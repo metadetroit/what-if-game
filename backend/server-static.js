@@ -40,6 +40,100 @@ function shuffleArray(array) {
   return newArray;
 }
 
+// Permanently remove a player from a game's state. Returns the removed player object (or null).
+// Cleans up keyed state (questions, answers, assignments) and rewrites references inside
+// cardPairs/turnLog/cardAssignments so summaries continue to render the cached author name.
+function removePlayerFromGame(roomCode, socketId) {
+  const game = games[roomCode];
+  if (!game) return null;
+  const player = game.players.find(p => p.id === socketId);
+  if (!player) return null;
+  if (player.reconnectTimeout) {
+    clearTimeout(player.reconnectTimeout);
+    player.reconnectTimeout = null;
+  }
+  game.players = game.players.filter(p => p.id !== socketId);
+  delete game.questions[socketId];
+  delete game.answers[socketId];
+  if (game.questionAssignments) delete game.questionAssignments[socketId];
+  if (game.cardAssignments) {
+    delete game.cardAssignments[socketId];
+    for (const key of Object.keys(game.cardAssignments)) {
+      const card = game.cardAssignments[key];
+      if (card.playerId === socketId) card.playerId = null;
+      if (card.question && card.question.authorId === socketId) card.question.authorId = null;
+      if (card.answer && card.answer.authorId === socketId) card.answer.authorId = null;
+    }
+  }
+  if (Array.isArray(game.cardPairs)) {
+    for (const pair of game.cardPairs) {
+      if (pair.question && pair.question.authorId === socketId) pair.question.authorId = null;
+      if (pair.answer && pair.answer.authorId === socketId) pair.answer.authorId = null;
+    }
+  }
+  if (Array.isArray(game.turnLog)) {
+    for (const entry of game.turnLog) {
+      if (entry.questionAuthorId === socketId) entry.questionAuthorId = null;
+      if (entry.actualAnswerAuthorId === socketId) entry.actualAnswerAuthorId = null;
+      if (entry.pairedAnswerAuthorId === socketId) entry.pairedAnswerAuthorId = null;
+    }
+  }
+  if (Array.isArray(game.playerOrder)) {
+    const idx = game.playerOrder.indexOf(socketId);
+    if (idx !== -1) game.playerOrder[idx] = null;
+  }
+  return player;
+}
+
+function ensureHost(roomCode) {
+  const game = games[roomCode];
+  if (!game) return false;
+  const activeHost = game.players.find(p => p.isHost && p.isActive);
+  if (activeHost) {
+    if (game.host !== activeHost.id) {
+      game.host = activeHost.id;
+      return true;
+    }
+    return false;
+  }
+  for (const p of game.players) p.isHost = false;
+  const newHost = game.players.find(p => p.isActive);
+  if (newHost) {
+    newHost.isHost = true;
+    game.host = newHost.id;
+    return true;
+  }
+  return false;
+}
+
+function disbandIfBelowMinimum(roomCode) {
+  const game = games[roomCode];
+  if (!game) return false;
+  const active = game.players.filter(p => p.isActive).length;
+  let minimum = 0;
+  if (game.phase === 'writing') minimum = 3;
+  else if (game.phase === 'answering') minimum = 2;
+  else if (game.phase === 'performing') minimum = 2;
+  else return false;
+  if (active < minimum) {
+    console.log(`[disband] Room ${roomCode} below minimum (${active}/${minimum}) in ${game.phase}`);
+    io.to(roomCode).emit('game-disbanded', {
+      message: 'Not enough players remaining to continue. Returning to the new game screen.'
+    });
+    for (const p of game.players) {
+      const s = io.sockets.sockets.get(p.id);
+      if (s) {
+        s.leave(roomCode);
+        s.roomCode = null;
+      }
+      if (p.reconnectTimeout) clearTimeout(p.reconnectTimeout);
+    }
+    delete games[roomCode];
+    return true;
+  }
+  return false;
+}
+
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
   
@@ -69,7 +163,7 @@ io.on('connection', (socket) => {
     console.log(`Room ${roomCode} created by ${playerName}`);
     
     // CRITICAL FIX: Emit player-joined to update host's player list
-    io.to(roomCode).emit('player-joined', game.players);
+    io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
   });
 
   // Join existing room
@@ -102,7 +196,7 @@ io.on('connection', (socket) => {
     
     callback({ success: true });
     console.log(`${playerName} joined room ${roomCode}`);
-    io.to(roomCode).emit('player-joined', game.players);
+    io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
   });
 
   // Host starts the game
@@ -145,10 +239,11 @@ io.on('connection', (socket) => {
     
     if (!game || game.phase !== 'writing') return;
     
+    const player = game.players.find(p => p.id === socket.id);
     game.questions[socket.id] = {
       text: question,
       authorId: socket.id,
-      authorName: game.players.find(p => p.id === socket.id)?.name
+      authorName: player?.name || 'Unknown'
     };
     
     socket.emit('question-submitted');
@@ -160,13 +255,12 @@ io.on('connection', (socket) => {
     
     if (allSubmitted) {
       console.log('All active players submitted questions - distributing...');
-      // Shuffle and distribute questions (no one gets their own)
       distributeQuestions(roomCode);
     } else {
-      // Only count active players in progress
       io.to(roomCode).emit('progress-update', {
         submitted: Object.keys(game.questions).length,
-        total: activePlayers.length
+        total: activePlayers.length,
+        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.questions[p.id] }))
       });
     }
   });
@@ -288,6 +382,12 @@ io.on('connection', (socket) => {
       }
       
       console.log(`[distributeQuestions] Complete. Sent to ${sentCount}/${playerIds.length} players`);
+
+      io.to(roomCode).emit('progress-update', {
+        submitted: 0,
+        total: activePlayers.length,
+        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: false }))
+      });
     } catch (err) {
       console.error(`[distributeQuestions] CRITICAL ERROR:`, err.message);
       console.error(err.stack);
@@ -331,7 +431,7 @@ io.on('connection', (socket) => {
       text: answer,
       question: assignedQuestion,
       authorId: socket.id,
-      authorName: player.name
+      authorName: player.name || 'Unknown'
     };
     
     socket.emit('answer-submitted');
@@ -352,30 +452,51 @@ io.on('connection', (socket) => {
     } else {
       io.to(roomCode).emit('progress-update', {
         submitted: Object.keys(game.answers).length,
-        total: activePlayers.length
+        total: activePlayers.length,
+        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] }))
       });
     }
   });
 
-  // Build end-of-game summary with Q&A pairs
   function buildGameSummary(roomCode) {
     const game = games[roomCode];
-    if (!game || !game.cardPairs) return [];
-    
+    if (!game) return [];
     const isAnonymous = game.anonymousMode;
-    
-    return game.cardPairs.map(pair => {
-      const questionAuthor = game.players.find(p => p.id === pair.question?.authorId);
-      const answerAuthor = game.players.find(p => p.id === pair.answer?.authorId);
-      
-      return {
-        question: pair.question?.text || 'Unknown question',
-        answer: pair.answer?.text || 'Unknown answer',
-        questionAuthorName: isAnonymous ? '???' : (questionAuthor?.name || 'Unknown'),
-        answerAuthorName: isAnonymous ? '???' : (answerAuthor?.name || 'Unknown'),
-        anonymousMode: isAnonymous
-      };
-    });
+    if (game.turnLog && game.turnLog.length > 0) {
+      const pairs = [];
+      for (const turn of game.turnLog) {
+        if (turn.isQuestionTurn) {
+          const answerTurn = game.turnLog.find(t => t.turnIndex === turn.turnIndex + 1);
+          const qAuthor = turn.questionAuthor || 'Unknown';
+          const aAuthor = turn.actualAnswerAuthor || 'Unknown';
+          const pAuthor = answerTurn?.pairedAnswerAuthor || 'Unknown';
+          if (qAuthor === 'Unknown' || aAuthor === 'Unknown') {
+            console.log(`[buildGameSummary] Missing name for turn ${turn.turnIndex}: qAuthor=${turn.questionAuthor} (id=${turn.questionAuthorId}), aAuthor=${turn.actualAnswerAuthor} (id=${turn.actualAnswerAuthorId})`);
+          }
+          pairs.push({
+            question: turn.question || 'Unknown question',
+            questionAuthorName: isAnonymous ? '???' : qAuthor,
+            actualAnswer: turn.actualAnswer || 'Unknown answer',
+            actualAnswerAuthorName: isAnonymous ? '???' : aAuthor,
+            pairedAnswer: answerTurn ? answerTurn.pairedAnswer : null,
+            pairedAnswerAuthorName: answerTurn ? (isAnonymous ? '???' : pAuthor) : null,
+            anonymousMode: isAnonymous
+          });
+        }
+      }
+      console.log(`[buildGameSummary] Built ${pairs.length} pairs from turnLog`);
+      return pairs;
+    }
+    if (!game.cardPairs) return [];
+    return game.cardPairs.map(pair => ({
+      question: pair.question?.text || 'Unknown question',
+      questionAuthorName: isAnonymous ? '???' : (pair.question?.authorName || 'Unknown'),
+      actualAnswer: pair.answer?.text || 'Unknown answer',
+      actualAnswerAuthorName: isAnonymous ? '???' : (pair.answer?.authorName || 'Unknown'),
+      pairedAnswer: null,
+      pairedAnswerAuthorName: null,
+      anonymousMode: isAnonymous
+    }));
   }
 
   // Prepare the performance/reading phase
@@ -430,6 +551,7 @@ io.on('connection', (socket) => {
     game.cardAssignments = cardAssignments;
     game.phase = 'performing';
     game.currentReaderIndex = 0;
+    game.turnLog = [];
     
     io.to(roomCode).emit('performance-phase', {
       totalRounds: playerIds.length * 2,
@@ -504,6 +626,24 @@ io.on('connection', (socket) => {
     const question = cardForQuestion.question.text;
     const answer = isQuestionTurn ? null : cardForAnswer.answer.text;
     
+    const turnEntry = {
+      turnIndex: game.currentReaderIndex,
+      isQuestionTurn: isQuestionTurn,
+      question: isQuestionTurn ? (cardForQuestion.question?.text || null) : null,
+      questionAuthor: isQuestionTurn ? (cardForQuestion.question?.authorName || null) : null,
+      questionAuthorId: isQuestionTurn ? (cardForQuestion.question?.authorId || null) : null,
+      actualAnswer: isQuestionTurn ? (cardForQuestion.answer?.text || null) : null,
+      actualAnswerAuthor: isQuestionTurn ? (cardForQuestion.answer?.authorName || null) : null,
+      actualAnswerAuthorId: isQuestionTurn ? (cardForQuestion.answer?.authorId || null) : null,
+      pairedAnswer: isQuestionTurn ? null : (cardForAnswer.answer?.text || null),
+      pairedAnswerAuthor: isQuestionTurn ? null : (cardForAnswer.answer?.authorName || null),
+      pairedAnswerAuthorId: isQuestionTurn ? null : (cardForAnswer.answer?.authorId || null)
+    };
+    game.turnLog.push(turnEntry);
+    if (isQuestionTurn) {
+      console.log(`[turnLog] Q-turn ${game.currentReaderIndex}: authorName=${turnEntry.questionAuthor}, answerAuthorName=${turnEntry.actualAnswerAuthor}`);
+    }
+
     io.to(roomCode).emit('reading-turn', {
       questionReader: { id: questionReaderId, name: questionReaderName },
       answerReader: { id: answerReaderId, name: answerReaderName },
@@ -590,8 +730,120 @@ io.on('connection', (socket) => {
     
     // Notify all players to restart
     io.to(roomCode).emit('game-restarted', { phase: 'writing' });
-    io.to(roomCode).emit('player-joined', game.players);
+    io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
     console.log(`Game replayed in room ${roomCode}`);
+  });
+
+  // Host force-advances the game
+  socket.on('force-progress', () => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+
+    if (game.phase === 'writing') {
+      const activePlayers = game.players.filter(p => p.isActive);
+      const submitted = activePlayers.filter(p => game.questions[p.id]);
+      if (submitted.length < 3) { socket.emit('error', 'Need at least 3 submissions to advance'); return; }
+      const toKick = activePlayers.filter(p => !game.questions[p.id]);
+      for (const p of toKick) {
+        console.log(`[FORCE-PROGRESS] Kicking non-submitter ${p.name} (${p.id}) from game`);
+        const kickedSocket = io.sockets.sockets.get(p.id);
+        if (kickedSocket) {
+          kickedSocket.emit('kicked-from-game', { reason: 'You were removed for not submitting in time.' });
+          kickedSocket.leave(roomCode);
+          kickedSocket.roomCode = null;
+        }
+        removePlayerFromGame(roomCode, p.id);
+      }
+      distributeQuestions(roomCode);
+    } else if (game.phase === 'answering') {
+      const activePlayers = game.players.filter(p => p.isActive);
+      const submitted = activePlayers.filter(p => game.answers[p.id]);
+      if (submitted.length < 2) { socket.emit('error', 'Need at least 2 answers to advance'); return; }
+      const toKick = activePlayers.filter(p => !game.answers[p.id]);
+      for (const p of toKick) {
+        console.log(`[FORCE-PROGRESS] Kicking non-answerer ${p.name} (${p.id}) from game`);
+        const kickedSocket = io.sockets.sockets.get(p.id);
+        if (kickedSocket) {
+          kickedSocket.emit('kicked-from-game', { reason: 'You were removed for not answering in time.' });
+          kickedSocket.leave(roomCode);
+          kickedSocket.roomCode = null;
+        }
+        removePlayerFromGame(roomCode, p.id);
+      }
+      preparePerformancePhase(roomCode);
+    } else if (game.phase === 'performing') {
+      console.log(`[FORCE-PROGRESS] Host skipping turn ${game.currentReaderIndex} in performing phase`);
+      game.currentReaderIndex++;
+      startNextReading(roomCode);
+    }
+  });
+
+  // Host immediately removes a disconnected/AFK player without waiting for grace
+  socket.on('host-kick-player', ({ playerId }) => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+    if (!playerId || playerId === socket.id) {
+      socket.emit('error', "Can't kick yourself");
+      return;
+    }
+    const target = game.players.find(p => p.id === playerId);
+    if (!target) {
+      socket.emit('error', 'Player not found');
+      return;
+    }
+    console.log(`[HOST-KICK] Host kicking ${target.name} (${playerId}) from room ${roomCode}`);
+    const kickedSocket = io.sockets.sockets.get(playerId);
+    if (kickedSocket) {
+      kickedSocket.emit('kicked-from-game', { reason: 'The host removed you from the game.' });
+      kickedSocket.leave(roomCode);
+      kickedSocket.roomCode = null;
+    }
+    removePlayerFromGame(roomCode, playerId);
+
+    if (game.players.length === 0) {
+      delete games[roomCode];
+      return;
+    }
+
+    if (disbandIfBelowMinimum(roomCode)) return;
+
+    const activePlayers = game.players.filter(p => p.isActive);
+    io.to(roomCode).emit('player-left', activePlayers);
+
+    if (game.phase === 'writing') {
+      io.to(roomCode).emit('progress-update', {
+        submitted: activePlayers.filter(p => game.questions[p.id]).length,
+        total: activePlayers.length,
+        playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.questions[p.id], isActive: true }))
+      });
+      if (activePlayers.length >= 3 && activePlayers.every(p => game.questions[p.id])) {
+        distributeQuestions(roomCode);
+      }
+    } else if (game.phase === 'answering') {
+      io.to(roomCode).emit('progress-update', {
+        submitted: activePlayers.filter(p => game.answers[p.id]).length,
+        total: activePlayers.length,
+        playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.answers[p.id], isActive: true }))
+      });
+      if (activePlayers.length >= 2 && activePlayers.every(p => game.answers[p.id])) {
+        preparePerformancePhase(roomCode);
+      }
+    } else if (game.phase === 'performing') {
+      const playerIds = game.playerOrder || activePlayers.map(p => p.id);
+      const isQuestionTurn = game.currentReaderIndex % 2 === 0;
+      let expectedReaderId;
+      if (isQuestionTurn) {
+        expectedReaderId = playerIds[game.currentReaderIndex / 2];
+      } else {
+        expectedReaderId = playerIds[((game.currentReaderIndex + 1) / 2) % playerIds.length];
+      }
+      if (expectedReaderId === playerId || expectedReaderId === null) {
+        game.currentReaderIndex++;
+        setTimeout(() => startNextReading(roomCode), 300);
+      }
+    }
   });
 
   // Player leaves room voluntarily (Play Again)
@@ -599,20 +851,27 @@ io.on('connection', (socket) => {
     const roomCode = socket.roomCode;
     if (roomCode && games[roomCode]) {
       const game = games[roomCode];
-      game.players = game.players.filter(p => p.id !== socket.id);
+      const wasHost = game.host === socket.id;
+      removePlayerFromGame(roomCode, socket.id);
       socket.leave(roomCode);
       socket.roomCode = null;
-      
+
       if (game.players.length === 0) {
         delete games[roomCode];
-      } else {
-        // Transfer host if needed
-        if (game.host === socket.id) {
-          game.host = game.players[0].id;
-          game.players[0].isHost = true;
-        }
-        io.to(roomCode).emit('player-left', game.players);
+        return;
       }
+      if (wasHost) {
+        const hostChanged = ensureHost(roomCode);
+        if (hostChanged) {
+          const newHost = game.players.find(p => p.isHost);
+          if (newHost) {
+            io.to(roomCode).emit('host-changed', { hostId: newHost.id, hostName: newHost.name });
+          }
+        }
+      }
+      if (disbandIfBelowMinimum(roomCode)) return;
+
+      io.to(roomCode).emit('player-left', game.players.filter(p => p.isActive));
     }
   });
 
@@ -624,7 +883,7 @@ io.on('connection', (socket) => {
     
     if (!game) {
       console.log('[RECONNECT] Room not found:', roomCode);
-      socket.emit('error', 'Room not found');
+      socket.emit('reconnect-failed', { reason: 'Room not found or expired', roomCode, playerName });
       return;
     }
     
@@ -680,7 +939,7 @@ io.on('connection', (socket) => {
     
     if (timeSinceDisconnect > 90000) {
       game.players = game.players.filter(p => p.name !== playerName);
-      socket.emit('error', 'Reconnection window expired (90 seconds)');
+      socket.emit('reconnect-failed', { reason: 'Reconnection window expired (90 seconds)', roomCode, playerName });
       return;
     }
     
@@ -768,33 +1027,41 @@ io.on('connection', (socket) => {
     const alreadySubmittedQuestion = game.phase === 'writing' && !!game.questions[socket.id];
     const alreadyAnswered = game.phase === 'answering' && !!game.answers[socket.id];
     
-    // Calculate progress for current phase
+    // Calculate progress + statuses for current phase
     const activePlayers = game.players.filter(p => p.isActive);
     let progress = null;
+    let playerStatuses = null;
     if (game.phase === 'writing') {
-      progress = { submitted: Object.keys(game.questions).length, total: activePlayers.length };
+      const submitted = activePlayers.filter(p => game.questions[p.id]).length;
+      progress = { submitted, total: activePlayers.length };
+      playerStatuses = activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.questions[p.id], isActive: true }));
+      progress.playerStatuses = playerStatuses;
     } else if (game.phase === 'answering') {
-      progress = { submitted: Object.keys(game.answers).length, total: activePlayers.length };
+      const submitted = activePlayers.filter(p => game.answers[p.id]).length;
+      progress = { submitted, total: activePlayers.length };
+      playerStatuses = activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.answers[p.id], isActive: true }));
+      progress.playerStatuses = playerStatuses;
     }
-    
+
     // Notify player of successful reconnection with current game state
     const reconnectData = {
       success: true,
       phase: game.phase,
       players: activePlayers,
       isHost: player.isHost,
+      hostId: game.host,
       roomCode: roomCode,
       assignedQuestion: assignedQuestion,
       alreadyAnswered: alreadyAnswered,
       alreadySubmittedQuestion: alreadySubmittedQuestion,
-      progress: progress
+      progress: progress,
+      anonymousMode: !!game.anonymousMode
     };
-    
-    // If reconnecting during ended phase, include the game summary
+
     if (game.phase === 'ended') {
       reconnectData.summary = buildGameSummary(roomCode);
     }
-    
+
     socket.emit('reconnected', reconnectData);
     
     console.log(`[RECONNECT] Sent reconnected event to ${playerName} (phase=${game.phase})`);
@@ -837,142 +1104,176 @@ io.on('connection', (socket) => {
       players: activePlayers,
       playerName: playerName
     });
-    
+
+    if (progress && playerStatuses) {
+      io.to(roomCode).emit('progress-update', {
+        submitted: progress.submitted,
+        total: progress.total,
+        playerStatuses: playerStatuses
+      });
+    }
+
     console.log(`[RECONNECT] ${playerName} reconnected to room ${roomCode} successfully`);
   });
 
-  // Handle disconnect with 90-second grace period
+  // Handle disconnect: lobby = immediate removal, in-game = 90s grace
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
-    
+
     const roomCode = socket.roomCode;
-    console.log(`Disconnect - roomCode: ${roomCode}`);
-    
-    if (roomCode && games[roomCode]) {
-      const game = games[roomCode];
-      console.log(`Disconnect - game found, players: ${game.players.map(p => `(${p.name}, id=${p.id}, active=${p.isActive})`).join(', ')}`);
-      
-      const player = game.players.find(p => p.id === socket.id);
-      
-      if (!player) {
-        console.log(`Disconnect - No player found with socket.id ${socket.id}`);
-        return; // Player already removed or not found
+    if (!roomCode || !games[roomCode]) return;
+    const game = games[roomCode];
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player) {
+      console.log(`Disconnect - No player found with socket.id ${socket.id}`);
+      return;
+    }
+
+    const wasHost = game.host === socket.id;
+
+    if (game.phase === 'lobby') {
+      console.log(`Disconnect (lobby) - removing ${player.name} immediately`);
+      removePlayerFromGame(roomCode, socket.id);
+      if (game.players.length === 0) {
+        delete games[roomCode];
+        return;
       }
-      
-      console.log(`Disconnect - Found player: ${player.name}, marking as disconnected`);
-      
-      // Mark player as disconnected instead of removing immediately
-      player.isActive = false;
-      player.disconnectedAt = Date.now();
-      
-      console.log(`Disconnect - Player ${player.name} marked: isActive=false, disconnectedAt=${player.disconnectedAt}`);
-      
-      const wasHost = game.host === socket.id;
-      const wasInGame = game.phase !== 'lobby';
-      
-      // Notify others that player temporarily disconnected
-      io.to(roomCode).emit('player-disconnected', {
-        players: game.players.filter(p => p.isActive),
-        disconnectedPlayer: player.name,
-        gracePeriod: 90
-      });
-      
-      // CRITICAL FIX: Immediately handle game-state implications during disconnect
-      // (don't wait for 90s grace period - the game must continue smoothly)
-      
-      // If in writing phase: check if remaining active players have all submitted
-      if (game.phase === 'writing') {
-        const activePlayers = game.players.filter(p => p.isActive);
-        if (activePlayers.length >= 3 && activePlayers.every(p => game.questions[p.id])) {
-          console.log('All remaining active players submitted - distributing questions');
+      if (wasHost) {
+        const hostChanged = ensureHost(roomCode);
+        if (hostChanged) {
+          const newHost = game.players.find(p => p.isHost);
+          if (newHost) {
+            io.to(roomCode).emit('host-changed', { hostId: newHost.id, hostName: newHost.name });
+          }
+        }
+      }
+      io.to(roomCode).emit('player-left', game.players.filter(p => p.isActive));
+      return;
+    }
+
+    if (game.phase === 'ended') {
+      removePlayerFromGame(roomCode, socket.id);
+      if (game.players.length === 0) delete games[roomCode];
+      return;
+    }
+
+    console.log(`Disconnect (${game.phase}) - ${player.name} marked inactive, 90s grace`);
+    player.isActive = false;
+    player.disconnectedAt = Date.now();
+
+    let hostTransferredTo = null;
+    if (wasHost) {
+      player.isHost = false;
+      const hostChanged = ensureHost(roomCode);
+      if (hostChanged) {
+        const newHost = game.players.find(p => p.isHost);
+        if (newHost) {
+          hostTransferredTo = newHost;
+          console.log(`[disconnect] Host transferred from ${player.name} to ${newHost.name}`);
+        }
+      }
+    }
+
+    io.to(roomCode).emit('player-disconnected', {
+      players: game.players.filter(p => p.isActive),
+      disconnectedPlayer: player.name,
+      gracePeriod: 90
+    });
+
+    if (hostTransferredTo) {
+      io.to(roomCode).emit('host-changed', { hostId: hostTransferredTo.id, hostName: hostTransferredTo.name });
+    }
+
+    setTimeout(() => {
+      const stillThere = games[roomCode];
+      if (!stillThere) return;
+      const stillPlayer = stillThere.players.find(p => p.id === socket.id);
+      if (!stillPlayer || stillPlayer.isActive) {
+        console.log(`[disconnect-deferred] ${player.name} reconnected before grace - skipping side effects`);
+        return;
+      }
+
+      if (stillThere.phase === 'writing') {
+        const activePlayers = stillThere.players.filter(p => p.isActive);
+        if (activePlayers.length >= 3 && activePlayers.every(p => stillThere.questions[p.id])) {
           distributeQuestions(roomCode);
         } else {
           io.to(roomCode).emit('progress-update', {
-            submitted: Object.keys(game.questions).filter(id => game.players.find(p => p.id === id && p.isActive)).length,
-            total: activePlayers.length
+            submitted: Object.keys(stillThere.questions).filter(id => stillThere.players.find(p => p.id === id && p.isActive)).length,
+            total: activePlayers.length,
+            playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.questions[p.id], isActive: true }))
           });
         }
       }
-      
-      // If in answering phase: check if remaining active players have all submitted
-      if (game.phase === 'answering') {
-        const activePlayers = game.players.filter(p => p.isActive);
-        if (activePlayers.length >= 2 && activePlayers.every(p => game.answers[p.id])) {
-          console.log('All remaining active players answered - moving to performance');
+
+      if (stillThere.phase === 'answering') {
+        const activePlayers = stillThere.players.filter(p => p.isActive);
+        if (activePlayers.length >= 2 && activePlayers.every(p => stillThere.answers[p.id])) {
           preparePerformancePhase(roomCode);
         } else {
           io.to(roomCode).emit('progress-update', {
-            submitted: Object.keys(game.answers).filter(id => game.players.find(p => p.id === id && p.isActive)).length,
-            total: activePlayers.length
+            submitted: Object.keys(stillThere.answers).filter(id => stillThere.players.find(p => p.id === id && p.isActive)).length,
+            total: activePlayers.length,
+            playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.answers[p.id], isActive: true }))
           });
         }
       }
-      
-      // If in performing phase: skip to next turn if disconnected player was the active reader
-      if (game.phase === 'performing') {
-        const playerIds = game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id);
-        const isQuestionTurn = game.currentReaderIndex % 2 === 0;
+
+      if (stillThere.phase === 'performing') {
+        const playerIds = stillThere.playerOrder || stillThere.players.filter(p => p.isActive).map(p => p.id);
+        const isQuestionTurn = stillThere.currentReaderIndex % 2 === 0;
         let expectedReaderId;
-        
         if (isQuestionTurn) {
-          const playerIndex = game.currentReaderIndex / 2;
-          expectedReaderId = playerIds[playerIndex];
+          expectedReaderId = playerIds[stillThere.currentReaderIndex / 2];
         } else {
-          const playerIndex = (game.currentReaderIndex + 1) / 2;
-          expectedReaderId = playerIds[playerIndex % playerIds.length];
+          expectedReaderId = playerIds[((stillThere.currentReaderIndex + 1) / 2) % playerIds.length];
         }
-        
         if (expectedReaderId === socket.id) {
-          console.log(`Active reader ${player.name} disconnected - advancing turn`);
-          game.currentReaderIndex++;
-          setTimeout(() => startNextReading(roomCode), 500);
+          stillThere.currentReaderIndex++;
+          setTimeout(() => startNextReading(roomCode), 300);
         }
-        
-        // End game if too few active players
-        const activeCount = game.players.filter(p => p.isActive).length;
+        const activeCount = stillThere.players.filter(p => p.isActive).length;
         if (activeCount < 2) {
-          const summary = buildGameSummary(roomCode);
-          io.to(roomCode).emit('game-ended', { 
-            message: 'Not enough players remaining',
-            summary: summary
-          });
-          game.phase = 'ended';
+          disbandIfBelowMinimum(roomCode);
         }
       }
-      
-      // Set 90-second timeout to permanently remove player if they don't reconnect
-      player.reconnectTimeout = setTimeout(() => {
-        // Find player by old socket ID; if they reconnected, the player object still exists with new ID
-        const stillDisconnected = game.players.find(p => p.id === socket.id && !p.isActive);
-        if (!stillDisconnected) {
-          console.log(`[grace-timeout] Player no longer matches old socket ID ${socket.id} - they reconnected or were already removed`);
-          return;
-        }
-        
-        console.log(`[grace-timeout] Permanently removing ${stillDisconnected.name}`);
-        // Permanently remove player
-        game.players = game.players.filter(p => p.id !== socket.id);
-        
-        // Also clean up any state keyed by their socket ID
-        delete game.questions[socket.id];
-        delete game.answers[socket.id];
-        if (game.questionAssignments) delete game.questionAssignments[socket.id];
-        if (game.cardAssignments) delete game.cardAssignments[socket.id];
-        
-        if (game.players.length === 0) {
-          delete games[roomCode];
-          return;
-        }
-        
-        // Transfer host if needed
-        if (wasHost && !game.players.find(p => p.isHost)) {
-          game.host = game.players[0].id;
-          game.players[0].isHost = true;
-        }
-        
-        io.to(roomCode).emit('player-left', game.players.filter(p => p.isActive));
-      }, 90000); // 90 seconds grace period
-    }
+    }, 250);
+
+    player.reconnectTimeout = setTimeout(() => {
+      const stillThere = games[roomCode];
+      if (!stillThere) return;
+      const stillDisconnected = stillThere.players.find(p => p.id === socket.id && !p.isActive);
+      if (!stillDisconnected) {
+        console.log(`[grace-timeout] ${socket.id} no longer matches a disconnected player - skipping`);
+        return;
+      }
+      console.log(`[grace-timeout] Permanently removing ${stillDisconnected.name}`);
+      removePlayerFromGame(roomCode, socket.id);
+
+      if (stillThere.players.length === 0) {
+        delete games[roomCode];
+        return;
+      }
+
+      if (disbandIfBelowMinimum(roomCode)) return;
+
+      io.to(roomCode).emit('player-left', stillThere.players.filter(p => p.isActive));
+
+      const activePlayers = stillThere.players.filter(p => p.isActive);
+      if (stillThere.phase === 'writing') {
+        io.to(roomCode).emit('progress-update', {
+          submitted: activePlayers.filter(p => stillThere.questions[p.id]).length,
+          total: activePlayers.length,
+          playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.questions[p.id], isActive: true }))
+        });
+      } else if (stillThere.phase === 'answering') {
+        io.to(roomCode).emit('progress-update', {
+          submitted: activePlayers.filter(p => stillThere.answers[p.id]).length,
+          total: activePlayers.length,
+          playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.answers[p.id], isActive: true }))
+        });
+      }
+    }, 90000);
   });
 });
 

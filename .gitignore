@@ -5,7 +5,7 @@ node_modules/
 .pnp.js
 
 # Production builds
-dist/
+# NOTE: frontend/dist is intentionally tracked for Render single-service deploy
 dist-ssr/
 *.local
 

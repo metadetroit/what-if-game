@@ -39,7 +39,7 @@
   }
   
   .game-container {
-    @apply h-screen w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
+    @apply h-[100dvh] w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
   }
   
   .text-gradient {
