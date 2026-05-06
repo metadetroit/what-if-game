@@ -31,6 +31,7 @@ function App() {
   const [hasRead, setHasRead] = useState(false)
   const [gameSummary, setGameSummary] = useState(null)
   const [anonymousMode, setAnonymousMode] = useState(false)
+  const [noSelfReading, setNoSelfReading] = useState(false)
   const [reconnectInfo, setReconnectInfo] = useState(null)
   const [playerStatuses, setPlayerStatuses] = useState([])
   const [forceConfirm, setForceConfirm] = useState(false)
@@ -359,7 +360,7 @@ function App() {
     })
   }, [socket, playerName, roomCode])
 
-  const startGame = useCallback(() => { socket.emit("start-game") }, [socket])
+  const startGame = useCallback(() => { socket.emit("start-game", { noSelfReading }) }, [socket, noSelfReading])
 
   const submitQuestion = useCallback(() => {
     if (!question.trim() || !question.toLowerCase().startsWith("what if")) {
@@ -600,6 +601,19 @@ function App() {
                   </div>
                   <button onClick={() => socket.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
                     <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
+                  </button>
+                </div>
+              </div>
+            )}
+            {isHost && (
+              <div className="card mb-2 py-2 px-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-white font-medium leading-tight">No Self-Reading</p>
+                    <p className="text-[9px] text-gray-500 leading-tight">Players won't read their own content</p>
+                  </div>
+                  <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
+                    <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
                   </button>
                 </div>
               </div>

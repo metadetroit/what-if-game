@@ -200,7 +200,7 @@ io.on('connection', (socket) => {
   });
 
   // Host starts the game
-  socket.on('start-game', () => {
+  socket.on('start-game', ({ noSelfReading = false }) => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
     
@@ -212,6 +212,10 @@ io.on('connection', (socket) => {
       socket.emit('error', 'Need at least 3 active players to start');
       return;
     }
+    
+    // Store noSelfReading setting for use in performance phase
+    game.noSelfReading = noSelfReading;
+    console.log(`Room ${roomCode}: No Self-Reading ${noSelfReading ? 'ON' : 'OFF'}`);
     
     // CRITICAL FIX: Remove any disconnected players from lobby before starting
     game.players = activePlayers;
@@ -541,11 +545,40 @@ io.on('connection', (socket) => {
     }
     shuffledCardIndices = shuffleArray(shuffledCardIndices);
     
-    // Assign cards totally randomly — no restrictions
-    for (let i = 0; i < playerIds.length; i++) {
-      const playerId = playerIds[i];
-      const cardIndex = shuffledCardIndices[i];
-      cardAssignments[playerId] = game.shuffledCards[cardIndex];
+    // Assign cards with optional noSelfReading constraint
+    if (game.noSelfReading) {
+      console.log(`[preparePerformancePhase] No Self-Reading enabled - filtering self-authored cards`);
+      for (let i = 0; i < playerIds.length; i++) {
+        const playerId = playerIds[i];
+        // Find a card that this player didn't author
+        let assignedCard = null;
+        let availableIndices = shuffledCardIndices.filter(idx => {
+          const card = game.shuffledCards[idx];
+          return card.question.authorId !== playerId && card.answer.authorId !== playerId;
+        });
+        
+        if (availableIndices.length > 0) {
+          // Pick a random available card
+          const cardIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+          assignedCard = game.shuffledCards[cardIndex];
+          // Remove this index from shuffledCardIndices so it's not reused
+          shuffledCardIndices = shuffledCardIndices.filter(idx => idx !== cardIndex);
+        } else {
+          // Fallback: if no valid cards (rare edge case), assign any card
+          console.warn(`[preparePerformancePhase] No valid cards for player ${playerId}, using fallback`);
+          const cardIndex = shuffledCardIndices[0];
+          assignedCard = game.shuffledCards[cardIndex];
+          shuffledCardIndices = shuffledCardIndices.slice(1);
+        }
+        cardAssignments[playerId] = assignedCard;
+      }
+    } else {
+      // Assign cards totally randomly — no restrictions
+      for (let i = 0; i < playerIds.length; i++) {
+        const playerId = playerIds[i];
+        const cardIndex = shuffledCardIndices[i];
+        cardAssignments[playerId] = game.shuffledCards[cardIndex];
+      }
     }
     
     game.cardAssignments = cardAssignments;
