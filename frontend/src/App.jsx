@@ -931,7 +931,10 @@ function App() {
                         {/* Left Section: Setup */}
                         <div className="flex-1 p-4 border-b md:border-b-0 md:border-r border-gray-700/50">
                           <p className="text-sm font-bold text-indigo-400 underline mb-3">Question:</p>
-                          <p className="text-sm text-white leading-relaxed mb-4">{pair.question}</p>
+                          <p className="text-sm text-white leading-relaxed mb-2">{pair.question}</p>
+                          {!gameSummary[0]?.anonymousMode && (
+                            <p className="text-[10px] text-gray-500 mb-4">— {pair.questionAuthorName}</p>
+                          )}
                           <div className="flex items-start gap-2">
                             <svg className="w-4 h-4 text-purple-400 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-3.293-3.293a1 1 0 010-1.414z" clipRule="evenodd" transform="rotate(90 10 10)"/>
@@ -941,7 +944,9 @@ function App() {
                               {pair.pairedAnswer ? (
                                 <>
                                   <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
-                                  <p className="text-[10px] text-gray-500 mt-1">— {pair.pairedAnswerAuthorName}</p>
+                                  {!gameSummary[0]?.anonymousMode && (
+                                    <p className="text-[10px] text-gray-500 mt-1">— {pair.pairedAnswerAuthorName}</p>
+                                  )}
                                 </>
                               ) : (
                                 <p className="text-sm text-gray-500 italic">Not assigned</p>
@@ -953,7 +958,9 @@ function App() {
                         <div className="flex-1 p-4 bg-green-900/10">
                           <p className="text-sm font-bold text-green-400 underline mb-3">Actual Answer:</p>
                           <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
-                          <p className="text-[10px] text-gray-500 mt-1">— {pair.actualAnswerAuthorName}</p>
+                          {!gameSummary[0]?.anonymousMode && (
+                            <p className="text-[10px] text-gray-500 mt-1">— {pair.actualAnswerAuthorName}</p>
+                          )}
                         </div>
                       </div>
                     </div>
