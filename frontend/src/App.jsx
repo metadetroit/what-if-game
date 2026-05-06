@@ -113,19 +113,15 @@ function App() {
     window.addEventListener("beforeunload", handleBeforeUnload)
 
     const updatePlayersAndHost = (payload) => {
-      if (!payload) return
-      const playerList = Array.isArray(payload) ? payload : payload.players || []
-      const nextHostId = !Array.isArray(payload) ? payload.hostId : null
+      if (!payload) return;
+      const playerList = Array.isArray(payload) ? payload : payload.players || [];
+      const nextHostId = !Array.isArray(payload) ? payload.hostId : null;
       setPlayers(playerList)
+      // Only update host state if hostId is provided in the payload
+      // This prevents overriding the correct host state set during reconnection
       if (nextHostId) {
         setHostId(nextHostId)
         setIsHost(newSocket.id === nextHostId)
-      } else {
-        const currentHost = playerList.find(p => p.isHost)
-        if (currentHost) {
-          setHostId(currentHost.id)
-          setIsHost(newSocket.id === currentHost.id)
-        }
       }
     }
 
