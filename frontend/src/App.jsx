@@ -111,18 +111,14 @@ function App() {
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
 
-    newSocket.on("player-joined", (playerList) => {
+    const updatePlayersAndHost = (playerList) => {
       setPlayers(playerList)
-      // Update isHost status based on current player in the list
-      const currentPlayer = playerList.find(p => p.id === socket?.id)
+      const currentPlayer = playerList.find(p => p.id === newSocket.id)
       if (currentPlayer) setIsHost(currentPlayer.isHost)
-    })
-    newSocket.on("player-left", (playerList) => {
-      setPlayers(playerList)
-      // Update isHost status based on current player in the list
-      const currentPlayer = playerList.find(p => p.id === socket?.id)
-      if (currentPlayer) setIsHost(currentPlayer.isHost)
-    })
+    }
+
+    newSocket.on("player-joined", updatePlayersAndHost)
+    newSocket.on("player-left", updatePlayersAndHost)
     newSocket.on("game-started", () => { setGameState("writing"); setSubmitted(false) })
     newSocket.on("progress-update", (data) => {
       setProgress(data)
@@ -671,6 +667,11 @@ function App() {
                   <div className={"flex justify-between text-[10px] mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
                   <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
                 </div>
+                {isHost && progress.submitted < progress.total && (
+                  <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
+                    ⚡ Force Advance (skip waiting players)
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
