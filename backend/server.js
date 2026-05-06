@@ -871,6 +871,30 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Host disbands room and sends everyone to welcome screen
+  socket.on('disband-room', () => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+
+    console.log(`[DISBAND] Host disbanding room ${roomCode}`);
+
+    // Notify all players to return to welcome screen
+    io.to(roomCode).emit('game-disbanded', {
+      message: 'The host ended the game. Returning to the main screen.'
+    });
+
+    // Remove all players from the room and clean up
+    for (const p of game.players) {
+      const pSocket = io.sockets.sockets.get(p.id);
+      if (pSocket) {
+        pSocket.leave(roomCode);
+        pSocket.roomCode = null;
+      }
+    }
+    delete games[roomCode];
+  });
+
   // Player leaves room voluntarily (Play Again)
   socket.on('leave-room', () => {
     const roomCode = socket.roomCode;
