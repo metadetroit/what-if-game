@@ -267,7 +267,7 @@ function App() {
         }
         setReconnectInfo(null)
         setRoomCode(data.roomCode)
-        setIsHost(!!data.isHost)
+        setIsHost(!!data.isHost || data.hostId === newSocket.id)
         setPlayers(data.players)
         setGameState(data.phase)
         if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode)
@@ -367,6 +367,8 @@ function App() {
   }, [socket, playerName, roomCode])
 
   const startGame = useCallback(() => { socket.emit("start-game", { noSelfReading }) }, [socket, noSelfReading])
+
+  const canForceAdvance = isHost && (progress.total === 0 || progress.submitted < progress.total)
 
   const submitQuestion = useCallback(() => {
     if (!question.trim() || !question.toLowerCase().startsWith("what if")) {
@@ -667,7 +669,7 @@ function App() {
                   <div className={"flex justify-between text-[10px] mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
                   <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
                 </div>
-                {isHost && progress.submitted < progress.total && (
+                {canForceAdvance && (
                   <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
                     ⚡ Force Advance (skip waiting players)
                   </button>
@@ -693,7 +695,7 @@ function App() {
                   <div className={"w-full h-2 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
                 </div>
                 {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
-                {isHost && progress.submitted < progress.total && (
+                {canForceAdvance && (
                   <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
                     ⚡ Force Advance (skip waiting players)
                   </button>
@@ -734,6 +736,11 @@ function App() {
                   <div className={"flex justify-between text-[10px] mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
                   <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
                 </div>
+                {canForceAdvance && (
+                  <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
+                    ⚡ Force Advance (skip waiting players)
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -755,7 +762,7 @@ function App() {
                   <div className={"w-full h-2 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
                 </div>
                 {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
-                {isHost && progress.submitted < progress.total && (
+                {canForceAdvance && (
                   <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
                     ⚡ Force Advance (skip waiting players)
                   </button>
