@@ -1018,9 +1018,10 @@ io.on('connection', (socket) => {
     player.disconnectedAt = null;
     player.reconnectTimeout = null;
     
-    // If this player was the host, update game.host to new socket ID
+    // If this player was the host, update game.host to new socket ID and player.isHost
     if (player.isHost) {
       game.host = socket.id;
+      player.isHost = true;
       console.log(`Updated game.host to new socket ID: ${socket.id}`);
     }
     
