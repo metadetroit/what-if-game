@@ -864,7 +864,7 @@ function App() {
                 <div className="space-y-3">
                   {gameSummary.map((pair, i) => (
                     <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl p-4 border border-gray-700/50 shadow-lg">
-                      <div className="mb-3">
+                      <div className="mb-3 bg-indigo-900/20 rounded-lg p-3 border border-indigo-800/30">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">{i + 1}</span>
                           <p className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold">Question</p>
@@ -872,7 +872,7 @@ function App() {
                         <p className="text-sm text-white leading-relaxed font-medium">{pair.question}</p>
                         <p className="text-[10px] text-gray-500 mt-1">— {pair.questionAuthorName}</p>
                       </div>
-                      <div className="border-t border-gray-700/50 pt-3 mb-3">
+                      <div className="border-t border-gray-700/50 pt-3 mb-3 bg-indigo-900/20 rounded-lg p-3 border border-indigo-800/30">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-xs font-bold text-white">✓</span>
                           <p className="text-[10px] text-green-400 uppercase tracking-wider font-semibold">Actual Answer</p>
@@ -881,10 +881,10 @@ function App() {
                         <p className="text-[10px] text-gray-500 mt-1">— {pair.actualAnswerAuthorName}</p>
                       </div>
                       {pair.pairedAnswer && (
-                        <div className="border-t border-gray-700/50 pt-3">
+                        <div className="border-t border-gray-700/50 pt-3 bg-purple-900/20 rounded-lg p-3 border border-purple-800/30">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold text-white">?</span>
-                            <p className="text-[10px] text-purple-400 uppercase tracking-wider font-semibold">Paired Answer</p>
+                            <p className="text-[10px] text-purple-400 uppercase tracking-wider font-semibold">Game Answer</p>
                           </div>
                           <p className="text-sm text-white leading-relaxed font-medium">{pair.pairedAnswer}</p>
                           <p className="text-[10px] text-gray-500 mt-1">— {pair.pairedAnswerAuthorName}</p>
