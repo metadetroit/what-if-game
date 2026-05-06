@@ -1161,6 +1161,10 @@ io.on('connection', (socket) => {
     
     console.log(`[RECONNECT] Sent reconnected event to ${playerName} (phase=${game.phase})`);
     
+    // Notify all players that this player has reconnected (updates player lists with correct isHost status)
+    io.to(roomCode).emit('player-joined', activePlayers);
+    console.log(`[RECONNECT] Notified room ${roomCode} that ${playerName} reconnected`);
+    
     // If reconnecting during performing phase, send current turn state
     if (game.phase === 'performing') {
       const playerIds = game.playerOrder || activePlayers.map(p => p.id);

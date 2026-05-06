@@ -916,10 +916,10 @@ function App() {
             {isHost ? (
               <div className="space-y-2">
                 <button onClick={() => socket.emit("replay-game")} className="btn-primary py-3 text-base w-full">
-                  🔄 Play Again (Same Players)
+                  🔄 New game with same players
                 </button>
                 <button onClick={disbandGame} className="btn-secondary py-3 text-sm w-full">
-                  🏠 New Game (All Players)
+                  🏠 New game (change players)
                 </button>
               </div>
             ) : (
