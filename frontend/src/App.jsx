@@ -116,16 +116,24 @@ function App() {
       if (!payload) return;
       const playerList = Array.isArray(payload) ? payload : payload.players || [];
       const nextHostId = !Array.isArray(payload) ? payload.hostId : null;
+      console.log("updatePlayersAndHost called with:", payload)
+      console.log("nextHostId:", nextHostId, "Socket ID:", newSocket.id)
       setPlayers(playerList)
       // Only update host state if hostId is provided in the payload
       // This prevents overriding the correct host state set during reconnection
       if (nextHostId) {
+        console.log("Updating host state from updatePlayersAndHost")
         setHostId(nextHostId)
         setIsHost(newSocket.id === nextHostId)
+      } else {
+        console.log("No hostId in payload, not updating host state")
       }
     }
 
-    newSocket.on("player-joined", updatePlayersAndHost)
+    newSocket.on("player-joined", (payload) => {
+      console.log("player-joined event received:", payload)
+      updatePlayersAndHost(payload)
+    })
     newSocket.on("player-left", updatePlayersAndHost)
     newSocket.on("game-started", () => { setGameState("writing"); setSubmitted(false) })
     newSocket.on("progress-update", (data) => {
@@ -271,6 +279,8 @@ function App() {
 
     newSocket.on("reconnected", (data) => {
       console.log("Reconnected event received:", data)
+      console.log("Socket ID:", newSocket.id, "Host ID from data:", data.hostId)
+      console.log("Should be host?", newSocket.id === data.hostId)
       setReconnectPrompt(null)
       if (data.success) {
         const savedSession = sessionStorage.getItem("gameSession")
@@ -281,9 +291,12 @@ function App() {
         setReconnectInfo(null)
         setRoomCode(data.roomCode)
         if (data.hostId) {
+          console.log("Setting hostId to:", data.hostId)
+          console.log("Is host?", newSocket.id === data.hostId)
           setHostId(data.hostId)
           setIsHost(newSocket.id === data.hostId)
         } else {
+          console.log("No hostId in data, using isHost flag:", !!data.isHost)
           setIsHost(!!data.isHost)
         }
         setPlayers(data.players)
@@ -508,7 +521,7 @@ function App() {
                 🔄 Try Rejoining Room {reconnectInfo?.roomCode}
               </button>
               <button onClick={resetGame} className="btn-secondary py-3 text-sm w-full">
-                Start New Game
+                Return to Main Screen
               </button>
             </div>
           </div>
@@ -550,7 +563,7 @@ function App() {
                       }}
                       className="btn-secondary py-3 text-sm w-full"
                     >
-                      Start New Game
+                      Return to Main Screen
                     </button>
                   </div>
                 </div>
