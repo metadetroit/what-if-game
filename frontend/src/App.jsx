@@ -924,35 +924,38 @@ function App() {
             {gameSummary && gameSummary.length > 0 && (
               <div className="card mb-3 py-3 px-3 flex-1 min-h-0 overflow-y-auto">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 text-center">Game Summary</p>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {gameSummary.map((pair, i) => (
-                    <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl p-4 border border-gray-700/50 shadow-lg">
-                      <div className="mb-3 bg-indigo-900/20 rounded-lg p-3 border border-indigo-800/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">{i + 1}</span>
-                          <p className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold">Question</p>
-                        </div>
-                        <p className="text-sm text-white leading-relaxed font-medium">{pair.question}</p>
-                        <p className="text-[10px] text-gray-500 mt-1">— {pair.questionAuthorName}</p>
-                      </div>
-                      <div className="border-t border-gray-700/50 pt-3 mb-3 bg-indigo-900/20 rounded-lg p-3 border border-indigo-800/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-xs font-bold text-white">✓</span>
-                          <p className="text-[10px] text-green-400 uppercase tracking-wider font-semibold">Actual Answer</p>
-                        </div>
-                        <p className="text-sm text-white leading-relaxed font-medium">{pair.actualAnswer}</p>
-                        <p className="text-[10px] text-gray-500 mt-1">— {pair.actualAnswerAuthorName}</p>
-                      </div>
-                      {pair.pairedAnswer && (
-                        <div className="border-t border-gray-700/50 pt-3 bg-purple-900/20 rounded-lg p-3 border border-purple-800/30">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold text-white">?</span>
-                            <p className="text-[10px] text-purple-400 uppercase tracking-wider font-semibold">Game Answer</p>
+                    <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+                      <div className="flex flex-col md:flex-row">
+                        {/* Left Section: Setup */}
+                        <div className="flex-1 p-4 border-b md:border-b-0 md:border-r border-gray-700/50">
+                          <p className="text-sm font-bold text-indigo-400 underline mb-3">Question:</p>
+                          <p className="text-sm text-white leading-relaxed mb-4">{pair.question}</p>
+                          <div className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-purple-400 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-3.293-3.293a1 1 0 010-1.414z" clipRule="evenodd" transform="rotate(90 10 10)"/>
+                            </svg>
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-purple-400 underline mb-2">Game Answer:</p>
+                              {pair.pairedAnswer ? (
+                                <>
+                                  <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
+                                  <p className="text-[10px] text-gray-500 mt-1">— {pair.pairedAnswerAuthorName}</p>
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">Not assigned</p>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-sm text-white leading-relaxed font-medium">{pair.pairedAnswer}</p>
-                          <p className="text-[10px] text-gray-500 mt-1">— {pair.pairedAnswerAuthorName}</p>
                         </div>
-                      )}
+                        {/* Right Section: Result */}
+                        <div className="flex-1 p-4 bg-green-900/10">
+                          <p className="text-sm font-bold text-green-400 underline mb-3">Actual Answer:</p>
+                          <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
+                          <p className="text-[10px] text-gray-500 mt-1">— {pair.actualAnswerAuthorName}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
