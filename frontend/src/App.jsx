@@ -111,8 +111,18 @@ function App() {
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
 
-    newSocket.on("player-joined", (playerList) => { setPlayers(playerList) })
-    newSocket.on("player-left", (playerList) => { setPlayers(playerList) })
+    newSocket.on("player-joined", (playerList) => {
+      setPlayers(playerList)
+      // Update isHost status based on current player in the list
+      const currentPlayer = playerList.find(p => p.id === socket?.id)
+      if (currentPlayer) setIsHost(currentPlayer.isHost)
+    })
+    newSocket.on("player-left", (playerList) => {
+      setPlayers(playerList)
+      // Update isHost status based on current player in the list
+      const currentPlayer = playerList.find(p => p.id === socket?.id)
+      if (currentPlayer) setIsHost(currentPlayer.isHost)
+    })
     newSocket.on("game-started", () => { setGameState("writing"); setSubmitted(false) })
     newSocket.on("progress-update", (data) => {
       setProgress(data)
