@@ -1048,11 +1048,11 @@ io.on('connection', (socket) => {
     player.disconnectedAt = null;
     player.reconnectTimeout = null;
     
-    // If this player was the host, update game.host to new socket ID and player.isHost
-    if (player.isHost) {
+    // If this player was the host (check both player.isHost and game.host comparison), update game.host to new socket ID and player.isHost
+    if (player.isHost || game.host === oldSocketId) {
       game.host = socket.id;
       player.isHost = true;
-      console.log(`Updated game.host to new socket ID: ${socket.id}`);
+      console.log(`Updated game.host to new socket ID: ${socket.id} (was ${oldSocketId})`);
     }
     
     // CRITICAL FIX: Migrate ALL game state from old socket ID to new socket ID
