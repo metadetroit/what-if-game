@@ -88,6 +88,16 @@ function removePlayerFromGame(roomCode, socketId) {
 function ensureHost(roomCode) {
   const game = games[roomCode];
   if (!game) return false;
+  
+  // Check if original host is still in the game (even if disconnected)
+  const originalHost = game.players.find(p => p.id === game.host);
+  if (originalHost) {
+    // Keep original host as host - they can reconnect within 90s
+    // Only transfer if they've been permanently removed from game
+    return false;
+  }
+  
+  // Original host is gone, find a new active host
   const activeHost = game.players.find(p => p.isHost && p.isActive);
   if (activeHost) {
     if (game.host !== activeHost.id) {
@@ -96,6 +106,7 @@ function ensureHost(roomCode) {
     }
     return false;
   }
+  // Clear isHost from any inactive player still flagged
   for (const p of game.players) p.isHost = false;
   const newHost = game.players.find(p => p.isActive);
   if (newHost) {

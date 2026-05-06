@@ -535,7 +535,7 @@ function App() {
                 <span className="text-xl">🤔</span>
               </div>
               <h1 className="text-xl font-extrabold text-gradient mb-0">The What if? Game</h1>
-              <p className="text-gray-500 text-[10px] mt-1">3-15 players • 10-15 min</p>
+              <p className="text-gray-500 text-[10px] mt-1">3-15 players</p>
             </div>
             <div className="card space-y-3 py-3">
               <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" className="input-field py-2 text-lg" maxLength={20} />
