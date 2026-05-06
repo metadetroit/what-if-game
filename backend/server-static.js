@@ -174,7 +174,7 @@ io.on('connection', (socket) => {
     console.log(`Room ${roomCode} created by ${playerName}`);
     
     // CRITICAL FIX: Emit player-joined to update host's player list
-    io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
+    io.to(roomCode).emit('player-joined', { players: game.players.filter(p => p.isActive), hostId: game.host });
   });
 
   // Join existing room
@@ -774,7 +774,7 @@ io.on('connection', (socket) => {
     
     // Notify all players to restart
     io.to(roomCode).emit('game-restarted', { phase: 'writing' });
-    io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
+    io.to(roomCode).emit('player-joined', { players: game.players.filter(p => p.isActive), hostId: game.host });
     console.log(`Game replayed in room ${roomCode}`);
   });
 
@@ -854,7 +854,7 @@ io.on('connection', (socket) => {
     if (disbandIfBelowMinimum(roomCode)) return;
 
     const activePlayers = game.players.filter(p => p.isActive);
-    io.to(roomCode).emit('player-left', activePlayers);
+    io.to(roomCode).emit('player-left', { players: activePlayers, hostId: game.host });
 
     if (game.phase === 'writing') {
       io.to(roomCode).emit('progress-update', {
@@ -936,7 +936,7 @@ io.on('connection', (socket) => {
       }
       if (disbandIfBelowMinimum(roomCode)) return;
 
-      io.to(roomCode).emit('player-left', game.players.filter(p => p.isActive));
+      io.to(roomCode).emit('player-left', { players: game.players.filter(p => p.isActive), hostId: game.host });
     }
   });
 
@@ -1132,7 +1132,7 @@ io.on('connection', (socket) => {
     console.log(`[RECONNECT] Sent reconnected event to ${playerName} (phase=${game.phase})`);
     
     // Notify all players that this player has reconnected (updates player lists with correct isHost status)
-    io.to(roomCode).emit('player-joined', activePlayers);
+    io.to(roomCode).emit('player-joined', { players: activePlayers, hostId: game.host });
     console.log(`[RECONNECT] Notified room ${roomCode} that ${playerName} reconnected`);
     
     // If reconnecting during performing phase, send current turn state
@@ -1171,7 +1171,8 @@ io.on('connection', (socket) => {
     // Notify others that player rejoined
     io.to(roomCode).emit('player-rejoined', {
       players: activePlayers,
-      playerName: playerName
+      playerName: playerName,
+      hostId: game.host
     });
 
     if (progress && playerStatuses) {
@@ -1326,7 +1327,7 @@ io.on('connection', (socket) => {
 
       if (disbandIfBelowMinimum(roomCode)) return;
 
-      io.to(roomCode).emit('player-left', stillThere.players.filter(p => p.isActive));
+      io.to(roomCode).emit('player-left', { players: stillThere.players.filter(p => p.isActive), hostId: stillThere.host });
 
       const activePlayers = stillThere.players.filter(p => p.isActive);
       if (stillThere.phase === 'writing') {

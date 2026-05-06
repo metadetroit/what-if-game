@@ -19,6 +19,7 @@ function App() {
   const [roomCode, setRoomCode] = useState("")
   const [players, setPlayers] = useState([])
   const [isHost, setIsHost] = useState(false)
+  const [hostId, setHostId] = useState(null)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState(null)
   const [question, setQuestion] = useState("")
@@ -111,10 +112,21 @@ function App() {
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
 
-    const updatePlayersAndHost = (playerList) => {
+    const updatePlayersAndHost = (payload) => {
+      if (!payload) return
+      const playerList = Array.isArray(payload) ? payload : payload.players || []
+      const nextHostId = !Array.isArray(payload) ? payload.hostId : null
       setPlayers(playerList)
-      const currentPlayer = playerList.find(p => p.id === newSocket.id)
-      if (currentPlayer) setIsHost(currentPlayer.isHost)
+      if (nextHostId) {
+        setHostId(nextHostId)
+        setIsHost(newSocket.id === nextHostId)
+      } else {
+        const currentHost = playerList.find(p => p.isHost)
+        if (currentHost) {
+          setHostId(currentHost.id)
+          setIsHost(newSocket.id === currentHost.id)
+        }
+      }
     }
 
     newSocket.on("player-joined", updatePlayersAndHost)
@@ -208,11 +220,16 @@ function App() {
 
     newSocket.on("player-rejoined", (data) => {
       setPlayers(data.players)
+      if (data.hostId) {
+        setHostId(data.hostId)
+        setIsHost(newSocket.id === data.hostId)
+      }
       setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2000))
     })
 
     // Host transferred during game (e.g. previous host disconnected)
     newSocket.on("host-changed", (data) => {
+      if (data.hostId) setHostId(data.hostId)
       // Only react when this client is the new host or current host changed identity
       if (newSocket.id === data.hostId) {
         setIsHost(true)
@@ -267,7 +284,12 @@ function App() {
         }
         setReconnectInfo(null)
         setRoomCode(data.roomCode)
-        setIsHost(!!data.isHost || data.hostId === newSocket.id)
+        if (data.hostId) {
+          setHostId(data.hostId)
+          setIsHost(newSocket.id === data.hostId)
+        } else {
+          setIsHost(!!data.isHost)
+        }
         setPlayers(data.players)
         setGameState(data.phase)
         if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode)
