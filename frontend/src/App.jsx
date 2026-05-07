@@ -1291,7 +1291,7 @@ function App() {
                   <div className="border-t border-gray-700 pt-4">
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">Why I Built It</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      After playing this game for years with pen, paper, and way too many napkins, I realized something: this shouldn't just be for us. The whole world deserves to laugh as hard as we have.
+                      After playing this game for years with pen, paper, and way too many napkins, I realized something: The whole world deserves to laugh as hard as we have.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
                       So I decided to replicate the experience digitally. No more passing around a single notebook. No more trying to read someone else's handwriting. No more losing the best questions because someone spilled their drink.
