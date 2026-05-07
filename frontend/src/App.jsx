@@ -38,6 +38,8 @@ function App() {
   const [forceConfirm, setForceConfirm] = useState(false)
   const [kickConfirm, setKickConfirm] = useState(null) // { id, name } when host wants to confirm a kick
   const [reconnectPrompt, setReconnectPrompt] = useState(null) // { roomCode, playerName } on page-load reconnect
+  const [helpTab, setHelpTab] = useState("how-to-play") // "how-to-play" | "faq" | "tips" | "about"
+  const [firstSubmitter, setFirstSubmitter] = useState(null) // { name } for the first player to submit
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -135,10 +137,11 @@ function App() {
       updatePlayersAndHost(payload)
     })
     newSocket.on("player-left", updatePlayersAndHost)
-    newSocket.on("game-started", () => { setGameState("writing"); setSubmitted(false) })
+    newSocket.on("game-started", () => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null) })
     newSocket.on("progress-update", (data) => {
       setProgress(data)
       if (data.playerStatuses) { setPlayerStatuses(data.playerStatuses) }
+      if (data.firstSubmitter) { setFirstSubmitter(data.firstSubmitter) }
     })
     newSocket.on("answer-submitted", () => { setSubmitted(true); setError("") })
 
@@ -154,6 +157,7 @@ function App() {
       setSubmitted(false)
       setProgress({ submitted: 0, total: players.length })
       setPlayerStatuses(players.map(p => ({ name: p.name, submitted: false })))
+      setFirstSubmitter(null)
     })
 
     newSocket.on("performance-phase", (data) => {
@@ -399,7 +403,7 @@ function App() {
 
   const startGame = useCallback(() => { socket.emit("start-game", { noSelfReading }) }, [socket, noSelfReading])
 
-  const canForceAdvance = isHost && (progress.total === 0 || progress.submitted < progress.total)
+  const canForceAdvance = isHost && submitted && (progress.total === 0 || progress.submitted < progress.total)
 
   const submitQuestion = useCallback(() => {
     if (!question.trim() || !question.toLowerCase().startsWith("what if")) {
@@ -575,6 +579,9 @@ function App() {
               </div>
               <h1 className="text-xl font-extrabold text-gradient mb-0">The What if? Game</h1>
               <p className="text-gray-500 text-[10px] mt-1">3-15 players</p>
+              <button onClick={() => setGameState("help")} className="mt-2 text-[10px] text-indigo-400 hover:text-indigo-300 underline">
+                How to Play
+              </button>
             </div>
             <div className="card space-y-3 py-3">
               <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" className="input-field py-2 text-lg" maxLength={20} />
@@ -715,7 +722,12 @@ function App() {
                   <div className="w-full max-w-xs mb-4 space-y-1">
                     {playerStatuses.map((p, i) => (
                       <div key={i} className={"flex items-center justify-between px-3 py-1.5 rounded-lg text-sm " + (p.submitted ? "bg-green-900/30 border border-green-800" : "bg-gray-800 border border-gray-700")}>
-                        <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
+                        <div className="flex items-center gap-2">
+                          {firstSubmitter && p.name === firstSubmitter && (
+                            <span className="text-lg" title="First to submit!">🏆</span>
+                          )}
+                          <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
+                        </div>
                         <span className={p.submitted ? "text-green-400" : "text-gray-600"}>{p.submitted ? "✓ Done" : "waiting..."}</span>
                       </div>
                     ))}
@@ -782,7 +794,12 @@ function App() {
                   <div className="w-full max-w-xs mb-4 space-y-1">
                     {playerStatuses.map((p, i) => (
                       <div key={i} className={"flex items-center justify-between px-3 py-1.5 rounded-lg text-sm " + (p.submitted ? "bg-green-900/30 border border-green-800" : "bg-gray-800 border border-gray-700")}>
-                        <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
+                        <div className="flex items-center gap-2">
+                          {firstSubmitter && p.name === firstSubmitter && (
+                            <span className="text-lg" title="First to submit!">🏆</span>
+                          )}
+                          <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
+                        </div>
                         <span className={p.submitted ? "text-green-400" : "text-gray-600"}>{p.submitted ? "✓ Done" : "writing..."}</span>
                       </div>
                     ))}
@@ -982,10 +999,369 @@ function App() {
                 </button>
               </div>
             ) : (
-              <div className="py-3">
-                <span className="text-base text-indigo-400 animate-pulse">Waiting for host...</span>
+              <div className="space-y-2">
+                <div className="py-2">
+                  <span className="text-sm text-indigo-400 animate-pulse">Waiting for host...</span>
+                </div>
+                <button onClick={resetGame} className="btn-secondary py-3 text-sm w-full">
+                  🚪 Return to main screen (leave this game)
+                </button>
               </div>
             )}
+          </div>
+        )
+
+      case "help":
+        return (
+          <div className="game-container py-2">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-white">Help & Info</h2>
+              <button onClick={() => setGameState("welcome")} className="text-gray-400 hover:text-white text-sm">
+                ✕ Close
+              </button>
+            </div>
+            
+            <div className="flex gap-1 mb-3 overflow-x-auto pb-1">
+              {[
+                { id: "how-to-play", label: "How to Play", icon: "📝" },
+                { id: "faq", label: "FAQ", icon: "❓" },
+                { id: "tips", label: "Tips & Tricks", icon: "💡" },
+                { id: "about", label: "About", icon: "📖" }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setHelpTab(tab.id)}
+                  className={"flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors " + 
+                    (helpTab === tab.id 
+                      ? "bg-indigo-600 text-white" 
+                      : "bg-gray-800 text-gray-400 hover:bg-gray-700")}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="card flex-1 min-h-0 overflow-y-auto py-3 px-4">
+              {helpTab === "how-to-play" && (
+                <div className="space-y-4">
+                  <div className="text-center mb-4">
+                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xl">🎮</span>
+                    </div>
+                    <h3 className="text-base font-bold text-white">Quick Overview</h3>
+                  </div>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    The What If? Game is a party game where you write absurd questions, give each other ridiculous answers, then perform the results. It's like Cards Against Humanity meets improv comedy, but with more chaos and less reading from cards.
+                  </p>
+                  
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Getting Started</h4>
+                    <ol className="space-y-2 text-sm text-gray-300">
+                      <li className="flex gap-2">
+                        <span className="text-indigo-400 font-bold">1.</span>
+                        <span><strong>Join or Create a Room</strong> - Enter a 4-digit room code to join a friend's game, or create your own room and share the code</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-indigo-400 font-bold">2.</span>
+                        <span><strong>Wait for Players</strong> - You need at least 3 players to start (max 15)</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-indigo-400 font-bold">3.</span>
+                        <span><strong>Host Starts the Game</strong> - Only the host can click "Start Game"</span>
+                      </li>
+                    </ol>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 1: Question Writing 📝</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• Everyone writes a "What if..." question</li>
+                      <li>• Be creative! The weirder, the better</li>
+                      <li>• Example: "What if cats could talk but only about taxes?"</li>
+                      <li>• You have a time limit, so don't overthink it!</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 2: Answer Writing 🤔</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• Each person gets someone else's question to answer</li>
+                      <li>• You won't see who wrote the question (unless anonymous mode is off)</li>
+                      <li>• Give the most ridiculous answer you can think of</li>
+                      <li>• Example: "They'd form a union and demand deductions for naps"</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 3: Performance Time 🎭</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• One person at a time reads the question and their assigned answer</li>
+                      <li>• Perform it! Add flair, voices, dramatic pauses</li>
+                      <li>• The host can skip turns if someone is taking too long</li>
+                      <li>• Everyone votes on their favorite performance (coming soon!)</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Game Over 🎉</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• See the full summary of all questions and answers</li>
+                      <li>• Find out who wrote what (unless anonymous mode is on)</li>
+                      <li>• Play again with the same group or start fresh!</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Host Controls</h4>
+                    <p className="text-xs text-gray-500 mb-2">(Only the host sees these)</p>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• <strong>Anonymous Results</strong> - Hide names in the end-game summary for extra mystery</li>
+                      <li>• <strong>No Self-Reading</strong> - Ensure players never perform their own content</li>
+                      <li>• <strong>Force Advance</strong> - Skip waiting for stragglers (they get removed, so use carefully!)</li>
+                      <li>• <strong>Kick Player</strong> - Remove someone who's being a party pooper</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {helpTab === "faq" && (
+                <div className="space-y-4">
+                  <div className="text-center mb-4">
+                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xl">❓</span>
+                    </div>
+                    <h3 className="text-base font-bold text-white">Frequently Asked Questions</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">How many players do I need?</h4>
+                      <p className="text-sm text-gray-300">At least 3 players, up to 15. The more players, the more chaos (and fun)!</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">How long does a game take?</h4>
+                      <p className="text-sm text-gray-300">Usually 20-40 minutes depending on how many players and how dramatic everyone gets during the performance phase.</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I play with friends who aren't in the same room?</h4>
+                      <p className="text-sm text-gray-300">Absolutely! Just share your 4-digit room code with them. They can join from anywhere.</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What if someone disconnects?</h4>
+                      <p className="text-sm text-gray-300">Don't panic! They have 90 seconds to reconnect. If they don't make it back in time, they'll be removed from the game (but their questions/answers stay in the game).</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can we play again with the same group?</h4>
+                      <p className="text-sm text-gray-300">Yes! After the game ends, the host can click "New game with same players" to keep the party going.</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What are those toggle things only the host sees?</h4>
+                      <p className="text-sm text-gray-300">
+                        <strong>Anonymous Results</strong> - Hides everyone's names in the final summary, so you won't know who wrote what until after you vote (or never, if you want to keep it mysterious).
+                        <br /><br />
+                        <strong>No Self-Reading</strong> - Makes sure nobody ever has to perform their own question or answer during the performance phase. Great for avoiding awkward moments.
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Is this game free?</h4>
+                      <p className="text-sm text-gray-300">Yes! 100% free. No ads, no microtransactions, no hidden fees. Just pure, unadulterated chaos.</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I play on my phone?</h4>
+                      <p className="text-sm text-gray-300">Yep! The game works on any device with a web browser. Mobile, tablet, desktop - whatever you've got.</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What if someone is taking forever to write their question/answer?</h4>
+                      <p className="text-sm text-gray-300">The host has a "Force Advance" button that skips the waiting period. Anyone who hasn't submitted gets removed from the game (their content stays, though). Use this power responsibly!</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I kick a player?</h4>
+                      <p className="text-sm text-gray-300">Only the host can kick players. Click the "X" next to their name in the lobby. They won't be able to rejoin that game.</p>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-3">
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What's the difference between "New game with same players" and "New game (change players)"?</h4>
+                      <p className="text-sm text-gray-300">
+                        <strong>New game with same players</strong> - Everyone stays in the room, ready for round 2.
+                        <br /><br />
+                        <strong>New game (change players)</strong> - Clears the room so you can start fresh with new people.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {helpTab === "tips" && (
+                <div className="space-y-4">
+                  <div className="text-center mb-4">
+                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xl">💡</span>
+                    </div>
+                    <h3 className="text-base font-bold text-white">Tips & Tricks</h3>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Question Writers 🖊️</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• <strong>Think absurd, not realistic</strong> - "What if gravity reversed for 5 seconds?" is better than "What if it rained tomorrow?"</li>
+                      <li>• <strong>Keep it open-ended</strong> - Questions that can go in wild directions are more fun</li>
+                      <li>• <strong>Draw from your life</strong> - The funniest questions often come from weird things you've actually wondered</li>
+                      <li>• <strong>Don't be afraid to be silly</strong> - This is a party game, not a philosophy exam</li>
+                      <li>• <strong>Avoid inside jokes</strong> - Unless everyone in the group will get it, keep it universally weird</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Answer Writers 💡</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• <strong>Commit to the bit</strong> - If the question is absurd, give an equally absurd answer</li>
+                      <li>• <strong>Be specific</strong> - "They'd hire a tax lawyer" is okay, but "They'd form a feline tax union and demand nap deductions" is better</li>
+                      <li>• <strong>Surprise yourself</strong> - Try to come up with something you wouldn't normally think of</li>
+                      <li>• <strong>Read it out loud</strong> - If it's not funny when you say it, it won't be funny when someone performs it</li>
+                      <li>• <strong>Embrace the chaos</strong> - The weirder the answer, the better the performance will be</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Performers 🎭</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• <strong>Commit 100%</strong> - Even if the answer is ridiculous, sell it like it's the most profound thing ever said</li>
+                      <li>• <strong>Use voices</strong> - Accents, character voices, dramatic readings - anything to make it memorable</li>
+                      <li>• <strong>Add physical comedy</strong> - Hand gestures, facial expressions, dramatic pauses</li>
+                      <li>• <strong>Don't rush</strong> - Build tension, make people wait for the punchline</li>
+                      <li>• <strong>Have fun with it</strong> - The more you enjoy performing, the more everyone else will enjoy watching</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Hosts 🎮</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• <strong>Use Anonymous mode for mystery</strong> - It adds an extra layer of fun when nobody knows who wrote what</li>
+                      <li>• <strong>Enable No Self-Reading</strong> - It's almost always better to avoid people performing their own content</li>
+                      <li>• <strong>Be patient with Force Advance</strong> - Only use it if someone is clearly AFK or taking way too long</li>
+                      <li>• <strong>Keep the energy up</strong> - If things are dragging, encourage people to be more dramatic</li>
+                      <li>• <strong>Kick only when necessary</strong> - Nobody likes being kicked, so save it for actual problem players</li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">General Advice 🌟</h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      <li>• <strong>The funnier, the better</strong> - This game rewards creativity and humor</li>
+                      <li>• <strong>Don't take it seriously</strong> - The moment someone gets competitive or upset, the fun dies</li>
+                      <li>• <strong>Laugh at everything</strong> - Even bad answers can become great with the right performance</li>
+                      <li>• <strong>Play with the right people</strong> - This game is best with friends who can laugh at themselves</li>
+                      <li>• <strong>Embrace the awkward</strong> - The most memorable moments often come from the most ridiculous combinations</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {helpTab === "about" && (
+                <div className="space-y-4">
+                  <div className="text-center mb-4">
+                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xl">📖</span>
+                    </div>
+                    <h3 className="text-base font-bold text-white">About / The Story</h3>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">The Origin Story</h4>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      The What If? Game didn't start as an app - it started as a stack of napkins and a pen at a house party.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      One night, hanging out with friends, someone asked a completely ridiculous question: "What if dogs could only communicate through interpretive dance?" We spent the next hour answering it, then coming up with more absurd questions and even more ridiculous answers. We were laughing so hard our faces hurt.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      That night became a tradition. Every time we hung out, someone would inevitably ask "What if..." and we'd spend hours exploring the weirdest hypothetical scenarios we could think of. It became our go-to icebreaker at parties, our way to break the tension after a long week, our secret weapon for making new friends feel welcome.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Why I Built It</h4>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      After playing this game for years with pen, paper, and way too many napkins, I realized something: this shouldn't just be for us. The whole world deserves to laugh as hard as we have.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      So I decided to replicate the experience digitally. No more passing around a single notebook. No more trying to read someone else's handwriting. No more losing the best questions because someone spilled their drink.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      The What If? Game is my gift to the internet. It's the icebreaker that never gets old, the party game that works with any group, the excuse to be absurd that everyone needs.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">The Philosophy</h4>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      Life is serious enough. Work is stressful enough. The news is heavy enough.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      Sometimes, you just need to ask: What if?
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      What if aliens invaded but they were just really confused tourists?
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      What if your pet could talk but only about their dreams?
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      What if time travel was real but you could only travel to really awkward moments in history?
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      The answers don't matter. The point is the laughter, the creativity, the connection with other human beings who are all just trying to make sense of this weird world together.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Credits</h4>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      Built with love, laughter, and way too much coffee.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      Inspired by countless nights with friends who are way funnier than I am.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      Made possible by everyone who ever asked "What if..." and meant it.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Thank You</h4>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      To everyone who played the pen-and-paper version and didn't tell me I was crazy.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      To everyone who's played the digital version and kept the chaos alive.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                      To you, for reading this and (hopefully) about to play the game.
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      The world needs more laughter. You're doing your part.
+                    </p>
+                  </div>
+
+                  <div className="text-center pt-4">
+                    <span className="text-4xl">🎉</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setGameState("welcome")} className="btn-secondary py-3 text-sm w-full mt-3">
+              Back to Main Screen
+            </button>
           </div>
         )
 

@@ -254,23 +254,28 @@ io.on('connection', (socket) => {
   socket.on('submit-question', (question) => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
-    
+
     if (!game || game.phase !== 'writing') return;
-    
+
     const player = game.players.find(p => p.id === socket.id);
     game.questions[socket.id] = {
       text: question,
       authorId: socket.id,
       authorName: player?.name || 'Unknown'
     };
-    
+
+    // Track first submitter
+    if (!game.firstQuestionSubmitter) {
+      game.firstQuestionSubmitter = player?.name || 'Unknown';
+    }
+
     socket.emit('question-submitted');
-    
+
     // CRITICAL FIX: Check if all ACTIVE players submitted (not including disconnected)
     const activePlayers = game.players.filter(p => p.isActive);
     const allSubmitted = activePlayers.every(p => game.questions[p.id]);
     console.log(`Question submission check: ${Object.keys(game.questions).length}/${activePlayers.length} active players submitted`);
-    
+
     if (allSubmitted) {
       console.log('All active players submitted questions - distributing...');
       // Shuffle and distribute questions (no one gets their own)
@@ -280,7 +285,8 @@ io.on('connection', (socket) => {
       io.to(roomCode).emit('progress-update', {
         submitted: Object.keys(game.questions).length,
         total: activePlayers.length,
-        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.questions[p.id] }))
+        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.questions[p.id] })),
+        firstSubmitter: game.firstQuestionSubmitter
       });
     }
   });
@@ -454,9 +460,14 @@ io.on('connection', (socket) => {
       authorId: socket.id,
       authorName: player.name || 'Unknown'
     };
-    
+
+    // Track first submitter
+    if (!game.firstAnswerSubmitter) {
+      game.firstAnswerSubmitter = player.name || 'Unknown';
+    }
+
     socket.emit('answer-submitted');
-    
+
     // Check if all ACTIVE players submitted answers
     const activePlayers = game.players.filter(p => p.isActive);
     const missingAnswers = activePlayers.filter(p => !game.answers[p.id]).map(p => ({ name: p.name, id: p.id }));
@@ -465,7 +476,7 @@ io.on('connection', (socket) => {
     if (missingAnswers.length > 0) {
       console.log('Missing answers from:', missingAnswers);
     }
-    
+
     const allSubmitted = missingAnswers.length === 0;
     if (allSubmitted) {
       console.log('All active players submitted! Starting performance phase...');
@@ -474,7 +485,8 @@ io.on('connection', (socket) => {
       io.to(roomCode).emit('progress-update', {
         submitted: Object.keys(game.answers).length,
         total: activePlayers.length,
-        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] }))
+        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] })),
+        firstSubmitter: game.firstAnswerSubmitter
       });
     }
   });
@@ -796,6 +808,11 @@ io.on('connection', (socket) => {
     if (!game || game.host !== socket.id) return;
 
     if (game.phase === 'writing') {
+      // Host must have submitted their question before force-advancing
+      if (!game.questions[socket.id]) {
+        socket.emit('error', 'You must submit your question before force-advancing');
+        return;
+      }
       const activePlayers = game.players.filter(p => p.isActive);
       // Remove players who haven't submitted from the active list
       const submitted = activePlayers.filter(p => game.questions[p.id]);
@@ -818,6 +835,11 @@ io.on('connection', (socket) => {
       distributeQuestions(roomCode);
 
     } else if (game.phase === 'answering') {
+      // Host must have submitted their answer before force-advancing
+      if (!game.answers[socket.id]) {
+        socket.emit('error', 'You must submit your answer before force-advancing');
+        return;
+      }
       const activePlayers = game.players.filter(p => p.isActive);
       const submitted = activePlayers.filter(p => game.answers[p.id]);
       if (submitted.length < 2) {
