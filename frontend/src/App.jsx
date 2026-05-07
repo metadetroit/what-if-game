@@ -40,6 +40,8 @@ function App() {
   const [reconnectPrompt, setReconnectPrompt] = useState(null) // { roomCode, playerName } on page-load reconnect
   const [helpTab, setHelpTab] = useState("how-to-play") // "how-to-play" | "faq" | "tips" | "about"
   const [firstSubmitter, setFirstSubmitter] = useState(null) // { name } for the first player to submit
+  const [lastQuestionSubmitter, setLastQuestionSubmitter] = useState(null) // { name } for the last player to submit a question
+  const [showLastSubmitterIndicator, setShowLastSubmitterIndicator] = useState(false) // show ⏰ indicator after 10 seconds
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -142,6 +144,7 @@ function App() {
       setProgress(data)
       if (data.playerStatuses) { setPlayerStatuses(data.playerStatuses) }
       if (data.firstSubmitter) { setFirstSubmitter(data.firstSubmitter) }
+      if (data.lastQuestionSubmitter) { setLastQuestionSubmitter(data.lastQuestionSubmitter) }
     })
     newSocket.on("answer-submitted", () => { setSubmitted(true); setError("") })
 
@@ -158,6 +161,9 @@ function App() {
       setProgress({ submitted: 0, total: players.length })
       setPlayerStatuses(players.map(p => ({ name: p.name, submitted: false })))
       setFirstSubmitter(null)
+      setShowLastSubmitterIndicator(false)
+      // Show last submitter indicator after 10 seconds
+      setTimeout(() => setShowLastSubmitterIndicator(true), 10000)
     })
 
     newSocket.on("performance-phase", (data) => {
@@ -166,6 +172,8 @@ function App() {
       setProgress({ submitted: 0, total: 0 })
       setPlayerStatuses([])
       setForceConfirm(false)
+      setShowLastSubmitterIndicator(false)
+      setLastQuestionSubmitter(null)
     })
 
     newSocket.on("reading-turn", (data) => {
@@ -193,6 +201,8 @@ function App() {
       setGameSummary(null)
       setPlayerStatuses([])
       setForceConfirm(false)
+      setShowLastSubmitterIndicator(false)
+      setLastQuestionSubmitter(null)
     })
 
     newSocket.on("game-disbanded", (data) => {
@@ -797,6 +807,9 @@ function App() {
                         <div className="flex items-center gap-2">
                           {firstSubmitter && p.name === firstSubmitter && (
                             <span className="text-lg" title="First to submit!">🏆</span>
+                          )}
+                          {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
+                            <span className="text-lg" title="You were last to submit your question - don't be the last this time!">⏰</span>
                           )}
                           <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
                         </div>

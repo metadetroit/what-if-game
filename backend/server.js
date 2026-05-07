@@ -269,6 +269,9 @@ io.on('connection', (socket) => {
       game.firstQuestionSubmitter = player?.name || 'Unknown';
     }
 
+    // Track last submitter (always update to latest)
+    game.lastQuestionSubmitter = player?.name || 'Unknown';
+
     socket.emit('question-submitted');
 
     // CRITICAL FIX: Check if all ACTIVE players submitted (not including disconnected)
@@ -414,7 +417,8 @@ io.on('connection', (socket) => {
         submitted: 0,
         total: activePlayers.length,
         playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: false })),
-        firstSubmitter: game.firstQuestionSubmitter
+        firstSubmitter: game.firstQuestionSubmitter,
+        lastQuestionSubmitter: game.lastQuestionSubmitter
       });
     } catch (err) {
       console.error(`[distributeQuestions] CRITICAL ERROR:`, err.message);
@@ -487,7 +491,8 @@ io.on('connection', (socket) => {
         submitted: Object.keys(game.answers).length,
         total: activePlayers.length,
         playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] })),
-        firstSubmitter: game.firstAnswerSubmitter
+        firstSubmitter: game.firstAnswerSubmitter,
+        lastQuestionSubmitter: game.lastQuestionSubmitter
       });
     }
   });
@@ -795,6 +800,9 @@ io.on('connection', (socket) => {
     game.cardAssignments = {};
     game.currentReaderIndex = 0;
     game.playerOrder = [];
+    game.firstQuestionSubmitter = null;
+    game.firstAnswerSubmitter = null;
+    game.lastQuestionSubmitter = null;
     
     // Notify all players to restart
     io.to(roomCode).emit('game-restarted', { phase: 'writing' });
