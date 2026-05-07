@@ -142,10 +142,14 @@ function App() {
     newSocket.on("player-left", updatePlayersAndHost)
     newSocket.on("game-started", () => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null) })
     newSocket.on("progress-update", (data) => {
+      console.log("Progress-update received:", data)
       setProgress(data)
       if (data.playerStatuses) { setPlayerStatuses(data.playerStatuses) }
       if (data.firstSubmitter) { setFirstSubmitter(data.firstSubmitter) }
-      if (data.lastQuestionSubmitter) { setLastQuestionSubmitter(data.lastQuestionSubmitter) }
+      if (data.lastQuestionSubmitter) {
+        console.log("Setting lastQuestionSubmitter to:", data.lastQuestionSubmitter)
+        setLastQuestionSubmitter(data.lastQuestionSubmitter)
+      }
     })
     newSocket.on("answer-submitted", () => { setSubmitted(true); setError("") })
 
@@ -155,6 +159,10 @@ function App() {
         console.log("ERROR: Invalid answer-phase data received:", data)
         setError("Invalid question data received")
         return
+      }
+      if (data.lastQuestionSubmitter) {
+        console.log("Setting lastQuestionSubmitter from answer-phase to:", data.lastQuestionSubmitter)
+        setLastQuestionSubmitter(data.lastQuestionSubmitter)
       }
       setAssignedQuestion(data.question)
       setGameState("answering")

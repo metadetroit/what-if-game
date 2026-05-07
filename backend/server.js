@@ -398,7 +398,8 @@ io.on('connection', (socket) => {
           if (playerSocket) {
             playerSocket.emit('answer-phase', {
               question: assignedQuestion.text,
-              questionAuthor: assignedQuestion.authorName
+              questionAuthor: assignedQuestion.authorName,
+              lastQuestionSubmitter: game.lastQuestionSubmitter
             });
             console.log(`[distributeQuestions] Sent to ${playerName} successfully`);
             sentCount++;
