@@ -1051,7 +1051,7 @@ function App() {
                     <h3 className="text-base font-bold text-white">Quick Overview</h3>
                   </div>
                   <p className="text-sm text-gray-300 leading-relaxed">
-                    The What If? Game is a party game where you write absurd questions, give each other ridiculous answers, then perform the results. It's like Cards Against Humanity meets improv comedy, but with more chaos and less reading from cards.
+                    The What If? Game is a party game where you write 'what if' questions, give each other answers, then perform the results. It's like Cards Against Humanity meets improv comedy meets Mad Libs.
                   </p>
                   
                   <div className="border-t border-gray-700 pt-4">
@@ -1076,9 +1076,9 @@ function App() {
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 1: Question Writing 📝</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
                       <li>• Everyone writes a "What if..." question</li>
-                      <li>• Be creative! The weirder, the better</li>
-                      <li>• Example: "What if cats could talk but only about taxes?"</li>
-                      <li>• You have a time limit, so don't overthink it!</li>
+                      <li>• Be creative...or basic, either approach can work!</li>
+                      <li>• Try it out a few rounds to get the hang of it.</li>
+                      <li>• Don't overthink it. Trust me, this is LOW-STAKES.</li>
                     </ul>
                   </div>
 
@@ -1086,16 +1086,14 @@ function App() {
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 2: Answer Writing 🤔</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
                       <li>• Each person gets someone else's question to answer</li>
-                      <li>• You won't see who wrote the question (unless anonymous mode is off)</li>
-                      <li>• Give the most ridiculous answer you can think of</li>
-                      <li>• Example: "They'd form a union and demand deductions for naps"</li>
+                      <li>• How you answer is completely up to you</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 3: Performance Time 🎭</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• One person at a time reads the question and their assigned answer</li>
+                      <li>• The game will tell you when it's your turn to read</li>
                       <li>• Perform it! Add flair, voices, dramatic pauses</li>
                       <li>• The host can skip turns if someone is taking too long</li>
                       <li>• Everyone votes on their favorite performance (coming soon!)</li>
@@ -1116,9 +1114,9 @@ function App() {
                     <p className="text-xs text-gray-500 mb-2">(Only the host sees these)</p>
                     <ul className="space-y-1 text-sm text-gray-300">
                       <li>• <strong>Anonymous Results</strong> - Hide names in the end-game summary for extra mystery</li>
-                      <li>• <strong>No Self-Reading</strong> - Ensure players never perform their own content</li>
+                      <li>• <strong>No Self-Reading</strong> - Ensure players never perform their own content (best only for groups of six or more players)</li>
                       <li>• <strong>Force Advance</strong> - Skip waiting for stragglers (they get removed, so use carefully!)</li>
-                      <li>• <strong>Kick Player</strong> - Remove someone who's being a party pooper</li>
+                      <li>• <strong>Kick Player</strong> - Remove someone from the lobby</li>
                     </ul>
                   </div>
                 </div>
@@ -1136,17 +1134,17 @@ function App() {
                   <div className="space-y-3">
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">How many players do I need?</h4>
-                      <p className="text-sm text-gray-300">At least 3 players, up to 15. The more players, the more chaos (and fun)!</p>
+                      <p className="text-sm text-gray-300">At least 3 players, up to 15. The more players the better, but the more that everyone needs to be engaged to not lag the game.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">How long does a game take?</h4>
-                      <p className="text-sm text-gray-300">Usually 20-40 minutes depending on how many players and how dramatic everyone gets during the performance phase.</p>
+                      <p className="text-sm text-gray-300">Usually 5-10 minutes depending on how many players.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I play with friends who aren't in the same room?</h4>
-                      <p className="text-sm text-gray-300">Absolutely! Just share your 4-digit room code with them. They can join from anywhere.</p>
+                      <p className="text-sm text-gray-300">Yes, you need to have a live voice channel going with your friends, like a group call, Zoom, etc.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
@@ -1156,21 +1154,21 @@ function App() {
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">Can we play again with the same group?</h4>
-                      <p className="text-sm text-gray-300">Yes! After the game ends, the host can click "New game with same players" to keep the party going.</p>
+                      <p className="text-sm text-gray-300">Yes! After the game ends, the host can click "New game with same players" to keep it going.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">What are those toggle things only the host sees?</h4>
                       <p className="text-sm text-gray-300">
-                        <strong>Anonymous Results</strong> - Hides everyone's names in the final summary, so you won't know who wrote what until after you vote (or never, if you want to keep it mysterious).
+                        <strong>Anonymous Results</strong> - Hides everyone's names in the final summary, so you won't know who wrote what until after you vote (or never, if you want to keep it mysterious)
                         <br /><br />
-                        <strong>No Self-Reading</strong> - Makes sure nobody ever has to perform their own question or answer during the performance phase. Great for avoiding awkward moments.
+                        <strong>No Self-Reading</strong> - Makes sure nobody ever has to perform their own question or answer during the performance phase. I recommend only usng this option if there are six or more players.
                       </p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">Is this game free?</h4>
-                      <p className="text-sm text-gray-300">Yes! 100% free. No ads, no microtransactions, no hidden fees. Just pure, unadulterated chaos.</p>
+                      <p className="text-sm text-gray-300">Yes! 100% free. No ads, no microtransactions, no hidden fees. Just pure, unadulterated chaos. If you feel you received value from this game. You can donate to support the developer and project</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
@@ -1236,7 +1234,6 @@ function App() {
                     <ul className="space-y-1 text-sm text-gray-300">
                       <li>• <strong>Commit 100%</strong> - Even if the answer is ridiculous, sell it like it's the most profound thing ever said</li>
                       <li>• <strong>Use voices</strong> - Accents, character voices, dramatic readings - anything to make it memorable</li>
-                      <li>• <strong>Add physical comedy</strong> - Hand gestures, facial expressions, dramatic pauses</li>
                       <li>• <strong>Don't rush</strong> - Build tension, make people wait for the punchline</li>
                       <li>• <strong>Have fun with it</strong> - The more you enjoy performing, the more everyone else will enjoy watching</li>
                     </ul>
@@ -1281,23 +1278,23 @@ function App() {
                       The What If? Game didn't start as an app - it started as a stack of napkins and a pen at a house party.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      One night, hanging out with friends, someone asked a completely ridiculous question: "What if dogs could only communicate through interpretive dance?" We spent the next hour answering it, then coming up with more absurd questions and even more ridiculous answers. We were laughing so hard our faces hurt.
+                      For some reason, the syntax of "What if..." can pair with almost any another and can create abssurdity or somethnig beautifully fit.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      That night became a tradition. Every time we hung out, someone would inevitably ask "What if..." and we'd spend hours exploring the weirdest hypothetical scenarios we could think of. It became our go-to icebreaker at parties, our way to break the tension after a long week, our secret weapon for making new friends feel welcome.
+                      This is a great ice-breaker to get new groups of people laughing and comfortable.
                     </p>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">Why I Built It</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      After playing this game for years with pen, paper, and way too many napkins, I realized something: The whole world deserves to laugh as hard as we have.
+                      After playing this game for years with pen, paper, and way too many napkins, I realized something: The whole world deserves to laugh as hard as I have.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
                       So I decided to replicate the experience digitally. No more passing around a single notebook. No more trying to read someone else's handwriting. No more losing the best questions because someone spilled their drink.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      The What If? Game is my gift to the internet. It's the icebreaker that never gets old, the party game that works with any group, the excuse to be absurd that everyone needs.
+                      The What If...? Game is my gift to the internet. It's the icebreaker that never gets old, the party game that works with any group, the excuse to be absurd that everyone needs.
                     </p>
                   </div>
 
@@ -1324,22 +1321,16 @@ function App() {
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Credits</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Built with love, laughter, and way too much coffee.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Inspired by countless nights with friends who are way funnier than I am.
-                    </p>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Donate</h4>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      Made possible by everyone who ever asked "What if..." and meant it.
+                      If you feel you received value from this game, consider donating that value in moneyary form to support the developer and project. With my thanks.
                     </p>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">Thank You</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      To everyone who played the pen-and-paper version and didn't tell me I was crazy.
+                      To everyone who played the pen-and-paper version with me.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
                       To everyone who's played the digital version and kept the chaos alive.
