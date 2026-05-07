@@ -646,9 +646,12 @@ io.on('connection', (socket) => {
     
     if (game.currentReaderIndex >= totalTurns) {
       const summary = buildGameSummary(roomCode);
-      io.to(roomCode).emit('game-ended', { 
+      io.to(roomCode).emit('game-ended', {
         message: 'Thanks for playing!',
-        summary: summary
+        summary: summary,
+        firstQuestionSubmitter: game.firstQuestionSubmitter,
+        firstAnswerSubmitter: game.firstAnswerSubmitter,
+        lastQuestionSubmitter: game.lastQuestionSubmitter
       });
       game.phase = 'ended';
       return;

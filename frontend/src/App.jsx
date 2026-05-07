@@ -42,6 +42,7 @@ function App() {
   const [firstSubmitter, setFirstSubmitter] = useState(null) // { name } for the first player to submit
   const [lastQuestionSubmitter, setLastQuestionSubmitter] = useState(null) // { name } for the last player to submit a question
   const [showLastSubmitterIndicator, setShowLastSubmitterIndicator] = useState(false) // show ⏰ indicator after 10 seconds
+  const [gameAwards, setGameAwards] = useState({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null }) // awards for summary page
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -185,6 +186,13 @@ function App() {
     newSocket.on("game-ended", (data) => {
       setGameState("ended")
       if (data.summary) { setGameSummary(data.summary) }
+      if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter) {
+        setGameAwards({
+          firstQuestionSubmitter: data.firstQuestionSubmitter,
+          firstAnswerSubmitter: data.firstAnswerSubmitter,
+          lastQuestionSubmitter: data.lastQuestionSubmitter
+        })
+      }
     })
 
     newSocket.on("game-restarted", () => {
@@ -203,6 +211,7 @@ function App() {
       setForceConfirm(false)
       setShowLastSubmitterIndicator(false)
       setLastQuestionSubmitter(null)
+      setGameAwards({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null })
     })
 
     newSocket.on("game-disbanded", (data) => {
@@ -775,6 +784,12 @@ function App() {
             )}
             {!submitted ? (
               <div className="flex-1 flex flex-col min-h-0">
+                {showLastSubmitterIndicator && lastQuestionSubmitter && playerName === lastQuestionSubmitter && (
+                  <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700 rounded-lg text-center">
+                    <span className="text-lg mr-1">⏰</span>
+                    <span className="text-xs text-yellow-300">You were last to submit your question - don't be the last this time!</span>
+                  </div>
+                )}
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 text-center">Answer This Question</p>
                 <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
@@ -963,7 +978,11 @@ function App() {
                           <p className="text-sm font-bold text-indigo-400 underline mb-3">Question:</p>
                           <p className="text-sm text-white leading-relaxed mb-2">{pair.question}</p>
                           {!gameSummary[0]?.anonymousMode && (
-                            <p className="text-[10px] text-gray-500 mb-4">— {pair.questionAuthorName}</p>
+                            <p className="text-[10px] text-gray-500 mb-4">
+                              {gameAwards.firstQuestionSubmitter === pair.questionAuthorName && <span className="mr-1">🏆</span>}
+                              {gameAwards.lastQuestionSubmitter === pair.questionAuthorName && <span className="mr-1">⏰</span>}
+                              — {pair.questionAuthorName}
+                            </p>
                           )}
                           <div className="flex items-start gap-2">
                             <svg className="w-4 h-4 text-purple-400 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -975,7 +994,10 @@ function App() {
                                 <>
                                   <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
                                   {!gameSummary[0]?.anonymousMode && (
-                                    <p className="text-[10px] text-gray-500 mt-1">— {pair.pairedAnswerAuthorName}</p>
+                                    <p className="text-[10px] text-gray-500 mt-1">
+                                      {gameAwards.firstAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">🏆</span>}
+                                      — {pair.pairedAnswerAuthorName}
+                                    </p>
                                   )}
                                 </>
                               ) : (
@@ -989,7 +1011,10 @@ function App() {
                           <p className="text-sm font-bold text-green-400 underline mb-3">Actual Answer:</p>
                           <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
                           {!gameSummary[0]?.anonymousMode && (
-                            <p className="text-[10px] text-gray-500 mt-1">— {pair.actualAnswerAuthorName}</p>
+                            <p className="text-[10px] text-gray-500 mt-1">
+                              {gameAwards.firstAnswerSubmitter === pair.actualAnswerAuthorName && <span className="mr-1">🏆</span>}
+                              — {pair.actualAnswerAuthorName}
+                            </p>
                           )}
                         </div>
                       </div>
