@@ -163,8 +163,12 @@ function App() {
       setPlayerStatuses(players.map(p => ({ name: p.name, submitted: false })))
       setFirstSubmitter(null)
       setShowLastSubmitterIndicator(false)
+      console.log("Setting 10-second timer for last submitter indicator")
       // Show last submitter indicator after 10 seconds
-      setTimeout(() => setShowLastSubmitterIndicator(true), 10000)
+      setTimeout(() => {
+        console.log("10-second timer fired, setting showLastSubmitterIndicator to true. lastQuestionSubmitter:", lastQuestionSubmitter)
+        setShowLastSubmitterIndicator(true)
+      }, 10000)
     })
 
     newSocket.on("performance-phase", (data) => {
@@ -784,7 +788,7 @@ function App() {
             )}
             {!submitted ? (
               <div className="flex-1 flex flex-col min-h-0">
-                {showLastSubmitterIndicator && lastQuestionSubmitter && playerName === lastQuestionSubmitter && (
+                {showLastSubmitterIndicator && lastQuestionSubmitter && (
                   <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700 rounded-lg text-center">
                     <span className="text-lg mr-1">⏰</span>
                     <span className="text-xs text-yellow-300">You were last to submit your question - don't be the last this time!</span>
