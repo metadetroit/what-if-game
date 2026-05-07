@@ -43,10 +43,10 @@ function shuffleArray(array) {
 function attachFirstSubmitter(game, payload) {
   if (!game) return payload;
   if (game.phase === 'writing' && game.firstQuestionSubmitter) {
-    return { ...payload, firstSubmitter: game.firstQuestionSubmitter };
+    return { ...payload, firstSubmitter: game.firstQuestionSubmitter, lastQuestionSubmitter: game.lastQuestionSubmitter };
   }
   if (game.phase === 'answering' && game.firstAnswerSubmitter) {
-    return { ...payload, firstSubmitter: game.firstAnswerSubmitter };
+    return { ...payload, firstSubmitter: game.firstAnswerSubmitter, lastQuestionSubmitter: game.lastQuestionSubmitter };
   }
   return payload;
 }
@@ -279,6 +279,9 @@ io.on('connection', (socket) => {
     if (!game.firstQuestionSubmitter) {
       game.firstQuestionSubmitter = player?.name || 'Unknown';
     }
+
+    // Track last submitter (always update to latest)
+    game.lastQuestionSubmitter = player?.name || 'Unknown';
     
     socket.emit('question-submitted');
     
@@ -404,7 +407,8 @@ io.on('connection', (socket) => {
           if (playerSocket) {
             playerSocket.emit('answer-phase', {
               question: assignedQuestion.text,
-              questionAuthor: assignedQuestion.authorName
+              questionAuthor: assignedQuestion.authorName,
+              lastQuestionSubmitter: game.lastQuestionSubmitter
             });
             console.log(`[distributeQuestions] Sent to ${playerName} successfully`);
             sentCount++;
@@ -641,9 +645,12 @@ io.on('connection', (socket) => {
     
     if (game.currentReaderIndex >= totalTurns) {
       const summary = buildGameSummary(roomCode);
-      io.to(roomCode).emit('game-ended', { 
+      io.to(roomCode).emit('game-ended', {
         message: 'Thanks for playing!',
-        summary: summary
+        summary: summary,
+        firstQuestionSubmitter: game.firstQuestionSubmitter,
+        firstAnswerSubmitter: game.firstAnswerSubmitter,
+        lastQuestionSubmitter: game.lastQuestionSubmitter
       });
       game.phase = 'ended';
       return;
@@ -797,6 +804,7 @@ io.on('connection', (socket) => {
     game.playerOrder = [];
     game.firstQuestionSubmitter = null;
     game.firstAnswerSubmitter = null;
+    game.lastQuestionSubmitter = null;
     
     // Notify all players to restart
     io.to(roomCode).emit('game-restarted', { phase: 'writing' });
