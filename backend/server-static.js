@@ -40,6 +40,17 @@ function shuffleArray(array) {
   return newArray;
 }
 
+function attachFirstSubmitter(game, payload) {
+  if (!game) return payload;
+  if (game.phase === 'writing' && game.firstQuestionSubmitter) {
+    return { ...payload, firstSubmitter: game.firstQuestionSubmitter };
+  }
+  if (game.phase === 'answering' && game.firstAnswerSubmitter) {
+    return { ...payload, firstSubmitter: game.firstAnswerSubmitter };
+  }
+  return payload;
+}
+
 // Permanently remove a player from a game's state. Returns the removed player object (or null).
 // Cleans up keyed state (questions, answers, assignments) and rewrites references inside
 // cardPairs/turnLog/cardAssignments so summaries continue to render the cached author name.
@@ -163,7 +174,9 @@ io.on('connection', (socket) => {
       answers: {},
       currentReaderIndex: 0,
       playerOrder: [],
-      anonymousMode: false
+      anonymousMode: false,
+      firstQuestionSubmitter: null,
+      firstAnswerSubmitter: null
     };
     games[roomCode] = game;
     
@@ -231,6 +244,8 @@ io.on('connection', (socket) => {
     // CRITICAL FIX: Remove any disconnected players from lobby before starting
     game.players = activePlayers;
     game.phase = 'writing';
+    game.firstQuestionSubmitter = null;
+    game.firstAnswerSubmitter = null;
     io.to(roomCode).emit('game-started', { phase: 'writing' });
   });
 
@@ -261,6 +276,10 @@ io.on('connection', (socket) => {
       authorName: player?.name || 'Unknown'
     };
     
+    if (!game.firstQuestionSubmitter) {
+      game.firstQuestionSubmitter = player?.name || 'Unknown';
+    }
+    
     socket.emit('question-submitted');
     
     // CRITICAL FIX: Check if all ACTIVE players submitted (not including disconnected)
@@ -272,11 +291,11 @@ io.on('connection', (socket) => {
       console.log('All active players submitted questions - distributing...');
       distributeQuestions(roomCode);
     } else {
-      io.to(roomCode).emit('progress-update', {
+      io.to(roomCode).emit('progress-update', attachFirstSubmitter(game, {
         submitted: Object.keys(game.questions).length,
         total: activePlayers.length,
         playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.questions[p.id] }))
-      });
+      }));
     }
   });
 
@@ -364,6 +383,7 @@ io.on('connection', (socket) => {
       console.log(`[distributeQuestions] Assignments complete. Count: ${Object.keys(game.questionAssignments).length}`);
       
       game.phase = 'answering';
+      game.firstAnswerSubmitter = null;
       console.log(`[distributeQuestions] Game phase set to 'answering'`);
       
       // Send each player their assigned question
@@ -398,11 +418,11 @@ io.on('connection', (socket) => {
       
       console.log(`[distributeQuestions] Complete. Sent to ${sentCount}/${playerIds.length} players`);
 
-      io.to(roomCode).emit('progress-update', {
+      io.to(roomCode).emit('progress-update', attachFirstSubmitter(game, {
         submitted: 0,
         total: activePlayers.length,
         playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: false }))
-      });
+      }));
     } catch (err) {
       console.error(`[distributeQuestions] CRITICAL ERROR:`, err.message);
       console.error(err.stack);
@@ -449,6 +469,10 @@ io.on('connection', (socket) => {
       authorName: player.name || 'Unknown'
     };
     
+    if (!game.firstAnswerSubmitter) {
+      game.firstAnswerSubmitter = player.name || 'Unknown';
+    }
+    
     socket.emit('answer-submitted');
     
     // Check if all ACTIVE players submitted answers
@@ -465,11 +489,11 @@ io.on('connection', (socket) => {
       console.log('All active players submitted! Starting performance phase...');
       preparePerformancePhase(roomCode);
     } else {
-      io.to(roomCode).emit('progress-update', {
+      io.to(roomCode).emit('progress-update', attachFirstSubmitter(game, {
         submitted: Object.keys(game.answers).length,
         total: activePlayers.length,
         playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] }))
-      });
+      }));
     }
   });
 
@@ -771,6 +795,8 @@ io.on('connection', (socket) => {
     game.cardAssignments = {};
     game.currentReaderIndex = 0;
     game.playerOrder = [];
+    game.firstQuestionSubmitter = null;
+    game.firstAnswerSubmitter = null;
     
     // Notify all players to restart
     io.to(roomCode).emit('game-restarted', { phase: 'writing' });
@@ -857,20 +883,20 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('player-left', { players: activePlayers, hostId: game.host });
 
     if (game.phase === 'writing') {
-      io.to(roomCode).emit('progress-update', {
+      io.to(roomCode).emit('progress-update', attachFirstSubmitter(game, {
         submitted: activePlayers.filter(p => game.questions[p.id]).length,
         total: activePlayers.length,
         playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.questions[p.id], isActive: true }))
-      });
+      }));
       if (activePlayers.length >= 3 && activePlayers.every(p => game.questions[p.id])) {
         distributeQuestions(roomCode);
       }
     } else if (game.phase === 'answering') {
-      io.to(roomCode).emit('progress-update', {
+      io.to(roomCode).emit('progress-update', attachFirstSubmitter(game, {
         submitted: activePlayers.filter(p => game.answers[p.id]).length,
         total: activePlayers.length,
         playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.answers[p.id], isActive: true }))
-      });
+      }));
       if (activePlayers.length >= 2 && activePlayers.every(p => game.answers[p.id])) {
         preparePerformancePhase(roomCode);
       }
@@ -1177,11 +1203,11 @@ io.on('connection', (socket) => {
     });
 
     if (progress && playerStatuses) {
-      io.to(roomCode).emit('progress-update', {
+      io.to(roomCode).emit('progress-update', attachFirstSubmitter(game, {
         submitted: progress.submitted,
         total: progress.total,
         playerStatuses: playerStatuses
-      });
+      }));
     }
 
     console.log(`[RECONNECT] ${playerName} reconnected to room ${roomCode} successfully`);
@@ -1269,11 +1295,11 @@ io.on('connection', (socket) => {
         if (activePlayers.length >= 3 && activePlayers.every(p => stillThere.questions[p.id])) {
           distributeQuestions(roomCode);
         } else {
-          io.to(roomCode).emit('progress-update', {
+          io.to(roomCode).emit('progress-update', attachFirstSubmitter(stillThere, {
             submitted: Object.keys(stillThere.questions).filter(id => stillThere.players.find(p => p.id === id && p.isActive)).length,
             total: activePlayers.length,
             playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.questions[p.id], isActive: true }))
-          });
+          }));
         }
       }
 
@@ -1282,11 +1308,11 @@ io.on('connection', (socket) => {
         if (activePlayers.length >= 2 && activePlayers.every(p => stillThere.answers[p.id])) {
           preparePerformancePhase(roomCode);
         } else {
-          io.to(roomCode).emit('progress-update', {
+          io.to(roomCode).emit('progress-update', attachFirstSubmitter(stillThere, {
             submitted: Object.keys(stillThere.answers).filter(id => stillThere.players.find(p => p.id === id && p.isActive)).length,
             total: activePlayers.length,
             playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.answers[p.id], isActive: true }))
-          });
+          }));
         }
       }
 
@@ -1332,17 +1358,17 @@ io.on('connection', (socket) => {
 
       const activePlayers = stillThere.players.filter(p => p.isActive);
       if (stillThere.phase === 'writing') {
-        io.to(roomCode).emit('progress-update', {
+        io.to(roomCode).emit('progress-update', attachFirstSubmitter(stillThere, {
           submitted: activePlayers.filter(p => stillThere.questions[p.id]).length,
           total: activePlayers.length,
           playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.questions[p.id], isActive: true }))
-        });
+        }));
       } else if (stillThere.phase === 'answering') {
-        io.to(roomCode).emit('progress-update', {
+        io.to(roomCode).emit('progress-update', attachFirstSubmitter(stillThere, {
           submitted: activePlayers.filter(p => stillThere.answers[p.id]).length,
           total: activePlayers.length,
           playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.answers[p.id], isActive: true }))
-        });
+        }));
       }
     }, 90000);
   });
