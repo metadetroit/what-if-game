@@ -413,7 +413,8 @@ io.on('connection', (socket) => {
       io.to(roomCode).emit('progress-update', {
         submitted: 0,
         total: activePlayers.length,
-        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: false }))
+        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: false })),
+        firstSubmitter: game.firstQuestionSubmitter
       });
     } catch (err) {
       console.error(`[distributeQuestions] CRITICAL ERROR:`, err.message);

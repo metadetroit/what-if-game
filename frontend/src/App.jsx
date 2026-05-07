@@ -1164,7 +1164,7 @@ function App() {
                       <p className="text-sm text-gray-300">
                         <strong>Anonymous Results</strong> - Hides everyone's names in the final summary, so you won't know who wrote what until after you vote (or never, if you want to keep it mysterious)
                         <br /><br />
-                        <strong>No Self-Reading</strong> - Makes sure nobody ever has to perform their own question or answer during the performance phase.
+                        <strong>No Self-Reading</strong> - Makes sure nobody ever has to perform their own question or answer during the performance phase. Great for avoiding awkward moments.
                       </p>
                     </div>
 
@@ -1212,7 +1212,7 @@ function App() {
                   <div className="border-t border-gray-700 pt-4">
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">For Question Writers 🖊️</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Think absurd, not realistic</strong> - "What if gravity reversed for 5 seconds?" beats "What if it rained tomorrow?" every time</li>
+                      <li>• <strong>Think absurd, not realistic</strong> - "What if gravity reversed for 5 seconds?" is better than "What if it rained tomorrow?"</li>
                       <li>• <strong>Keep it open-ended</strong> - Questions that can go in wild directions are more fun</li>
                       <li>• <strong>Draw from your life</strong> - The funniest prompts often come from weird thoughts you've actually had</li>
                       <li>• <strong>Don't be afraid to be silly</strong> - This is a party game, not a philosophy exam</li>
@@ -1224,7 +1224,7 @@ function App() {
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">For Answer Writers 💡</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
                       <li>• <strong>Commit to the bit</strong> - If the question is absurd, give an equally absurd answer</li>
-                      <li>• <strong>Be specific</strong> - "They'd hire a tax lawyer" is fine, but "They'd form a feline tax union and demand nap deductions" is perfection</li>
+                      <li>• <strong>Be specific</strong> - "They'd hire a tax lawyer" is okay, but "They'd form a feline tax union and demand nap deductions" is better</li>
                       <li>• <strong>Surprise yourself</strong> - Try to come up with something you wouldn't normally think of</li>
                       <li>• <strong>Read it out loud</strong> - If it's not funny when you say it, it won't be funny when someone performs it</li>
                       <li>• <strong>Embrace the chaos</strong> - The weirder the answer, the better the performance will be</li>
@@ -1333,13 +1333,6 @@ function App() {
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
                       Made possible by everyone who ever asked "What if..." and meant it.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Donate</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                      Thank you for playing, sharing, and spreading the chaos. The world needs more laughter. You're doing your part.
                     </p>
                   </div>
 
