@@ -42,7 +42,7 @@ function App() {
   const [firstSubmitter, setFirstSubmitter] = useState(null) // { name } for the first player to submit
   const [lastQuestionSubmitter, setLastQuestionSubmitter] = useState(null) // { name } for the last player to submit a question
   const [showLastSubmitterIndicator, setShowLastSubmitterIndicator] = useState(false) // show ⏰ indicator after 10 seconds
-  const [gameAwards, setGameAwards] = useState({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null }) // awards for summary page
+  const [gameAwards, setGameAwards] = useState({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null, lastAnswerSubmitter: null }) // awards for summary page
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -198,11 +198,12 @@ function App() {
     newSocket.on("game-ended", (data) => {
       setGameState("ended")
       if (data.summary) { setGameSummary(data.summary) }
-      if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter) {
+      if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
         setGameAwards({
           firstQuestionSubmitter: data.firstQuestionSubmitter,
           firstAnswerSubmitter: data.firstAnswerSubmitter,
-          lastQuestionSubmitter: data.lastQuestionSubmitter
+          lastQuestionSubmitter: data.lastQuestionSubmitter,
+          lastAnswerSubmitter: data.lastAnswerSubmitter
         })
       }
     })
@@ -223,7 +224,7 @@ function App() {
       setForceConfirm(false)
       setShowLastSubmitterIndicator(false)
       setLastQuestionSubmitter(null)
-      setGameAwards({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null })
+      setGameAwards({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null, lastAnswerSubmitter: null })
     })
 
     newSocket.on("game-disbanded", (data) => {
@@ -796,7 +797,7 @@ function App() {
             )}
             {!submitted ? (
               <div className="flex-1 flex flex-col min-h-0">
-                {showLastSubmitterIndicator && lastQuestionSubmitter && (
+                {showLastSubmitterIndicator && lastQuestionSubmitter && playerName === lastQuestionSubmitter && (
                   <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700 rounded-lg text-center">
                     <span className="text-lg mr-1">⏰</span>
                     <span className="text-xs text-yellow-300">You were last to submit your question - don't be the last this time!</span>
@@ -1008,6 +1009,7 @@ function App() {
                                   {!gameSummary[0]?.anonymousMode && (
                                     <p className="text-[10px] text-gray-500 mt-1">
                                       {gameAwards.firstAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">🏆</span>}
+                                      {gameAwards.lastAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">⏰</span>}
                                       — {pair.pairedAnswerAuthorName}
                                     </p>
                                   )}
@@ -1025,6 +1027,7 @@ function App() {
                           {!gameSummary[0]?.anonymousMode && (
                             <p className="text-[10px] text-gray-500 mt-1">
                               {gameAwards.firstAnswerSubmitter === pair.actualAnswerAuthorName && <span className="mr-1">🏆</span>}
+                              {gameAwards.lastAnswerSubmitter === pair.actualAnswerAuthorName && <span className="mr-1">⏰</span>}
                               — {pair.actualAnswerAuthorName}
                             </p>
                           )}

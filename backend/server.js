@@ -472,6 +472,9 @@ io.on('connection', (socket) => {
       game.firstAnswerSubmitter = player.name || 'Unknown';
     }
 
+    // Track last submitter (always update to latest)
+    game.lastAnswerSubmitter = player.name || 'Unknown';
+
     socket.emit('answer-submitted');
 
     // Check if all ACTIVE players submitted answers
@@ -652,7 +655,8 @@ io.on('connection', (socket) => {
         summary: summary,
         firstQuestionSubmitter: game.firstQuestionSubmitter,
         firstAnswerSubmitter: game.firstAnswerSubmitter,
-        lastQuestionSubmitter: game.lastQuestionSubmitter
+        lastQuestionSubmitter: game.lastQuestionSubmitter,
+        lastAnswerSubmitter: game.lastAnswerSubmitter
       });
       game.phase = 'ended';
       return;
@@ -807,6 +811,7 @@ io.on('connection', (socket) => {
     game.firstQuestionSubmitter = null;
     game.firstAnswerSubmitter = null;
     game.lastQuestionSubmitter = null;
+    game.lastAnswerSubmitter = null;
     
     // Notify all players to restart
     io.to(roomCode).emit('game-restarted', { phase: 'writing' });
