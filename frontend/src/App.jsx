@@ -735,8 +735,9 @@ function App() {
               <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-xl">🤔</span>
               </div>
-              <h1 className="text-xl font-extrabold text-gradient mb-0">Fluke! The 'What If...?' Game</h1>
-              <p className="text-gray-500 text-[10px] mt-1">3-15 players</p>
+              <h1 className="text-xl font-extrabold text-gradient mb-0">Fluke! The Game</h1>
+              <p className="text-gray-500 text-[10px] mt-1">playfluke.com</p>
+              <p className="text-gray-500 text-[10px] mt-0">3-15 players</p>
               <div className="flex justify-center gap-4 mt-2">
                 <button onClick={() => setGameState("help")} className="text-[10px] text-indigo-400 hover:text-indigo-300 underline">
                   How to Play
@@ -1293,7 +1294,7 @@ function App() {
                     <h3 className="text-base font-bold text-white">Quick Overview</h3>
                   </div>
                   <p className="text-sm text-gray-300 leading-relaxed">
-                    Fluke! The 'What If...?' Game is a party game where you write absurd questions, give each other ridiculous answers, then perform the results. It's like Cards Against Humanity meets improv comedy, but with more chaos and less reading from cards.
+                    Fluke! The Game is a party game where you write absurd questions, give each other ridiculous answers, then perform the results. It's like Cards Against Humanity meets improv comedy, but with more chaos and less reading from cards.
                   </p>
                   
                   <div className="border-t border-gray-700 pt-4">
