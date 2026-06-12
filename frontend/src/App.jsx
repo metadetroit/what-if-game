@@ -54,6 +54,7 @@ function App() {
   const reconnectAttemptedRef = useRef(false)
   const roomCodeRef = useRef("")
   const gameStateRef = useRef("welcome")
+  const socketRef = useRef(null)
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
@@ -100,12 +101,14 @@ function App() {
 
   const handleVote = (type, targetId) => {
     if (userVotes[targetId]) return // Already voted
-    socket.emit("submit-vote", { type, targetId })
+    if (!socketRef.current) return // Socket not connected
+    socketRef.current.emit("submit-vote", { type, targetId })
   }
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL)
     setSocket(newSocket)
+    socketRef.current = newSocket
 
     newSocket.on("connect", () => {
       console.log("Connected to server")
