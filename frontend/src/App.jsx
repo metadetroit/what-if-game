@@ -79,13 +79,16 @@ function App() {
   }
 
   const handleHideGame = async () => {
+    console.log('handleHideGame called:', { roomCode, SOCKET_URL })
     try {
       const response = await fetch(`${SOCKET_URL}/api/hide-game`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomCode })
       })
+      console.log('hide-game response status:', response.status)
       const result = await response.json()
+      console.log('hide-game result:', result)
       if (result.success) {
         setNotice(noticeFor('Game hidden from Best Of page', 'success', 2000))
         setHideGameConfirm(false)
@@ -99,7 +102,7 @@ function App() {
   }
 
   const handleVote = (type, targetId) => {
-    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id, roomCode: roomCodeRef.current })
+    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id, roomCode: roomCodeRef.current, socketRoomCode: socketRef.current?.roomCode })
     if (userVotes[targetId]) {
       console.log('Vote rejected: already voted')
       return // Already voted
@@ -1120,75 +1123,52 @@ function App() {
                 </div>
               </div>
             )}
-            <div className="text-center mb-4">
-              <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl">
-                <span className="text-3xl">🎉</span>
+            {/* Anonymous notice banner */}
+            {gameSummary[0]?.anonymousMode && (
+              <div className="mb-2 p-2 bg-purple-900/30 border border-purple-700 rounded-lg text-center">
+                <p className="text-xs font-bold text-purple-300">🔒 This round was anonymized</p>
               </div>
-              <h2 className="text-xl font-bold text-white mb-1">Round over. Vote for the best pairing.</h2>
+            )}
+            <div className="text-center mb-2">
+              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-2xl">🎉</span>
+              </div>
+              <h2 className="text-base font-bold text-white mb-0">Round over. Vote for the best pairing.</h2>
             </div>
 
             {gameSummary && gameSummary.length > 0 && (
-              <div className="card mb-3 py-3 px-3 flex-1 min-h-0 overflow-y-auto">
-                <div className="space-y-4">
+              <div className="card mb-2 py-2 px-2 flex-1 min-h-0 overflow-y-auto">
+                <div className="space-y-2">
                   {gameSummary.map((pair, i) => (
-                    <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
-                      <div className="p-4 space-y-3">
+                    <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-lg border border-gray-700/50 shadow overflow-hidden">
+                      <div className="p-2 space-y-2">
                         {/* Question */}
                         <div>
-                          <p className="text-xs font-bold text-indigo-400 mb-1">Question</p>
-                          <p className="text-sm text-white leading-relaxed">{pair.question}</p>
-                          {!gameSummary[0]?.anonymousMode && (
-                            <p className="text-[10px] text-gray-500 mt-1">
-                              {gameAwards.firstQuestionSubmitter === pair.questionAuthorName && <span className="mr-1">🏆</span>}
-                              {gameAwards.lastQuestionSubmitter === pair.questionAuthorName && <span className="mr-1">⏰</span>}
-                              — {pair.questionAuthorName}
-                            </p>
-                          )}
+                          <p className="text-[10px] font-bold text-indigo-400 mb-0.5">Q:</p>
+                          <p className="text-xs text-white leading-snug">{pair.question}</p>
                         </div>
 
                         {/* Game Answer */}
-                        <div className="border-t border-gray-700/50 pt-3">
-                          <p className="text-xs font-bold text-purple-400 mb-1">Game Answer</p>
+                        <div>
+                          <p className="text-[10px] font-bold text-purple-400 mb-0.5">A:</p>
                           {pair.pairedAnswer ? (
-                            <>
-                              <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
-                              {!gameSummary[0]?.anonymousMode && (
-                                <p className="text-[10px] text-gray-500 mt-1">
-                                  {gameAwards.firstAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">🏆</span>}
-                                  {gameAwards.lastAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">⏰</span>}
-                                  — {pair.pairedAnswerAuthorName}
-                                </p>
-                              )}
-                            </>
+                            <p className="text-xs text-white leading-snug">{pair.pairedAnswer}</p>
                           ) : (
-                            <p className="text-sm text-gray-500 italic">Not assigned</p>
+                            <p className="text-xs text-gray-500 italic">Not assigned</p>
                           )}
                         </div>
 
                         {/* Actual Answer */}
-                        <div className="border-t border-gray-700/50 pt-3">
-                          <p className="text-xs font-bold text-green-400 mb-1">Actual Answer</p>
-                          <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
-                          {!gameSummary[0]?.anonymousMode && (
-                            <p className="text-[10px] text-gray-500 mt-1">
-                              {gameAwards.firstAnswerSubmitter === pair.actualAnswerAuthorName && <span className="mr-1">🏆</span>}
-                              {gameAwards.lastAnswerSubmitter === pair.actualAnswerAuthorName && <span className="mr-1">⏰</span>}
-                              — {pair.actualAnswerAuthorName}
-                            </p>
-                          )}
+                        <div>
+                          <p className="text-[10px] font-bold text-green-400 mb-0.5">Actual:</p>
+                          <p className="text-xs text-white leading-snug">{pair.actualAnswer}</p>
                         </div>
                       </div>
                       {/* Best Pair vote button */}
-                      <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-amber-400 text-xs font-bold whitespace-nowrap">🎯</span>
-                          <span className="text-[10px] text-gray-300 truncate">
-                            "{pair.question}" → "{pair.actualAnswer}"
-                          </span>
-                        </div>
+                      <div className="p-2 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
                         <button
                           onClick={() => handleVote('qa_pair', pair.pairDbId || i)}
-                          className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold flex-shrink-0 ${
+                          className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all font-bold flex-shrink-0 ${
                             userVotes[pair.pairDbId || i]
                               ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
                               : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
@@ -1201,44 +1181,41 @@ function App() {
                     </div>
                   ))}
                 </div>
-                {gameSummary[0]?.anonymousMode && (
-                  <p className="text-center text-[10px] text-gray-600 mt-3 italic">Names hidden by host</p>
-                )}
               </div>
             )}
 
             {isHost ? (
-              <div className="space-y-2">
-                <div className="card py-2 px-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
-                      <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
+              <div className="space-y-1.5">
+                <div className="flex gap-2">
+                  <div className="flex-1 card py-1.5 px-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-white font-medium leading-tight">Anonymous</p>
+                      </div>
+                      <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-8 h-4 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
+                        <div className={"absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-4" : "translate-x-0.5")} />
+                      </button>
                     </div>
-                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
-                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
-                    </button>
+                  </div>
+                  <div className="flex-1 card py-1.5 px-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-white font-medium leading-tight">No Self-Read</p>
+                      </div>
+                      <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-8 h-4 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
+                        <div className={"absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-4" : "translate-x-0.5")} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="card py-2 px-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-white font-medium leading-tight">No Self-Reading</p>
-                      <p className="text-[9px] text-gray-500 leading-tight">Players won't read their own content</p>
-                    </div>
-                    <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
-                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
-                    </button>
-                  </div>
-                </div>
-                <button onClick={() => socket.emit("replay-game")} className="btn-primary py-3 text-base w-full">
-                  🔄 New game with same players
+                <button onClick={() => socketRef.current?.emit("replay-game")} className="btn-primary py-2 text-sm w-full">
+                  🔄 Replay with same players
                 </button>
-                <button onClick={disbandGame} className="btn-secondary py-3 text-sm w-full">
-                  🏠 New game (change players)
+                <button onClick={disbandGame} className="btn-secondary py-2 text-xs w-full">
+                  🏠 New game
                 </button>
-                <button onClick={() => setHideGameConfirm(true)} className="py-2 text-xs text-red-500 border border-red-800 rounded-lg w-full hover:bg-red-900/20 transition-colors">
-                  🚫 Hide from Best Of page
+                <button onClick={() => setHideGameConfirm(true)} className="py-1.5 text-[10px] text-red-500 border border-red-800 rounded-lg w-full hover:bg-red-900/20 transition-colors">
+                  🚫 Hide from Best Of
                 </button>
               </div>
             ) : (
@@ -1246,8 +1223,8 @@ function App() {
                 <div className="py-2">
                   <span className="text-sm text-indigo-400 animate-pulse">Waiting for host...</span>
                 </div>
-                <button onClick={resetGame} className="btn-secondary py-3 text-sm w-full">
-                  🚪 Return to main screen (leave this game)
+                <button onClick={resetGame} className="btn-secondary py-2 text-sm w-full">
+                  🚪 Leave game
                 </button>
               </div>
             )}
