@@ -1425,6 +1425,42 @@ io.on('connection', (socket) => {
       reconnectData.summary = buildGameSummary(roomCode);
     }
 
+    // If reconnecting during performance phase, include current turn data
+    if (game.phase === 'performing' && game.currentReaderIndex !== undefined && game.playerOrder) {
+      const currentReaderId = game.playerOrder[game.currentReaderIndex];
+      const isQuestionTurn = game.currentReaderIndex % 2 === 0;
+      const questionReaderId = isQuestionTurn ? currentReaderId : game.playerOrder[game.currentReaderIndex - 1];
+      const answerReaderId = isQuestionTurn ? game.playerOrder[game.currentReaderIndex + 1] : currentReaderId;
+
+      // Find the question and answer for this turn
+      let question = null;
+      let pairedAnswer = null;
+      let actualAnswer = null;
+
+      if (game.cardAssignments) {
+        for (const cardKey of Object.keys(game.cardAssignments)) {
+          const card = game.cardAssignments[cardKey];
+          if (card.playerId === questionReaderId) {
+            question = card.question?.text;
+            pairedAnswer = card.answer?.text;
+            actualAnswer = card.actualAnswer?.text;
+            break;
+          }
+        }
+      }
+
+      reconnectData.currentTurn = {
+        isQuestionTurn,
+        questionReader: { id: questionReaderId, name: game.players.find(p => p.id === questionReaderId)?.name || 'Unknown' },
+        answerReader: { id: answerReaderId, name: game.players.find(p => p.id === answerReaderId)?.name || 'Unknown' },
+        question,
+        pairedAnswer,
+        actualAnswer,
+        round: game.currentRound || 1,
+        total: game.totalRounds || 1
+      };
+    }
+
     socket.emit('reconnected', reconnectData);
     
     console.log(`[RECONNECT] Sent reconnected event to ${playerName} (phase=${game.phase})`);

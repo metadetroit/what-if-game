@@ -437,6 +437,7 @@ function App() {
           if (data.progress.playerStatuses) setPlayerStatuses(data.progress.playerStatuses)
         }
         if (data.summary) { setGameSummary(data.summary) }
+        if (data.currentTurn) { setCurrentTurn(data.currentTurn) }
         setNotice(noticeFor("Reconnected", "success", 2000))
       } else {
         console.log("Reconnection failed:", data)
@@ -849,6 +850,11 @@ function App() {
             )}
             {!submitted ? (
               <div className="flex-1 flex flex-col min-h-0">
+                {anonymousMode && (
+                  <div className="mb-3 p-2 bg-purple-900/30 border border-purple-700 rounded-lg text-center">
+                    <p className="text-xs font-bold text-purple-300">🔒 This round is anonymized!</p>
+                  </div>
+                )}
                 <div className="text-center mb-1">
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
                   <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
@@ -1206,6 +1212,28 @@ function App() {
 
             {isHost ? (
               <div className="space-y-2">
+                <div className="card py-2 px-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
+                      <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
+                    </div>
+                    <button onClick={() => socket.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
+                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
+                    </button>
+                  </div>
+                </div>
+                <div className="card py-2 px-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-white font-medium leading-tight">No Self-Reading</p>
+                      <p className="text-[9px] text-gray-500 leading-tight">Players won't read their own content</p>
+                    </div>
+                    <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
+                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
+                    </button>
+                  </div>
+                </div>
                 <button onClick={() => socket.emit("replay-game")} className="btn-primary py-3 text-base w-full">
                   🔄 New game with same players
                 </button>
