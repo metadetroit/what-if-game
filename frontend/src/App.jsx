@@ -99,7 +99,7 @@ function App() {
   }
 
   const handleVote = (type, targetId) => {
-    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id })
+    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id, roomCode: roomCodeRef.current })
     if (userVotes[targetId]) {
       console.log('Vote rejected: already voted')
       return // Already voted
@@ -107,6 +107,10 @@ function App() {
     if (!socketRef.current) {
       console.log('Vote rejected: socket not connected')
       return // Socket not connected
+    }
+    if (!roomCodeRef.current) {
+      console.log('Vote rejected: roomCode not set')
+      return // Room code not set
     }
     console.log('Emitting submit-vote:', { type, targetId })
     socketRef.current.emit("submit-vote", { type, targetId })
@@ -1119,7 +1123,7 @@ function App() {
               <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl">
                 <span className="text-3xl">🎉</span>
               </div>
-              <h2 className="text-3xl font-black text-white mb-1">ROUND OVER. VOTE FOR THE BEST PAIRING.</h2>
+              <h2 className="text-xl font-bold text-white mb-1">Round over. Vote for the best pairing.</h2>
             </div>
 
             {gameSummary && gameSummary.length > 0 && (
@@ -1127,50 +1131,42 @@ function App() {
                 <div className="space-y-4">
                   {gameSummary.map((pair, i) => (
                     <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
-                      <div className="flex flex-col md:flex-row">
-                        {/* Left Section: Setup */}
-                        <div className="flex-1 p-4 border-b md:border-b-0 md:border-r border-gray-700/50 relative">
-                          <div className="flex justify-between items-start mb-3">
-                            <p className="text-sm font-bold text-indigo-400 underline">Question:</p>
-                          </div>
-                          <p className="text-sm text-white leading-relaxed mb-2">{pair.question}</p>
+                      <div className="p-4 space-y-3">
+                        {/* Question */}
+                        <div>
+                          <p className="text-xs font-bold text-indigo-400 mb-1">Question</p>
+                          <p className="text-sm text-white leading-relaxed">{pair.question}</p>
                           {!gameSummary[0]?.anonymousMode && (
-                            <p className="text-[10px] text-gray-500 mb-4">
+                            <p className="text-[10px] text-gray-500 mt-1">
                               {gameAwards.firstQuestionSubmitter === pair.questionAuthorName && <span className="mr-1">🏆</span>}
                               {gameAwards.lastQuestionSubmitter === pair.questionAuthorName && <span className="mr-1">⏰</span>}
                               — {pair.questionAuthorName}
                             </p>
                           )}
-                          <div className="flex items-start gap-2">
-                            <svg className="w-4 h-4 text-purple-400 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-3.293-3.293a1 1 0 010-1.414z" clipRule="evenodd" transform="rotate(90 10 10)"/>
-                            </svg>
-                            <div className="flex-1">
-                              <div className="flex justify-between items-start mb-2">
-                                <p className="text-sm font-bold text-purple-400 underline">Game Answer:</p>
-                              </div>
-                              {pair.pairedAnswer ? (
-                                <>
-                                  <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
-                                  {!gameSummary[0]?.anonymousMode && (
-                                    <p className="text-[10px] text-gray-500 mt-1">
-                                      {gameAwards.firstAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">🏆</span>}
-                                      {gameAwards.lastAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">⏰</span>}
-                                      — {pair.pairedAnswerAuthorName}
-                                    </p>
-                                  )}
-                                </>
-                              ) : (
-                                <p className="text-sm text-gray-500 italic">Not assigned</p>
-                              )}
-                            </div>
-                          </div>
                         </div>
-                        {/* Right Section: Result */}
-                        <div className="flex-1 p-4 bg-green-900/10 relative">
-                          <div className="flex justify-between items-start mb-3">
-                            <p className="text-sm font-bold text-green-400 underline">Actual Answer:</p>
-                          </div>
+
+                        {/* Game Answer */}
+                        <div className="border-t border-gray-700/50 pt-3">
+                          <p className="text-xs font-bold text-purple-400 mb-1">Game Answer</p>
+                          {pair.pairedAnswer ? (
+                            <>
+                              <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
+                              {!gameSummary[0]?.anonymousMode && (
+                                <p className="text-[10px] text-gray-500 mt-1">
+                                  {gameAwards.firstAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">🏆</span>}
+                                  {gameAwards.lastAnswerSubmitter === pair.pairedAnswerAuthorName && <span className="mr-1">⏰</span>}
+                                  — {pair.pairedAnswerAuthorName}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">Not assigned</p>
+                          )}
+                        </div>
+
+                        {/* Actual Answer */}
+                        <div className="border-t border-gray-700/50 pt-3">
+                          <p className="text-xs font-bold text-green-400 mb-1">Actual Answer</p>
                           <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
                           {!gameSummary[0]?.anonymousMode && (
                             <p className="text-[10px] text-gray-500 mt-1">
@@ -1181,7 +1177,7 @@ function App() {
                           )}
                         </div>
                       </div>
-                      {/* Best Pair vote button - moved to side */}
+                      {/* Best Pair vote button */}
                       <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className="text-amber-400 text-xs font-bold whitespace-nowrap">🎯</span>
@@ -1218,7 +1214,7 @@ function App() {
                       <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
                       <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
                     </div>
-                    <button onClick={() => socket.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
+                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
                       <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
                     </button>
                   </div>
