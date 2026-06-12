@@ -43,6 +43,12 @@ function App() {
   const [lastQuestionSubmitter, setLastQuestionSubmitter] = useState(null) // { name } for the last player to submit a question
   const [showLastSubmitterIndicator, setShowLastSubmitterIndicator] = useState(false) // show ⏰ indicator after 10 seconds
   const [gameAwards, setGameAwards] = useState({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null, lastAnswerSubmitter: null }) // awards for summary page
+  const [performanceVotes, setPerformanceVotes] = useState({}) // Track votes during performing phase: { questionId: count, answerId: count }
+  const [userVotes, setUserVotes] = useState({}) // Track user's votes: { questionId: true, answerId: true, pairId: true }
+  const [summaryVotes, setSummaryVotes] = useState({}) // Track votes on summary page: { questionId: count, answerId: count, pairId: count }
+  const [bestOfData, setBestOfData] = useState(null) // Data for best of page
+  const [bestOfTab, setBestOfTab] = useState('all') // Tab for best of page: 'all', 'questions', 'answers', 'qa_pairs'
+  const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -135,6 +141,43 @@ function App() {
       }
     }
 
+    const handleVote = (type, targetId) => {
+      if (userVotes[targetId]) return // Already voted
+      socket.emit("submit-vote", { type, targetId })
+    }
+
+    const fetchBestOfData = async (type = 'all') => {
+      try {
+        const url = `${SOCKET_URL}/api/best-of?type=${type}&limit=20`
+        const response = await fetch(url)
+        const data = await response.json()
+        setBestOfData(data)
+      } catch (error) {
+        console.error('Failed to fetch best of data:', error)
+        setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
+      }
+    }
+
+    const handleHideGame = async () => {
+      try {
+        const response = await fetch(`${SOCKET_URL}/api/hide-game`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode })
+        })
+        const result = await response.json()
+        if (result.success) {
+          setNotice(noticeFor('Game hidden from Best Of page', 'success', 2000))
+          setHideGameConfirm(false)
+        } else {
+          setNotice(noticeFor('Failed to hide game', 'warn', 3000))
+        }
+      } catch (error) {
+        console.error('Failed to hide game:', error)
+        setNotice(noticeFor('Failed to hide game', 'warn', 3000))
+      }
+    }
+
     newSocket.on("player-joined", (payload) => {
       console.log("player-joined event received:", payload)
       updatePlayersAndHost(payload)
@@ -193,6 +236,28 @@ function App() {
       setCurrentTurn(data)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
+      // Reset performance votes for new turn
+      setPerformanceVotes({})
+    })
+
+    newSocket.on("vote-update", (data) => {
+      setPerformanceVotes(prev => ({
+        ...prev,
+        [data.targetId]: data.voteCount
+      }))
+      setSummaryVotes(prev => ({
+        ...prev,
+        [data.targetId]: data.voteCount
+      }))
+    })
+
+    newSocket.on("vote-submitted", (data) => {
+      if (data.success) {
+        setUserVotes(prev => ({
+          ...prev,
+          [data.targetId]: true
+        }))
+      }
     })
 
     newSocket.on("game-ended", (data) => {
@@ -563,6 +628,88 @@ function App() {
           </div>
         )
 
+      case "best-of":
+        return (
+          <div className="game-container justify-center py-1">
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-xl">🏆</span>
+              </div>
+              <h1 className="text-xl font-extrabold text-gradient mb-1">Best Of</h1>
+              <p className="text-gray-500 text-[10px] mt-1">Top-voted content from all games</p>
+            </div>
+            <div className="card py-3">
+              {/* Tabs */}
+              <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                {['all', 'questions', 'answers', 'qa_pairs'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => { setBestOfTab(tab); fetchBestOfData(tab) }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                      bestOfTab === tab
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {tab === 'all' ? 'All' : tab === 'questions' ? 'Questions' : tab === 'answers' ? 'Answers' : 'Q&A Pairs'}
+                  </button>
+                ))}
+              </div>
+              {/* Content */}
+              {bestOfData === null ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm">Loading...</p>
+                </div>
+              ) : bestOfData.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm">No content yet. Play some games to see the best content here!</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {bestOfData.map((item, i) => (
+                    <div key={i} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                      {item.type === 'question' && (
+                        <>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-bold text-indigo-400">Question</span>
+                            <span className="text-xs text-gray-400">👍 {item.vote_count}</span>
+                          </div>
+                          <p className="text-sm text-white mb-2">{item.content}</p>
+                          <p className="text-[10px] text-gray-500">— {item.author}</p>
+                        </>
+                      )}
+                      {item.type === 'answer' && (
+                        <>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-bold text-purple-400">Answer</span>
+                            <span className="text-xs text-gray-400">👍 {item.vote_count}</span>
+                          </div>
+                          <p className="text-sm text-white mb-2">{item.content}</p>
+                          <p className="text-[10px] text-gray-500">— {item.author}</p>
+                        </>
+                      )}
+                      {item.type === 'qa_pair' && (
+                        <>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-bold text-green-400">Q&A Pair</span>
+                            <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
+                          </div>
+                          <p className="text-sm text-white mb-1"><span className="text-indigo-400">Q:</span> {item.question}</p>
+                          <p className="text-sm text-white mb-2"><span className="text-purple-400">A:</span> {item.answer}</p>
+                          <p className="text-[10px] text-gray-500">— {item.question_author} → {item.answer_author}</p>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={() => setGameState("welcome")} className="btn-secondary py-3 text-sm w-full mt-3">
+              Back to Main Screen
+            </button>
+          </div>
+        )
+
       case "welcome":
         return (
           <div className="game-container justify-center py-1 relative">
@@ -611,9 +758,14 @@ function App() {
               </div>
               <h1 className="text-xl font-extrabold text-gradient mb-0">The What if? Game</h1>
               <p className="text-gray-500 text-[10px] mt-1">3-15 players</p>
-              <button onClick={() => setGameState("help")} className="mt-2 text-[10px] text-indigo-400 hover:text-indigo-300 underline">
-                How to Play
-              </button>
+              <div className="flex justify-center gap-4 mt-2">
+                <button onClick={() => setGameState("help")} className="text-[10px] text-indigo-400 hover:text-indigo-300 underline">
+                  How to Play
+                </button>
+                <button onClick={() => { setGameState("best-of"); fetchBestOfData('all') }} className="text-[10px] text-yellow-400 hover:text-yellow-300 underline">
+                  View Best Of
+                </button>
+              </div>
             </div>
             <div className="card space-y-3 py-3">
               <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" className="input-field py-2 text-lg" maxLength={20} />
@@ -904,9 +1056,47 @@ function App() {
                     </div>
                   )}
                   {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                    <div className="py-3 rounded-lg text-center bg-gray-700 border border-gray-600">
+                    <div className="py-3 rounded-lg text-center bg-gray-700 border border-gray-600 relative">
                       <span className="text-lg font-bold text-gray-400">LISTEN</span>
-                      <p className="text-gray-500 text-sm mt-1">{currentTurn.questionReader.name} &​rarr; {currentTurn.answerReader.name}</p>
+                      <p className="text-gray-500 text-sm mt-1">{currentTurn.questionReader.name} &rarr; {currentTurn.answerReader.name}</p>
+                      {/* Thumbs-up vote button for listeners */}
+                      {currentTurn.isQuestionTurn && currentTurn.questionDbId && (
+                        <button
+                          onClick={() => handleVote('question', currentTurn.questionDbId)}
+                          className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
+                            userVotes[currentTurn.questionDbId]
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-600 text-gray-300 hover:bg-indigo-600 hover:text-white'
+                          }`}
+                          title="Vote for best question"
+                        >
+                          👍
+                        </button>
+                      )}
+                      {!currentTurn.isQuestionTurn && currentTurn.answerDbId && (
+                        <button
+                          onClick={() => handleVote('answer', currentTurn.answerDbId)}
+                          className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
+                            userVotes[currentTurn.answerDbId]
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-600 text-gray-300 hover:bg-indigo-600 hover:text-white'
+                          }`}
+                          title="Vote for best answer"
+                        >
+                          👍
+                        </button>
+                      )}
+                      {/* Vote count badge */}
+                      {currentTurn.isQuestionTurn && currentTurn.questionDbId && performanceVotes[currentTurn.questionDbId] !== undefined && (
+                        <span className="absolute bottom-2 left-2 text-xs text-gray-400">
+                          👍 {performanceVotes[currentTurn.questionDbId]}
+                        </span>
+                      )}
+                      {!currentTurn.isQuestionTurn && currentTurn.answerDbId && performanceVotes[currentTurn.answerDbId] !== undefined && (
+                        <span className="absolute bottom-2 left-2 text-xs text-gray-400">
+                          👍 {performanceVotes[currentTurn.answerDbId]}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -971,6 +1161,18 @@ function App() {
       case "ended":
         return (
           <div className="game-container py-2">
+            {hideGameConfirm && (
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
+                  <p className="text-lg font-bold text-white mb-2">Hide from Best Of?</p>
+                  <p className="text-sm text-gray-400 mb-4">This will prevent any content from this game from appearing on the public Best Of page.</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setHideGameConfirm(false)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
+                    <button onClick={handleHideGame} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Confirm</button>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="text-center mb-4">
               <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl">
                 <span className="text-3xl">🎉</span>
@@ -987,8 +1189,23 @@ function App() {
                     <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
                       <div className="flex flex-col md:flex-row">
                         {/* Left Section: Setup */}
-                        <div className="flex-1 p-4 border-b md:border-b-0 md:border-r border-gray-700/50">
-                          <p className="text-sm font-bold text-indigo-400 underline mb-3">Question:</p>
+                        <div className="flex-1 p-4 border-b md:border-b-0 md:border-r border-gray-700/50 relative">
+                          <div className="flex justify-between items-start mb-3">
+                            <p className="text-sm font-bold text-indigo-400 underline">Question:</p>
+                            {pair.questionDbId && (
+                              <button
+                                onClick={() => handleVote('question', pair.questionDbId)}
+                                className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-all ${
+                                  userVotes[pair.questionDbId]
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-gray-700 text-gray-300 hover:bg-indigo-600 hover:text-white'
+                                }`}
+                                title="Vote for best question"
+                              >
+                                👍 {summaryVotes[pair.questionDbId] || 0}
+                              </button>
+                            )}
+                          </div>
                           <p className="text-sm text-white leading-relaxed mb-2">{pair.question}</p>
                           {!gameSummary[0]?.anonymousMode && (
                             <p className="text-[10px] text-gray-500 mb-4">
@@ -1002,7 +1219,22 @@ function App() {
                               <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-3.293-3.293a1 1 0 010-1.414z" clipRule="evenodd" transform="rotate(90 10 10)"/>
                             </svg>
                             <div className="flex-1">
-                              <p className="text-sm font-bold text-purple-400 underline mb-2">Game Answer:</p>
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="text-sm font-bold text-purple-400 underline">Game Answer:</p>
+                                {pair.pairedAnswer && pair.actualAnswerDbId && (
+                                  <button
+                                    onClick={() => handleVote('answer', pair.actualAnswerDbId)}
+                                    className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-all ${
+                                      userVotes[pair.actualAnswerDbId]
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-gray-700 text-gray-300 hover:bg-purple-600 hover:text-white'
+                                    }`}
+                                    title="Vote for best answer"
+                                  >
+                                    👍 {summaryVotes[pair.actualAnswerDbId] || 0}
+                                  </button>
+                                )}
+                              </div>
                               {pair.pairedAnswer ? (
                                 <>
                                   <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
@@ -1021,8 +1253,23 @@ function App() {
                           </div>
                         </div>
                         {/* Right Section: Result */}
-                        <div className="flex-1 p-4 bg-green-900/10">
-                          <p className="text-sm font-bold text-green-400 underline mb-3">Actual Answer:</p>
+                        <div className="flex-1 p-4 bg-green-900/10 relative">
+                          <div className="flex justify-between items-start mb-3">
+                            <p className="text-sm font-bold text-green-400 underline">Actual Answer:</p>
+                            {pair.actualAnswerDbId && (
+                              <button
+                                onClick={() => handleVote('answer', pair.actualAnswerDbId)}
+                                className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-all ${
+                                  userVotes[pair.actualAnswerDbId]
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-700 text-gray-300 hover:bg-green-600 hover:text-white'
+                                }`}
+                                title="Vote for best answer"
+                              >
+                                👍 {summaryVotes[pair.actualAnswerDbId] || 0}
+                              </button>
+                            )}
+                          </div>
                           <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
                           {!gameSummary[0]?.anonymousMode && (
                             <p className="text-[10px] text-gray-500 mt-1">
@@ -1033,6 +1280,22 @@ function App() {
                           )}
                         </div>
                       </div>
+                      {/* Best Pair vote button */}
+                      {pair.pairDbId && (
+                        <div className="p-3 bg-gray-800/50 border-t border-gray-700/50 flex justify-center">
+                          <button
+                            onClick={() => handleVote('qa_pair', pair.pairDbId)}
+                            className={`text-sm px-4 py-2 rounded-full flex items-center gap-2 transition-all ${
+                              userVotes[pair.pairDbId]
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-700 text-gray-300 hover:bg-green-600 hover:text-white'
+                            }`}
+                            title="Vote for best Q&A pair"
+                          >
+                            🏆 Best Pair {summaryVotes[pair.pairDbId] ? `(${summaryVotes[pair.pairDbId]})` : ''}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1049,6 +1312,9 @@ function App() {
                 </button>
                 <button onClick={disbandGame} className="btn-secondary py-3 text-sm w-full">
                   🏠 New game (change players)
+                </button>
+                <button onClick={() => setHideGameConfirm(true)} className="py-2 text-xs text-red-500 border border-red-800 rounded-lg w-full hover:bg-red-900/20 transition-colors">
+                  🚫 Hide from Best Of page
                 </button>
               </div>
             ) : (
