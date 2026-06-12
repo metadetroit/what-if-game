@@ -361,7 +361,7 @@ io.on('connection', (socket) => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
 
-    if (!game || game.host !== socket.id || game.phase !== 'lobby') return;
+    if (!game || game.host !== socket.id) return;
 
     game.anonymousMode = !game.anonymousMode;
 
@@ -370,8 +370,8 @@ io.on('connection', (socket) => {
     db.run("UPDATE games SET anonymous_mode = ? WHERE id = ?", [game.anonymousMode ? 1 : 0, game.dbGameId]);
     saveDatabase();
 
-    // Only tell the host about the toggle state - other players don't know
-    socket.emit('anonymous-toggled', { anonymousMode: game.anonymousMode });
+    // Broadcast to all players in the room
+    io.to(roomCode).emit('anonymous-toggled', { anonymousMode: game.anonymousMode });
     console.log(`Room ${roomCode}: Anonymous mode ${game.anonymousMode ? 'ON' : 'OFF'}`);
   });
 

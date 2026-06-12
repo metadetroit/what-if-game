@@ -1139,45 +1139,51 @@ function App() {
             </div>
 
             {gameSummary && gameSummary.length > 0 && (
-              <div className="card mb-2 py-2 px-2 flex-1 min-h-0 overflow-y-auto">
-                <div className="space-y-2">
+              <div className="card mb-2 py-3 px-3 flex-1 min-h-0 overflow-y-auto">
+                <div className="space-y-3">
                   {gameSummary.map((pair, i) => (
-                    <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-lg border border-gray-700/50 shadow overflow-hidden">
-                      <div className="p-2 space-y-2">
+                    <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+                      <div className="p-3 space-y-3">
                         {/* Question */}
                         <div>
-                          <p className="text-[10px] font-bold text-indigo-400 mb-0.5">Q:</p>
-                          <p className="text-xs text-white leading-snug">{pair.question}</p>
+                          <p className="text-xs font-bold text-indigo-400 mb-1">Question</p>
+                          <p className="text-sm text-white leading-relaxed">{pair.question}</p>
                         </div>
 
                         {/* Game Answer */}
-                        <div>
-                          <p className="text-[10px] font-bold text-purple-400 mb-0.5">A:</p>
+                        <div className="border-t border-gray-700/50 pt-3">
+                          <p className="text-xs font-bold text-purple-400 mb-1">Game Answer</p>
                           {pair.pairedAnswer ? (
-                            <p className="text-xs text-white leading-snug">{pair.pairedAnswer}</p>
+                            <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
                           ) : (
-                            <p className="text-xs text-gray-500 italic">Not assigned</p>
+                            <p className="text-sm text-gray-500 italic">Not assigned</p>
                           )}
                         </div>
 
                         {/* Actual Answer */}
-                        <div>
-                          <p className="text-[10px] font-bold text-green-400 mb-0.5">Actual:</p>
-                          <p className="text-xs text-white leading-snug">{pair.actualAnswer}</p>
+                        <div className="border-t border-gray-700/50 pt-3">
+                          <p className="text-xs font-bold text-green-400 mb-1">Actual Answer</p>
+                          <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
                         </div>
                       </div>
-                      {/* Best Pair vote button */}
-                      <div className="p-2 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
+                      {/* Best Pair vote button - voting on GAME PAIRED COMBINATION (Question + Game Answer) */}
+                      <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50">
+                        <div className="mb-2">
+                          <p className="text-xs font-bold text-amber-400 mb-1">Vote for this GAME PAIRING:</p>
+                          <p className="text-sm text-gray-300 leading-relaxed">
+                            "{pair.question}" + "{pair.pairedAnswer || 'No game answer'}"
+                          </p>
+                        </div>
                         <button
                           onClick={() => handleVote('qa_pair', pair.pairDbId || i)}
-                          className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all font-bold flex-shrink-0 ${
+                          className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold w-full ${
                             userVotes[pair.pairDbId || i]
                               ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
                               : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
                             }`}
                           title="Vote for best game pairing"
                         >
-                          👍 {summaryVotes[pair.pairDbId || i] || 0}
+                          👍 Vote for this pairing ({summaryVotes[pair.pairDbId || i] || 0} votes)
                         </button>
                       </div>
                     </div>
