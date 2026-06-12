@@ -934,10 +934,14 @@ io.on('connection', (socket) => {
 
   // Player submits a vote (non-blocking during performance phase)
   socket.on('submit-vote', ({ type, targetId }) => {
+    console.log('submit-vote received:', { type, targetId, socketId: socket.id, roomCode: socket.roomCode })
     const roomCode = socket.roomCode;
     const game = games[roomCode];
 
-    if (!game) return;
+    if (!game) {
+      console.log('Vote rejected: game not found for roomCode:', roomCode)
+      return
+    }
 
     const db = getDb();
 

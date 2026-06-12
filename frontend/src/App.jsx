@@ -99,8 +99,16 @@ function App() {
   }
 
   const handleVote = (type, targetId) => {
-    if (userVotes[targetId]) return // Already voted
-    if (!socketRef.current) return // Socket not connected
+    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id })
+    if (userVotes[targetId]) {
+      console.log('Vote rejected: already voted')
+      return // Already voted
+    }
+    if (!socketRef.current) {
+      console.log('Vote rejected: socket not connected')
+      return // Socket not connected
+    }
+    console.log('Emitting submit-vote:', { type, targetId })
     socketRef.current.emit("submit-vote", { type, targetId })
   }
 
