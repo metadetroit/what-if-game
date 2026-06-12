@@ -99,8 +99,10 @@ function App() {
   }
 
   const handleVote = (type, targetId) => {
+    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current })
     if (userVotes[targetId]) return // Already voted
     if (!socketRef.current) return // Socket not connected
+    console.log('Emitting submit-vote:', { type, targetId })
     socketRef.current.emit("submit-vote", { type, targetId })
   }
 
@@ -722,7 +724,7 @@ function App() {
               <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-xl">🤔</span>
               </div>
-              <h1 className="text-xl font-extrabold text-gradient mb-0">The What if? Game</h1>
+              <h1 className="text-xl font-extrabold text-gradient mb-0">Fluke! The 'What If...?' Game</h1>
               <p className="text-gray-500 text-[10px] mt-1">3-15 players</p>
               <div className="flex justify-center gap-4 mt-2">
                 <button onClick={() => setGameState("help")} className="text-[10px] text-indigo-400 hover:text-indigo-300 underline">
@@ -1169,13 +1171,15 @@ function App() {
                       </div>
                       {/* Best Pair vote button - moved to side */}
                       <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-amber-400 text-sm font-bold">🎯 GAME PAIRING</span>
-                          <span className="text-[10px] text-gray-400">Vote for this combination</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-amber-400 text-xs font-bold whitespace-nowrap">🎯</span>
+                          <span className="text-[10px] text-gray-300 truncate">
+                            "{pair.question}" → "{pair.actualAnswer}"
+                          </span>
                         </div>
                         <button
                           onClick={() => handleVote('qa_pair', pair.pairDbId || i)}
-                          className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold ${
+                          className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold flex-shrink-0 ${
                             userVotes[pair.pairDbId || i]
                               ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
                               : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
@@ -1259,7 +1263,7 @@ function App() {
                     <h3 className="text-base font-bold text-white">Quick Overview</h3>
                   </div>
                   <p className="text-sm text-gray-300 leading-relaxed">
-                    The What If? Game is a party game where you write absurd questions, give each other ridiculous answers, then perform the results. It's like Cards Against Humanity meets improv comedy, but with more chaos and less reading from cards.
+                    Fluke! The 'What If...?' Game is a party game where you write absurd questions, give each other ridiculous answers, then perform the results. It's like Cards Against Humanity meets improv comedy, but with more chaos and less reading from cards.
                   </p>
                   
                   <div className="border-t border-gray-700 pt-4">
@@ -1486,7 +1490,7 @@ function App() {
                   <div className="border-t border-gray-700 pt-4">
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">The Origin Story</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      The What If? Game didn't start as an app - it started as a stack of napkins and a pen at a house party.
+                      Fluke! The 'What If...?' Game didn't start as an app - it started as a stack of napkins and a pen at a house party.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
                       One night, hanging out with friends, someone asked a completely ridiculous question: "What if dogs could only communicate through interpretive dance?" We spent the next hour answering it, then coming up with more absurd questions and even more ridiculous answers. We were laughing so hard our faces hurt.
@@ -1502,10 +1506,10 @@ function App() {
                       After playing this game for years with pen, paper, and way too many napkins, I realized something: this shouldn't just be for us. The whole world deserves to laugh as hard as we have.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      So I decided to replicate the experience digitally. No more passing around a single notebook. No more trying to read someone else's handwriting. No more losing the best questions because someone spilled their drink.
+                      So I decided to replicate the experience digitally as Fluke! The 'What If...?' Game. No more passing around a single notebook. No more trying to read someone else's handwriting. No more losing the best questions because someone spilled their drink.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      The What If? Game is my gift to the internet. It's the icebreaker that never gets old, the party game that works with any group, the excuse to be absurd that everyone needs.
+                      Fluke! The 'What If...?' Game is my gift to the internet. It's the icebreaker that never gets old, the party game that works with any group, the excuse to be absurd that everyone needs.
                     </p>
                   </div>
 
