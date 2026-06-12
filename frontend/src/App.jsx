@@ -99,10 +99,8 @@ function App() {
   }
 
   const handleVote = (type, targetId) => {
-    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current })
     if (userVotes[targetId]) return // Already voted
     if (!socketRef.current) return // Socket not connected
-    console.log('Emitting submit-vote:', { type, targetId })
     socketRef.current.emit("submit-vote", { type, targetId })
   }
 
