@@ -408,6 +408,8 @@ function App() {
         }
         setReconnectInfo(null)
         setRoomCode(data.roomCode)
+        // Set socket.roomCode on client side for voting and other socket events
+        newSocket.roomCode = data.roomCode
         if (data.hostId) {
           console.log("Setting hostId to:", data.hostId)
           console.log("Is host?", newSocket.id === data.hostId)
