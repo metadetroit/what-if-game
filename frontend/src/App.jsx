@@ -1059,47 +1059,9 @@ function App() {
                     </div>
                   )}
                   {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                    <div className="py-3 rounded-lg text-center bg-gray-700 border border-gray-600 relative">
+                    <div className="py-3 rounded-lg text-center bg-gray-700 border border-gray-600">
                       <span className="text-lg font-bold text-gray-400">LISTEN</span>
                       <p className="text-gray-500 text-sm mt-1">{currentTurn.questionReader.name} &rarr; {currentTurn.answerReader.name}</p>
-                      {/* Thumbs-up vote button for listeners */}
-                      {currentTurn.isQuestionTurn && currentTurn.questionDbId && (
-                        <button
-                          onClick={() => handleVote('question', currentTurn.questionDbId)}
-                          className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
-                            userVotes[currentTurn.questionDbId]
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-gray-600 text-gray-300 hover:bg-indigo-600 hover:text-white'
-                          }`}
-                          title="Vote for best question"
-                        >
-                          👍
-                        </button>
-                      )}
-                      {!currentTurn.isQuestionTurn && currentTurn.answerDbId && (
-                        <button
-                          onClick={() => handleVote('answer', currentTurn.answerDbId)}
-                          className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
-                            userVotes[currentTurn.answerDbId]
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-gray-600 text-gray-300 hover:bg-indigo-600 hover:text-white'
-                          }`}
-                          title="Vote for best answer"
-                        >
-                          👍
-                        </button>
-                      )}
-                      {/* Vote count badge */}
-                      {currentTurn.isQuestionTurn && currentTurn.questionDbId && performanceVotes[currentTurn.questionDbId] !== undefined && (
-                        <span className="absolute bottom-2 left-2 text-xs text-gray-400">
-                          👍 {performanceVotes[currentTurn.questionDbId]}
-                        </span>
-                      )}
-                      {!currentTurn.isQuestionTurn && currentTurn.answerDbId && performanceVotes[currentTurn.answerDbId] !== undefined && (
-                        <span className="absolute bottom-2 left-2 text-xs text-gray-400">
-                          👍 {performanceVotes[currentTurn.answerDbId]}
-                        </span>
-                      )}
                     </div>
                   )}
                 </div>
@@ -1186,7 +1148,7 @@ function App() {
 
             {gameSummary && gameSummary.length > 0 && (
               <div className="card mb-3 py-3 px-3 flex-1 min-h-0 overflow-y-auto">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 text-center">Game Summary</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 text-center">Round Over. Vote for the best pairing.</p>
                 <div className="space-y-4">
                   {gameSummary.map((pair, i) => (
                     <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
@@ -1195,19 +1157,6 @@ function App() {
                         <div className="flex-1 p-4 border-b md:border-b-0 md:border-r border-gray-700/50 relative">
                           <div className="flex justify-between items-start mb-3">
                             <p className="text-sm font-bold text-indigo-400 underline">Question:</p>
-                            {pair.questionDbId && (
-                              <button
-                                onClick={() => handleVote('question', pair.questionDbId)}
-                                className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-all ${
-                                  userVotes[pair.questionDbId]
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-gray-700 text-gray-300 hover:bg-indigo-600 hover:text-white'
-                                }`}
-                                title="Vote for best question"
-                              >
-                                👍 {summaryVotes[pair.questionDbId] || 0}
-                              </button>
-                            )}
                           </div>
                           <p className="text-sm text-white leading-relaxed mb-2">{pair.question}</p>
                           {!gameSummary[0]?.anonymousMode && (
@@ -1224,19 +1173,6 @@ function App() {
                             <div className="flex-1">
                               <div className="flex justify-between items-start mb-2">
                                 <p className="text-sm font-bold text-purple-400 underline">Game Answer:</p>
-                                {pair.pairedAnswer && pair.actualAnswerDbId && (
-                                  <button
-                                    onClick={() => handleVote('answer', pair.actualAnswerDbId)}
-                                    className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-all ${
-                                      userVotes[pair.actualAnswerDbId]
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-gray-700 text-gray-300 hover:bg-purple-600 hover:text-white'
-                                    }`}
-                                    title="Vote for best answer"
-                                  >
-                                    👍 {summaryVotes[pair.actualAnswerDbId] || 0}
-                                  </button>
-                                )}
                               </div>
                               {pair.pairedAnswer ? (
                                 <>
@@ -1259,19 +1195,6 @@ function App() {
                         <div className="flex-1 p-4 bg-green-900/10 relative">
                           <div className="flex justify-between items-start mb-3">
                             <p className="text-sm font-bold text-green-400 underline">Actual Answer:</p>
-                            {pair.actualAnswerDbId && (
-                              <button
-                                onClick={() => handleVote('answer', pair.actualAnswerDbId)}
-                                className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-all ${
-                                  userVotes[pair.actualAnswerDbId]
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-gray-700 text-gray-300 hover:bg-green-600 hover:text-white'
-                                }`}
-                                title="Vote for best answer"
-                              >
-                                👍 {summaryVotes[pair.actualAnswerDbId] || 0}
-                              </button>
-                            )}
                           </div>
                           <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
                           {!gameSummary[0]?.anonymousMode && (
@@ -1283,19 +1206,23 @@ function App() {
                           )}
                         </div>
                       </div>
-                      {/* Best Pair vote button */}
+                      {/* Best Pair vote button - moved to side */}
                       {pair.pairDbId && (
-                        <div className="p-3 bg-gray-800/50 border-t border-gray-700/50 flex justify-center">
+                        <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-amber-400 text-sm font-bold">🎯 GAME PAIRING</span>
+                            <span className="text-[10px] text-gray-400">Vote for this combination</span>
+                          </div>
                           <button
                             onClick={() => handleVote('qa_pair', pair.pairDbId)}
-                            className={`text-sm px-4 py-2 rounded-full flex items-center gap-2 transition-all ${
+                            className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold ${
                               userVotes[pair.pairDbId]
-                                ? 'bg-green-600 text-white'
-                                : 'bg-gray-700 text-gray-300 hover:bg-green-600 hover:text-white'
+                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
+                                : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
                             }`}
-                            title="Vote for best Q&A pair"
+                            title="Vote for best game pairing"
                           >
-                            🏆 Best Pair {summaryVotes[pair.pairDbId] ? `(${summaryVotes[pair.pairDbId]})` : ''}
+                            👍 {summaryVotes[pair.pairDbId] || 0}
                           </button>
                         </div>
                       )}
