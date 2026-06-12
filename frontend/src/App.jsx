@@ -66,6 +66,43 @@ function App() {
     return () => clearTimeout(t)
   }, [notice])
 
+  const fetchBestOfData = async (type = 'all') => {
+    try {
+      const url = `${SOCKET_URL}/api/best-of?type=${type}&limit=20`
+      const response = await fetch(url)
+      const data = await response.json()
+      setBestOfData(data)
+    } catch (error) {
+      console.error('Failed to fetch best of data:', error)
+      setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
+    }
+  }
+
+  const handleHideGame = async () => {
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/hide-game`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomCode })
+      })
+      const result = await response.json()
+      if (result.success) {
+        setNotice(noticeFor('Game hidden from Best Of page', 'success', 2000))
+        setHideGameConfirm(false)
+      } else {
+        setNotice(noticeFor('Failed to hide game', 'warn', 3000))
+      }
+    } catch (error) {
+      console.error('Failed to hide game:', error)
+      setNotice(noticeFor('Failed to hide game', 'warn', 3000))
+    }
+  }
+
+  const handleVote = (type, targetId) => {
+    if (userVotes[targetId]) return // Already voted
+    socket.emit("submit-vote", { type, targetId })
+  }
+
   useEffect(() => {
     const newSocket = io(SOCKET_URL)
     setSocket(newSocket)
@@ -138,43 +175,6 @@ function App() {
         setIsHost(newSocket.id === nextHostId)
       } else {
         console.log("No hostId in payload, not updating host state")
-      }
-    }
-
-    const handleVote = (type, targetId) => {
-      if (userVotes[targetId]) return // Already voted
-      socket.emit("submit-vote", { type, targetId })
-    }
-
-    const fetchBestOfData = async (type = 'all') => {
-      try {
-        const url = `${SOCKET_URL}/api/best-of?type=${type}&limit=20`
-        const response = await fetch(url)
-        const data = await response.json()
-        setBestOfData(data)
-      } catch (error) {
-        console.error('Failed to fetch best of data:', error)
-        setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
-      }
-    }
-
-    const handleHideGame = async () => {
-      try {
-        const response = await fetch(`${SOCKET_URL}/api/hide-game`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ roomCode })
-        })
-        const result = await response.json()
-        if (result.success) {
-          setNotice(noticeFor('Game hidden from Best Of page', 'success', 2000))
-          setHideGameConfirm(false)
-        } else {
-          setNotice(noticeFor('Failed to hide game', 'warn', 3000))
-        }
-      } catch (error) {
-        console.error('Failed to hide game:', error)
-        setNotice(noticeFor('Failed to hide game', 'warn', 3000))
       }
     }
 

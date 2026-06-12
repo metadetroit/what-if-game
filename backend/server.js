@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const { initDatabase, getDb, saveDatabase } = require('./database');
 
 const app = express();
 
@@ -13,6 +14,117 @@ app.use(express.json());
 // Health check endpoint for Render.com
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'what-if-game-backend', players: Object.values(games).reduce((acc, g) => acc + g.players.length, 0) });
+});
+
+// API: Get best of content
+app.get('/api/best-of', (req, res) => {
+  const db = getDb();
+  const limit = parseInt(req.query.limit) || 20;
+  const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
+
+  let results = [];
+
+  if (!type || type === 'questions') {
+    const questions = db.exec(`
+      SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, g.anonymous_mode
+      FROM questions q
+      JOIN games g ON q.game_id = g.id
+      WHERE g.hidden_from_best_of = 0
+      ORDER BY q.vote_count DESC
+      LIMIT ?
+    `, [limit]);
+    
+    if (questions.length > 0) {
+      questions[0].values.forEach(row => {
+        results.push({
+          type: 'question',
+          id: row[0],
+          content: row[1],
+          author: row[3] ? row[2] : 'Anonymous',
+          vote_count: row[3],
+          game_date: row[4]
+        });
+      });
+    }
+  }
+
+  if (!type || type === 'answers') {
+    const answers = db.exec(`
+      SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, g.anonymous_mode
+      FROM answers a
+      JOIN games g ON a.game_id = g.id
+      WHERE g.hidden_from_best_of = 0
+      ORDER BY a.vote_count DESC
+      LIMIT ?
+    `, [limit]);
+    
+    if (answers.length > 0) {
+      answers[0].values.forEach(row => {
+        results.push({
+          type: 'answer',
+          id: row[0],
+          content: row[1],
+          author: row[3] ? row[2] : 'Anonymous',
+          vote_count: row[3],
+          game_date: row[4]
+        });
+      });
+    }
+  }
+
+  if (!type || type === 'qa_pairs') {
+    const pairs = db.exec(`
+      SELECT qp.id, q.text as question_text, a.text as answer_text, 
+             q.author_name as question_author, a.author_name as answer_author,
+             qp.vote_count, g.created_at, g.anonymous_mode
+      FROM qa_pairs qp
+      JOIN questions q ON qp.question_id = q.id
+      JOIN answers a ON qp.answer_id = a.id
+      JOIN games g ON qp.game_id = g.id
+      WHERE g.hidden_from_best_of = 0
+      ORDER BY qp.vote_count DESC
+      LIMIT ?
+    `, [limit]);
+    
+    if (pairs.length > 0) {
+      pairs[0].values.forEach(row => {
+        results.push({
+          type: 'qa_pair',
+          id: row[0],
+          question: row[1],
+          answer: row[2],
+          question_author: row[7] ? row[3] : 'Anonymous',
+          answer_author: row[7] ? row[4] : 'Anonymous',
+          vote_count: row[5],
+          game_date: row[6]
+        });
+      });
+    }
+  }
+
+  // Sort by vote count if mixed types
+  if (!type) {
+    results.sort((a, b) => b.vote_count - a.vote_count);
+    results = results.slice(0, limit);
+  }
+
+  res.json(results);
+});
+
+// API: Hide game from best of page
+app.post('/api/hide-game', (req, res) => {
+  const { roomCode } = req.body;
+  
+  if (!roomCode) {
+    return res.status(400).json({ success: false, error: 'roomCode required' });
+  }
+
+  const db = getDb();
+  const result = db.exec("UPDATE games SET hidden_from_best_of = 1 WHERE room_code = ?", [roomCode]);
+  
+  saveDatabase();
+  
+  res.json({ success: true });
 });
 
 const server = http.createServer(app);
@@ -172,6 +284,13 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
     socket.roomCode = roomCode;
     
+    // Save game to database
+    const db = getDb();
+    db.run("INSERT INTO games (room_code, anonymous_mode, hidden_from_best_of) VALUES (?, ?, ?)", [roomCode, 0, 0]);
+    const gameId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    game.dbGameId = gameId;
+    saveDatabase();
+    
     callback({ success: true, roomCode });
     console.log(`Room ${roomCode} created by ${playerName}`);
     
@@ -241,10 +360,16 @@ io.on('connection', (socket) => {
   socket.on('toggle-anonymous', () => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
-    
+
     if (!game || game.host !== socket.id || game.phase !== 'lobby') return;
-    
+
     game.anonymousMode = !game.anonymousMode;
+
+    // Save to database
+    const db = getDb();
+    db.run("UPDATE games SET anonymous_mode = ? WHERE id = ?", [game.anonymousMode ? 1 : 0, game.dbGameId]);
+    saveDatabase();
+
     // Only tell the host about the toggle state - other players don't know
     socket.emit('anonymous-toggled', { anonymousMode: game.anonymousMode });
     console.log(`Room ${roomCode}: Anonymous mode ${game.anonymousMode ? 'ON' : 'OFF'}`);
@@ -263,6 +388,14 @@ io.on('connection', (socket) => {
       authorId: socket.id,
       authorName: player?.name || 'Unknown'
     };
+
+    // Save question to database
+    const db = getDb();
+    db.run("INSERT INTO questions (game_id, text, author_id, author_name, vote_count) VALUES (?, ?, ?, ?, ?)", 
+      [game.dbGameId, question, socket.id, player?.name || 'Unknown', 0]);
+    const questionId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    game.questions[socket.id].dbId = questionId;
+    saveDatabase();
 
     // Track first submitter
     if (!game.firstQuestionSubmitter) {
@@ -467,6 +600,14 @@ io.on('connection', (socket) => {
       authorName: player.name || 'Unknown'
     };
 
+    // Save answer to database
+    const db = getDb();
+    db.run("INSERT INTO answers (game_id, text, author_id, author_name, vote_count) VALUES (?, ?, ?, ?, ?)", 
+      [game.dbGameId, answer, socket.id, player.name || 'Unknown', 0]);
+    const answerId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    game.answers[socket.id].dbId = answerId;
+    saveDatabase();
+
     // Track first submitter
     if (!game.firstAnswerSubmitter) {
       game.firstAnswerSubmitter = player.name || 'Unknown';
@@ -519,13 +660,22 @@ io.on('connection', (socket) => {
           if (qAuthor === 'Unknown' || aAuthor === 'Unknown') {
             console.log(`[buildGameSummary] Missing name for turn ${turn.turnIndex}: qAuthor=${turn.questionAuthor} (id=${turn.questionAuthorId}), aAuthor=${turn.actualAnswerAuthor} (id=${turn.actualAnswerAuthorId})`);
           }
+
+          // Find corresponding database IDs
+          const questionData = Object.values(game.questions).find(q => q.text === turn.question);
+          const answerData = Object.values(game.answers).find(a => a.text === turn.actualAnswer);
+          const pairData = game.cardPairs?.find(p => p.question?.text === turn.question && p.answer?.text === turn.actualAnswer);
+
           pairs.push({
             question: turn.question || 'Unknown question',
             questionAuthorName: isAnonymous ? '???' : qAuthor,
+            questionDbId: questionData?.dbId || null,
             actualAnswer: turn.actualAnswer || 'Unknown answer',
             actualAnswerAuthorName: isAnonymous ? '???' : aAuthor,
+            actualAnswerDbId: answerData?.dbId || null,
             pairedAnswer: answerTurn ? answerTurn.pairedAnswer : null,
             pairedAnswerAuthorName: answerTurn ? (isAnonymous ? '???' : pAuthor) : null,
+            pairDbId: pairData?.dbId || null,
             anonymousMode: isAnonymous
           });
         }
@@ -539,10 +689,13 @@ io.on('connection', (socket) => {
     return game.cardPairs.map(pair => ({
       question: pair.question?.text || 'Unknown question',
       questionAuthorName: isAnonymous ? '???' : (pair.question?.authorName || 'Unknown'),
+      questionDbId: pair.question?.dbId || null,
       actualAnswer: pair.answer?.text || 'Unknown answer',
       actualAnswerAuthorName: isAnonymous ? '???' : (pair.answer?.authorName || 'Unknown'),
+      actualAnswerDbId: pair.answer?.dbId || null,
       pairedAnswer: null,
       pairedAnswerAuthorName: null,
+      pairDbId: pair.dbId || null,
       anonymousMode: isAnonymous
     }));
   }
@@ -577,6 +730,18 @@ io.on('connection', (socket) => {
         playerName: answerData.authorName
       });
     }
+
+    // Save Q&A pairs to database
+    const db = getDb();
+    for (const pair of game.cardPairs) {
+      if (pair.question.dbId && pair.answer.dbId) {
+        db.run("INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count) VALUES (?, ?, ?, ?)",
+          [game.dbGameId, pair.question.dbId, pair.answer.dbId, 0]);
+        const pairId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+        pair.dbId = pairId;
+      }
+    }
+    saveDatabase();
     
     // Shuffle the cards for final distribution — totally random, anyone can get any card
     game.shuffledCards = shuffleArray([...game.cardPairs]);
@@ -730,6 +895,8 @@ io.on('connection', (socket) => {
       answerReader: { id: answerReaderId, name: answerReaderName },
       question: question,
       answer: answer,
+      questionDbId: isQuestionTurn ? cardForQuestion.question?.dbId : null,
+      answerDbId: isQuestionTurn ? cardForQuestion.answer?.dbId : (cardForAnswer.answer?.dbId || null),
       round: game.currentReaderIndex + 1,
       total: totalTurns,
       isQuestionTurn: isQuestionTurn
@@ -763,6 +930,61 @@ io.on('connection', (socket) => {
     
     game.currentReaderIndex++;
     startNextReading(roomCode);
+  });
+
+  // Player submits a vote (non-blocking during performance phase)
+  socket.on('submit-vote', ({ type, targetId }) => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+
+    if (!game) return;
+
+    const db = getDb();
+
+    // Check if player already voted for this item
+    const existingVote = db.exec(
+      "SELECT id FROM votes WHERE game_id = ? AND player_id = ? AND vote_type = ? AND target_id = ?",
+      [game.dbGameId, socket.id, type, targetId]
+    );
+
+    if (existingVote.length > 0 && existingVote[0].values.length > 0) {
+      // Already voted, just acknowledge
+      socket.emit('vote-submitted', { success: false, message: 'Already voted' });
+      return;
+    }
+
+    // Insert vote
+    db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)",
+      [game.dbGameId, socket.id, type, targetId]);
+
+    // Update vote count on target
+    if (type === 'question') {
+      db.run("UPDATE questions SET vote_count = vote_count + 1 WHERE id = ?", [targetId]);
+    } else if (type === 'answer') {
+      db.run("UPDATE answers SET vote_count = vote_count + 1 WHERE id = ?", [targetId]);
+    } else if (type === 'qa_pair') {
+      db.run("UPDATE qa_pairs SET vote_count = vote_count + 1 WHERE id = ?", [targetId]);
+    }
+
+    saveDatabase();
+
+    // Get updated vote count
+    let voteCount = 0;
+    if (type === 'question') {
+      const result = db.exec("SELECT vote_count FROM questions WHERE id = ?", [targetId]);
+      if (result.length > 0) voteCount = result[0].values[0][0];
+    } else if (type === 'answer') {
+      const result = db.exec("SELECT vote_count FROM answers WHERE id = ?", [targetId]);
+      if (result.length > 0) voteCount = result[0].values[0][0];
+    } else if (type === 'qa_pair') {
+      const result = db.exec("SELECT vote_count FROM qa_pairs WHERE id = ?", [targetId]);
+      if (result.length > 0) voteCount = result[0].values[0][0];
+    }
+
+    socket.emit('vote-submitted', { success: true, voteCount });
+
+    // Broadcast vote update to all players
+    io.to(roomCode).emit('vote-update', { type, targetId, voteCount });
   });
 
   // Host replays game with same players
@@ -1442,6 +1664,15 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+// Initialize database and start server
+async function startServer() {
+  await initDatabase();
+  console.log('Database initialized');
+  
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+startServer();
