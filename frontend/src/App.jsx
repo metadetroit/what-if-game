@@ -47,7 +47,6 @@ function App() {
   const [userVotes, setUserVotes] = useState({}) // Track user's votes: { questionId: true, answerId: true, pairId: true }
   const [summaryVotes, setSummaryVotes] = useState({}) // Track votes on summary page: { questionId: count, answerId: count, pairId: count }
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
-  const [bestOfTab, setBestOfTab] = useState('all') // Tab for best of page: 'all', 'questions', 'answers', 'qa_pairs'
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
 
   // Refs survive remounts/state-update batches
@@ -67,9 +66,9 @@ function App() {
     return () => clearTimeout(t)
   }, [notice])
 
-  const fetchBestOfData = async (type = 'all') => {
+  const fetchBestOfData = async () => {
     try {
-      const url = `${SOCKET_URL}/api/best-of?type=${type}&limit=20`
+      const url = `${SOCKET_URL}/api/best-of?type=qa_pairs&limit=20`
       const response = await fetch(url)
       const data = await response.json()
       setBestOfData(data)
@@ -639,25 +638,9 @@ function App() {
                 <span className="text-xl">🏆</span>
               </div>
               <h1 className="text-xl font-extrabold text-gradient mb-1">Best Of</h1>
-              <p className="text-gray-500 text-[10px] mt-1">Top-voted content from all games</p>
+              <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
             </div>
             <div className="card py-3">
-              {/* Tabs */}
-              <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                {['all', 'questions', 'answers', 'qa_pairs'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => { setBestOfTab(tab); fetchBestOfData(tab) }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                      bestOfTab === tab
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    {tab === 'all' ? 'All' : tab === 'questions' ? 'Questions' : tab === 'answers' ? 'Answers' : 'Q&A Pairs'}
-                  </button>
-                ))}
-              </div>
               {/* Content */}
               {bestOfData === null ? (
                 <div className="text-center py-8">
@@ -671,30 +654,10 @@ function App() {
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {bestOfData.map((item, i) => (
                     <div key={i} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
-                      {item.type === 'question' && (
-                        <>
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-bold text-indigo-400">Question</span>
-                            <span className="text-xs text-gray-400">👍 {item.vote_count}</span>
-                          </div>
-                          <p className="text-sm text-white mb-2">{item.content}</p>
-                          <p className="text-[10px] text-gray-500">— {item.author}</p>
-                        </>
-                      )}
-                      {item.type === 'answer' && (
-                        <>
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-bold text-purple-400">Answer</span>
-                            <span className="text-xs text-gray-400">👍 {item.vote_count}</span>
-                          </div>
-                          <p className="text-sm text-white mb-2">{item.content}</p>
-                          <p className="text-[10px] text-gray-500">— {item.author}</p>
-                        </>
-                      )}
                       {item.type === 'qa_pair' && (
                         <>
                           <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-bold text-green-400">Q&A Pair</span>
+                            <span className="text-xs font-bold text-amber-400">🎯 GAME PAIRING</span>
                             <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
                           </div>
                           <p className="text-sm text-white mb-1"><span className="text-indigo-400">Q:</span> {item.question}</p>
@@ -765,7 +728,7 @@ function App() {
                 <button onClick={() => setGameState("help")} className="text-[10px] text-indigo-400 hover:text-indigo-300 underline">
                   How to Play
                 </button>
-                <button onClick={() => { setGameState("best-of"); fetchBestOfData('all') }} className="text-[10px] text-yellow-400 hover:text-yellow-300 underline">
+                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="text-[10px] text-yellow-400 hover:text-yellow-300 underline">
                   View Best Of
                 </button>
               </div>
@@ -1142,13 +1105,11 @@ function App() {
               <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-xl">
                 <span className="text-3xl">🎉</span>
               </div>
-              <h2 className="text-3xl font-black text-white mb-1">Game Over!</h2>
-              <p className="text-gray-400 text-sm">Thanks for playing!</p>
+              <h2 className="text-3xl font-black text-white mb-1">ROUND OVER. VOTE FOR THE BEST PAIRING.</h2>
             </div>
 
             {gameSummary && gameSummary.length > 0 && (
               <div className="card mb-3 py-3 px-3 flex-1 min-h-0 overflow-y-auto">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 text-center">Round Over. Vote for the best pairing.</p>
                 <div className="space-y-4">
                   {gameSummary.map((pair, i) => (
                     <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
@@ -1207,25 +1168,23 @@ function App() {
                         </div>
                       </div>
                       {/* Best Pair vote button - moved to side */}
-                      {pair.pairDbId && (
-                        <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-amber-400 text-sm font-bold">🎯 GAME PAIRING</span>
-                            <span className="text-[10px] text-gray-400">Vote for this combination</span>
-                          </div>
-                          <button
-                            onClick={() => handleVote('qa_pair', pair.pairDbId)}
-                            className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold ${
-                              userVotes[pair.pairDbId]
-                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
-                                : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
-                            }`}
-                            title="Vote for best game pairing"
-                          >
-                            👍 {summaryVotes[pair.pairDbId] || 0}
-                          </button>
+                      <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-400 text-sm font-bold">🎯 GAME PAIRING</span>
+                          <span className="text-[10px] text-gray-400">Vote for this combination</span>
                         </div>
-                      )}
+                        <button
+                          onClick={() => handleVote('qa_pair', pair.pairDbId || i)}
+                          className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold ${
+                            userVotes[pair.pairDbId || i]
+                              ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
+                              : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
+                            }`}
+                          title="Vote for best game pairing"
+                        >
+                          👍 {summaryVotes[pair.pairDbId || i] || 0}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
