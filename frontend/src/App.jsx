@@ -752,7 +752,7 @@ function App() {
               <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" className="input-field py-2 text-lg" maxLength={20} />
               <div className="space-y-2">
                 <label className="text-sm text-indigo-400 font-semibold uppercase tracking-wider">Room Code</label>
-                <input type="text" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="1234" className="input-field py-3 text-2xl font-bold text-center tracking-[0.2em]" maxLength={4} />
+                <input type="text" inputMode="numeric" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="1234" className="input-field py-3 text-2xl font-bold text-center tracking-[0.2em]" maxLength={4} />
               </div>
               <div className="flex gap-3">
                 <button onClick={joinRoom} className="btn-primary py-3 px-5 text-lg whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join Game" : "..."}</button>
