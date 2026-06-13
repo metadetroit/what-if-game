@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { io } from "socket.io-client"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
@@ -54,6 +54,7 @@ function App() {
   const roomCodeRef = useRef("")
   const gameStateRef = useRef("welcome")
   const socketRef = useRef(null)
+  const lastSubmitterTimerRef = useRef(null)
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
@@ -308,10 +309,7 @@ function App() {
       const carried = data && data.lastQuestionSubmitter ? data.lastQuestionSubmitter : null
       if (carried) {
         setLastQuestionSubmitter(carried)
-        // Start the 10s timer for the indicator (affects only the affected player's banner; badge is visible to all in status list)
-        setTimeout(() => {
-          setShowLastSubmitterIndicator(true)
-        }, 10000)
+        setShowLastSubmitterIndicator(false)
       }
     })
 
@@ -624,6 +622,21 @@ function App() {
     setSummaryVotes({})
   }, [socket])
 
+  useEffect(() => {
+    return () => {
+      if (lastSubmitterTimerRef.current) {
+        clearTimeout(lastSubmitterTimerRef.current)
+        lastSubmitterTimerRef.current = null
+      }
+    }
+  }, [])
+
+  const fastestTyper = useMemo(() => {
+    if (!gameAwards.firstQuestionSubmitter || !gameAwards.firstAnswerSubmitter) return null
+    if (gameAwards.firstQuestionSubmitter !== gameAwards.firstAnswerSubmitter) return null
+    return gameAwards.firstQuestionSubmitter
+  }, [gameAwards.firstQuestionSubmitter, gameAwards.firstAnswerSubmitter])
+
   const renderContent = () => {
     switch (gameState) {
       case "reconnect-failed":
@@ -883,12 +896,6 @@ function App() {
                     <p className="text-xs font-bold text-purple-300">🔒 This round is anonymized!</p>
                   </div>
                 )}
-                {showLastSubmitterIndicator && lastQuestionSubmitter && playerName === lastQuestionSubmitter && (
-                  <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700 rounded-lg text-center">
-                    <span className="text-lg mr-1">⏰</span>
-                    <span className="text-xs text-yellow-300">You were last to submit your question - don't be the last this time!</span>
-                  </div>
-                )}
                 <div className="text-center mb-1">
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
                   <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
@@ -999,8 +1006,8 @@ function App() {
                           {firstSubmitter && p.name === firstSubmitter && (
                             <span className="text-lg" title="First to submit!">🏆</span>
                           )}
-                          {lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
-                            <span className="text-lg" title="You were last to submit your question - don't be the last this time!">⏰</span>
+                          {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
+                            <span className="text-lg" title="Last question submitter warning active">⏰</span>
                           )}
                           <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
                         </div>
@@ -1133,7 +1140,7 @@ function App() {
 
       case "ended":
         return (
-          <div className="game-container py-2">
+          <div className="game-container game-container--summary py-4">
             {hideGameConfirm && (
               <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
@@ -1146,108 +1153,140 @@ function App() {
                 </div>
               </div>
             )}
-            <div className="text-center mb-2">
-              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-2xl">🎉</span>
+            <div className="summary-header card">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Round Complete</p>
+                <h2 className="text-2xl font-black text-white leading-tight">Vote for tonight's sharpest pairing</h2>
+                <p className="text-sm text-gray-400">Scroll through the performances, tap your favorite combo, and crown the champions.</p>
               </div>
-              <h2 className="text-base font-bold text-white mb-0">Round over. Vote for the best pairing.</h2>
+              <div className="summary-header__meta">
+                <div>
+                  <p className="summary-pill">Players</p>
+                  <p className="text-lg font-bold text-white">{players.length}</p>
+                </div>
+                <div>
+                  <p className="summary-pill">Anonymous Mode</p>
+                  <p className={"text-lg font-bold " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "ON" : "OFF"}</p>
+                </div>
+              </div>
             </div>
 
-            {gameSummary && gameSummary.length > 0 && (
-              <div className="card mb-2 py-3 px-3 flex-1 min-h-0 overflow-y-auto">
-                <div className="space-y-3">
-                  {gameSummary.map((pair, i) => (
-                    <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
-                      <div className="p-3 space-y-3">
-                        {/* Game pairing with thumbs up */}
-                        <div className="flex items-start gap-2">
-                          <span className="text-2xl flex-shrink-0">👍</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-amber-400 mb-1">Vote for this pairing:</p>
-                            <p className="text-sm text-white leading-relaxed break-words">
-                              "{pair.question}" + "{pair.pairedAnswer || 'No game answer'}"
-                            </p>
-                            {(pair.questionAuthorName || pair.pairedAnswerAuthorName) && (
-                              <p className="text-[10px] text-gray-400 mt-0.5">— {anonymousMode ? '???' : (pair.questionAuthorName || 'Unknown')} + {anonymousMode ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Actual Answer */}
-                        <div className="border-t border-gray-700/50 pt-3">
-                          <p className="text-xs font-bold text-green-400 mb-1">Actual Answer:</p>
-                          <p className="text-sm text-white leading-relaxed break-words">{pair.actualAnswer}</p>
-                          {pair.actualAnswerAuthorName && (
-                            <p className="text-[10px] text-gray-400 mt-0.5">— {anonymousMode ? '???' : pair.actualAnswerAuthorName}</p>
-                          )}
-                        </div>
-                      </div>
-                      {/* Vote button */}
-                      <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50">
-                        {pair.pairDbId ? (
-                          <button
-                            onClick={() => handleVote('qa_pair', pair.pairDbId)}
-                            className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold w-full ${
-                              userVotes[pair.pairDbId]
-                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
-                                : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
-                              }`}
-                            title="Vote for best game pairing"
-                          >
-                            👍 Vote ({summaryVotes[pair.pairDbId] || 0})
-                          </button>
-                        ) : (
-                          <div className="text-xs text-gray-500 text-center py-1">Voting unavailable for this pairing</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+            {fastestTyper && (
+              <div className="summary-fastest card">
+                <div className="summary-fastest__icon">🏆</div>
+                <div>
+                  <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
+                  <p className="text-xl font-extrabold text-white">{fastestTyper}</p>
+                  <p className="text-xs text-amber-100/70">Crushed both the question and answer timers.</p>
                 </div>
+                <div className="summary-fastest__badge">Fastest Typer!</div>
               </div>
             )}
 
+            <div className="summary-scroll">
+              {gameSummary && gameSummary.length > 0 ? (
+                <div className="summary-grid">
+                  {gameSummary.map((pair, i) => {
+                    const questionAuthor = anonymousMode ? '???' : (pair.questionAuthorName || 'Unknown')
+                    const pairedAuthor = anonymousMode ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')
+                    const actualAuthor = anonymousMode ? '???' : (pair.actualAnswerAuthorName || 'Unknown')
+                    const pairKey = pair.pairDbId || `${pair.question}-${i}`
+                    const voteCount = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
+                    const hasPairId = Boolean(pair.pairDbId)
+                    const userVotedForPair = hasPairId ? Boolean(userVotes[pair.pairDbId]) : false
+
+                    return (
+                      <article key={pairKey} className="summary-card">
+                        <div className="summary-card__body">
+                          <div className="summary-pill summary-pill--accent">
+                            <span className="text-xs font-semibold tracking-widest">Game Pairing</span>
+                          </div>
+                          <p className="summary-question">{pair.question}</p>
+                          <div className="summary-paired">
+                            <p className="summary-paired__label">Performed with</p>
+                            <p className="summary-paired__answer">{pair.pairedAnswer || 'No pairing was performed'}</p>
+                          </div>
+                          <div className="summary-authors">
+                            <span>Q by {questionAuthor}</span>
+                            {pair.pairedAnswer && <span>↗ Paired by {pairedAuthor}</span>}
+                          </div>
+                        </div>
+
+                        <div className="summary-actual">
+                          <p className="summary-actual__label">Actual Answer</p>
+                          <p className="summary-actual__text">{pair.actualAnswer}</p>
+                          {pair.actualAnswerAuthorName && (
+                            <p className="summary-actual__author">— {actualAuthor}</p>
+                          )}
+                        </div>
+
+                        <div className="summary-card__footer">
+                          <div className="summary-vote-meta">
+                            <span className="text-gray-400 text-xs uppercase tracking-widest">Live Votes</span>
+                            <p className="text-2xl font-black text-amber-300">{voteCount}</p>
+                          </div>
+                          {hasPairId ? (
+                            <button
+                              onClick={() => handleVote('qa_pair', pair.pairDbId)}
+                              className={`summary-vote-btn ${userVotedForPair ? 'summary-vote-btn--active' : ''}`}
+                              title="Vote for best game pairing"
+                              disabled={userVotedForPair}
+                            >
+                              {userVotedForPair ? 'Voted' : 'Vote for this pairing'}
+                            </button>
+                          ) : (
+                            <button disabled className="summary-vote-btn summary-vote-btn--disabled">Voting unavailable</button>
+                          )}
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="card text-center py-6">
+                  <p className="text-sm text-gray-400">No pairings available. Finish a round to unlock voting.</p>
+                </div>
+              )}
+            </div>
+
             {isHost ? (
-              <div className="space-y-1.5">
-                <div className="flex gap-2">
-                  <div className="flex-1 card py-1.5 px-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[10px] text-white font-medium leading-tight">Anonymous</p>
-                      </div>
-                      <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
-                        <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
-                      </button>
+              <div className="summary-actions">
+                <div className="summary-actions__toggles">
+                  <div className="summary-toggle card">
+                    <div>
+                      <p className="text-xs text-white font-semibold">Anonymous Results</p>
+                      <p className="text-[11px] text-gray-400">Hide names in summary + Best Of.</p>
                     </div>
+                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}> 
+                      <span />
+                    </button>
                   </div>
-                  <div className="flex-1 card py-1.5 px-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[10px] text-white font-medium leading-tight">No Self-Read</p>
-                      </div>
-                      <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
-                        <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
-                      </button>
+                  <div className="summary-toggle card">
+                    <div>
+                      <p className="text-xs text-white font-semibold">No Self-Reading</p>
+                      <p className="text-[11px] text-gray-400">Keep performances anonymous next round.</p>
                     </div>
+                    <button onClick={() => setNoSelfReading(!noSelfReading)} className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
+                      <span />
+                    </button>
                   </div>
-                  <button onClick={() => socketRef.current?.emit("replay-game", { noSelfReading })} className="btn-primary py-1.5 text-[10px] px-2 flex-shrink-0">
-                    🔄 Replay
+                  <button onClick={() => socketRef.current?.emit("replay-game", { noSelfReading })} className="summary-quick-btn">
+                    🔄 Replay with same crew
                   </button>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={disbandGame} className="btn-secondary py-2 text-xs flex-1">
+                <div className="summary-actions__cta">
+                  <button onClick={disbandGame} className="btn-secondary py-3 text-sm">
                     🏠 New game
                   </button>
-                  <button onClick={() => setHideGameConfirm(true)} className="py-2 text-[10px] text-red-500 border border-red-800 rounded-lg flex-1 hover:bg-red-900/20 transition-colors">
-                    🚫 Hide
+                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
+                    🚫 Hide from Best Of
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="py-2">
-                  <span className="text-sm text-indigo-400 animate-pulse">Waiting for host...</span>
-                </div>
-                <button onClick={resetGame} className="btn-secondary py-2 text-sm w-full">
+              <div className="summary-guest">
+                <p className="text-sm text-indigo-300">Waiting for the host to set up the next round…</p>
+                <button onClick={resetGame} className="btn-secondary py-3 text-sm">
                   🚪 Leave game
                 </button>
               </div>
