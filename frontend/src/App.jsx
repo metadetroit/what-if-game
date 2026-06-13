@@ -864,11 +864,10 @@ function App() {
     return `${remaining} players are still finishing up.`
   }
 
-  const getWaitingTip = (phase) => {
+  const getWaitingTip = () => {
     const remaining = Math.max((progress.total || 0) - (progress.submitted || 0), 0)
     if (remaining <= 0) return 'The next phase should start any second.'
-    if (phase === 'writing') return 'While you wait, start thinking of the weirdest answer you can give.'
-    return 'While you wait, get ready to perform it with maximum drama.'
+    return ''
   }
 
   const renderWaitingPanel = (phase) => (
@@ -880,7 +879,7 @@ function App() {
         </div>
         <span className="waiting-panel__count">{progress.submitted}/{progress.total}</span>
       </div>
-      <p className="waiting-panel__tip">{getWaitingTip(phase)}</p>
+      {getWaitingTip() && (<p className="waiting-panel__tip">{getWaitingTip()}</p>)}
       {playerStatuses.length > 0 && (
         <div className="waiting-panel__players">
           {playerStatuses.map((p, i) => (
