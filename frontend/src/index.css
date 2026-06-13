@@ -48,7 +48,13 @@
   }
   
   .game-container {
-    @apply h-[100dvh] w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
+    @apply min-h-[100dvh] h-[100dvh] w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
+  }
+
+  @media (min-width: 768px) {
+    .game-container {
+      @apply min-h-screen h-screen;
+    }
   }
   
   .text-gradient {
