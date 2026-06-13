@@ -59,7 +59,7 @@
   }
   
   .game-container {
-    @apply w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
+    @apply w-full max-w-md mx-auto px-3 py-2 pb-4 flex flex-col overflow-hidden;
     /* Explicit safe-area-aware height — not derived from % chain, can't be overridden by py-* utilities */
     height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
