@@ -6,6 +6,16 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  html {
+    height: 100%;
+  }
+
+  #root {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
   
   body {
     @apply bg-gray-950 text-white font-sans;
@@ -48,7 +58,9 @@
   }
   
   .game-container {
-    @apply min-h-[100dvh] h-[100dvh] w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
+    @apply min-h-[100dvh] h-[100dvh] w-full max-w-md mx-auto px-3 flex flex-col overflow-hidden;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
 
   .game-container--scroll {
