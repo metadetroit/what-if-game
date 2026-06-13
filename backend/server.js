@@ -377,12 +377,31 @@ io.on('connection', (socket) => {
 
   // Player submits question
   socket.on('submit-question', (question) => {
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      // Filter out the socket's own room (which is always the socket.id)
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+        console.log('submit-question: using fallback roomCode from socket.rooms:', roomCode);
+      }
+    }
+    console.log('submit-question received:', { socketId: socket.id, roomCode, question });
     const game = games[roomCode];
 
-    if (!game || game.phase !== 'writing') return;
+    if (!game) {
+      console.log('submit-question rejected: game not found for roomCode:', roomCode);
+      return;
+    }
+    if (game.phase !== 'writing') {
+      console.log('submit-question rejected: game phase is not writing:', game.phase);
+      return;
+    }
 
     const player = game.players.find(p => p.id === socket.id);
+    console.log('submit-question: player found:', !!player, 'player name:', player?.name);
     game.questions[socket.id] = {
       text: question,
       authorId: socket.id,
@@ -406,6 +425,7 @@ io.on('connection', (socket) => {
     game.lastQuestionSubmitter = player?.name || 'Unknown';
 
     socket.emit('question-submitted');
+    console.log('question-submitted emitted to socket:', socket.id);
 
     // CRITICAL FIX: Check if all ACTIVE players submitted (not including disconnected)
     const activePlayers = game.players.filter(p => p.isActive);
@@ -418,6 +438,7 @@ io.on('connection', (socket) => {
       distributeQuestions(roomCode);
     } else {
       // Only count active players in progress
+      console.log('Emitting progress-update to room:', roomCode);
       io.to(roomCode).emit('progress-update', {
         submitted: Object.keys(game.questions).length,
         total: activePlayers.length,
@@ -562,9 +583,18 @@ io.on('connection', (socket) => {
 
   // Player submits answer
   socket.on('submit-answer', (answer) => {
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+        console.log('submit-answer: using fallback roomCode from socket.rooms:', roomCode);
+      }
+    }
     const game = games[roomCode];
-    
+
     if (!game || game.phase !== 'answering') {
       console.log(`Submit-answer rejected: game=${!!game}, phase=${game?.phase}`);
       return;
@@ -905,9 +935,17 @@ io.on('connection', (socket) => {
 
   // Player confirms they finished reading
   socket.on('reading-complete', () => {
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+      }
+    }
     const game = games[roomCode];
-    
+
     if (!game || game.phase !== 'performing') return;
     
     // CRITICAL FIX: Use stable playerOrder for reader validation
@@ -934,8 +972,16 @@ io.on('connection', (socket) => {
 
   // Player submits a vote (non-blocking during performance phase)
   socket.on('submit-vote', ({ type, targetId }) => {
-    console.log('submit-vote received:', { type, targetId, socketId: socket.id, roomCode: socket.roomCode })
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+      }
+    }
+    console.log('submit-vote received:', { type, targetId, socketId: socket.id, roomCode })
     const game = games[roomCode];
 
     if (!game) {
@@ -1047,7 +1093,15 @@ io.on('connection', (socket) => {
 
   // Host force-advances the game (skipping players who haven't submitted)
   socket.on('force-progress', () => {
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+      }
+    }
     const game = games[roomCode];
     if (!game || game.host !== socket.id) return;
 
@@ -1112,7 +1166,15 @@ io.on('connection', (socket) => {
 
   // Host immediately removes a disconnected/AFK player without waiting for grace
   socket.on('host-kick-player', ({ playerId }) => {
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+      }
+    }
     const game = games[roomCode];
     if (!game || game.host !== socket.id) return;
     if (!playerId || playerId === socket.id) {
@@ -1183,7 +1245,15 @@ io.on('connection', (socket) => {
 
   // Host disbands room and sends everyone to welcome screen
   socket.on('disband-room', () => {
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+      }
+    }
     const game = games[roomCode];
     if (!game || game.host !== socket.id) return;
 
@@ -1207,7 +1277,15 @@ io.on('connection', (socket) => {
 
   // Player leaves room voluntarily (Play Again)
   socket.on('leave-room', () => {
-    const roomCode = socket.roomCode;
+    let roomCode = socket.roomCode;
+    // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) {
+        roomCode = gameRoom;
+      }
+    }
     if (roomCode && games[roomCode]) {
       const game = games[roomCode];
       const wasHost = game.host === socket.id;
@@ -1377,7 +1455,9 @@ io.on('connection', (socket) => {
     }
     
     socket.join(roomCode);
+    // Ensure socket.roomCode is set after joining the room
     socket.roomCode = roomCode;
+    console.log(`Reconnection: socket joined room ${roomCode}, socket.id: ${socket.id}, socket.roomCode set to:`, socket.roomCode);
     
     // Build comprehensive reconnection state for frontend
     let assignedQuestion = null;
