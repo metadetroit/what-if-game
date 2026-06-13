@@ -293,15 +293,6 @@ function App() {
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
 
-    // iOS Safari scrolls the document when an input is focused, then leaves the
-    // scroll position stuck after the keyboard closes — hiding the top of the UI.
-    // Resetting on focusout keeps the document anchored at position 0.
-    const handleFocusOut = () => {
-      if (window.scrollY !== 0) window.scrollTo(0, 0)
-      if (document.documentElement.scrollTop !== 0) document.documentElement.scrollTop = 0
-    }
-    document.addEventListener("focusout", handleFocusOut)
-
     // Page Visibility: detect phone wake-up / tab switch back.
     // If socket is connected, ask server whether we're still active.
     // If socket is not yet connected, just ensure the flag lets the next 'connect' fire reconnect-player.
@@ -655,7 +646,6 @@ function App() {
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
-      document.removeEventListener("focusout", handleFocusOut)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       newSocket.close()
     }

@@ -25,10 +25,6 @@
     height: 100dvh;
     overflow: hidden;
     overscroll-behavior: none;
-    /* Push content below device notch / status bar on iOS standalone */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    box-sizing: border-box;
   }
 
   @media (max-width: 640px) {
@@ -63,7 +59,10 @@
   }
   
   .game-container {
-    @apply min-h-full h-full w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
+    @apply w-full max-w-md mx-auto px-3 py-2 flex flex-col overflow-hidden;
+    /* Explicit safe-area-aware height — not derived from % chain, can't be overridden by py-* utilities */
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 
   .game-container--scroll {
@@ -72,7 +71,8 @@
 
   @media (min-width: 768px) {
     .game-container {
-      @apply h-full min-h-full;
+      height: 100vh;
+      min-height: 100vh;
     }
   }
   
