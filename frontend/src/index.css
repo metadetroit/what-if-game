@@ -282,11 +282,15 @@
   }
 
   .lobby-ready {
-    @apply mb-2 flex items-center justify-between rounded-2xl border border-amber-700/50 bg-amber-950/20 px-3 py-2;
+    @apply flex items-center gap-3 rounded-xl border border-amber-700/40 bg-amber-950/20 px-3 py-2 text-left;
   }
 
   .lobby-ready--ready {
-    @apply border-emerald-500/50 bg-emerald-950/20;
+    @apply border-emerald-500/40 bg-emerald-950/20;
+  }
+
+  .lobby-ready__icon {
+    @apply text-lg leading-none shrink-0;
   }
 
   .summary-actions {

@@ -1025,13 +1025,20 @@ function App() {
                 <div className="text-3xl font-black text-gradient tracking-[0.2em] cursor-pointer active:scale-95 transition-transform" onClick={() => { navigator.clipboard?.writeText(roomCode); setNotice(noticeFor('Room code copied', 'success', 1200)) }} title="Tap to copy">{roomCode}</div>
                 <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
               </div>
+              <div className={"lobby-ready mt-2 " + (players.length >= 3 ? "lobby-ready--ready" : "")}>
+                <span className="lobby-ready__icon">{players.length >= 3 ? "✅" : "⏳"}</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white leading-tight">{players.length >= 3 ? "Ready to start" : "Waiting for players"}</p>
+                  <p className="text-[10px] text-gray-400 leading-tight">{players.length >= 3 ? "The host can start whenever everyone is settled." : `Need ${3 - players.length} more player${3 - players.length === 1 ? "" : "s"} to begin.`}</p>
+                </div>
+              </div>
             </div>
-            <div className="card flex-1 min-h-0 py-2 px-2 mb-2">
+            <div className="card flex-1 min-h-0 py-2 px-2 mb-2 flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] text-gray-500 uppercase tracking-wider">Players</span>
                 <span className="text-[10px] text-gray-400">{players.length}/15</span>
               </div>
-              <div className="space-y-1 overflow-y-auto">
+              <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
                 {players.map((player, index) => (
                   <div key={player.id} className={"flex items-center gap-2 py-0.5 px-1.5 rounded-lg " + (player.id === socket?.id ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800")}>
                     <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">{index + 1}</div>
@@ -1043,13 +1050,6 @@ function App() {
                   </div>
                 ))}
               </div>
-            </div>
-            <div className={"lobby-ready " + (players.length >= 3 ? "lobby-ready--ready" : "")}>
-              <div>
-                <p className="text-xs font-bold text-white">{players.length >= 3 ? "Ready to start" : "Waiting for players"}</p>
-                <p className="text-[10px] text-gray-400">{players.length >= 3 ? "The host can start whenever everyone is settled." : `Need ${3 - players.length} more player${3 - players.length === 1 ? "" : "s"} to begin.`}</p>
-              </div>
-              <span>{players.length >= 3 ? "✅" : "⏳"}</span>
             </div>
             {isHost && (
               <div className="card mb-2 py-2 px-3">
