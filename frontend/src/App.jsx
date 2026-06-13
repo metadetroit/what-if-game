@@ -47,6 +47,7 @@ function App() {
   const [userVotes, setUserVotes] = useState({}) // Track user's votes: { questionId: true, answerId: true, pairId: true }
   const [summaryVotes, setSummaryVotes] = useState({}) // Track votes on summary page: { questionId: count, answerId: count, pairId: count }
   const [summaryPairVoteId, setSummaryPairVoteId] = useState(null)
+  const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
 
@@ -103,6 +104,16 @@ function App() {
       setNotice(noticeFor('Failed to hide game', 'warn', 3000))
     }
   }
+
+  const applySummaryData = useCallback((summary, fallbackAnon = false) => {
+    setGameSummary(summary)
+    if (Array.isArray(summary) && summary.length > 0) {
+      const derivedAnon = typeof summary[0].anonymousMode === 'boolean' ? summary[0].anonymousMode : fallbackAnon
+      setSummaryAnonymousMode(derivedAnon)
+    } else {
+      setSummaryAnonymousMode(fallbackAnon)
+    }
+  }, [])
 
   const handleVote = (type, targetId) => {
     console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id, roomCode: roomCodeRef.current, socketRoomCode: socketRef.current?.roomCode })
@@ -285,7 +296,7 @@ function App() {
 
     newSocket.on("game-ended", (data) => {
       setGameState("ended")
-      if (data.summary) { setGameSummary(data.summary) }
+      if (data.summary) { applySummaryData(data.summary, anonymousMode) }
       if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
         setGameAwards({
           firstQuestionSubmitter: data.firstQuestionSubmitter,
@@ -307,7 +318,7 @@ function App() {
       setHasRead(false)
       setProgress({ submitted: 0, total: 0 })
       setError("")
-      setGameSummary(null)
+      applySummaryData(null, false)
       setPlayerStatuses([])
       setForceConfirm(false)
       setShowLastSubmitterIndicator(false)
@@ -341,7 +352,7 @@ function App() {
       setCurrentTurn(null)
       setGameStats({ round: 0, total: 0 })
       setHasRead(false)
-      setGameSummary(null)
+      applySummaryData(null, false)
       setPlayerStatuses([])
       setForceConfirm(false)
       setError(data.message)
@@ -408,7 +419,7 @@ function App() {
       setCurrentTurn(null)
       setGameStats({ round: 0, total: 0 })
       setHasRead(false)
-      setGameSummary(null)
+      applySummaryData(null, false)
       setPlayerStatuses([])
       setForceConfirm(false)
       setKickConfirm(null)
@@ -470,7 +481,7 @@ function App() {
           setProgress({ submitted: data.progress.submitted, total: data.progress.total })
           if (data.progress.playerStatuses) setPlayerStatuses(data.progress.playerStatuses)
         }
-        if (data.summary) { setGameSummary(data.summary) }
+        if (data.summary) { applySummaryData(data.summary, typeof data.anonymousMode === "boolean" ? data.anonymousMode : anonymousMode) }
         if (data.currentTurn) { setCurrentTurn(data.currentTurn) }
         setNotice(noticeFor("Reconnected", "success", 2000))
       } else {
@@ -594,7 +605,7 @@ function App() {
     setCurrentTurn(null)
     setGameStats({ round: 0, total: 0 })
     setHasRead(false)
-    setGameSummary(null)
+    applySummaryData(null, false)
     setAnonymousMode(false)
     setReconnectInfo(null)
     setPlayerStatuses([])
@@ -626,7 +637,7 @@ function App() {
     setCurrentTurn(null)
     setGameStats({ round: 0, total: 0 })
     setHasRead(false)
-    setGameSummary(null)
+    applySummaryData(null, false)
     setAnonymousMode(false)
     setReconnectInfo(null)
     setPlayerStatuses([])
@@ -1179,11 +1190,17 @@ function App() {
               <div className="summary-header__meta">
                 <div>
                   <p className="summary-pill">Players</p>
-                  <p className="text-lg font-bold text-white">{players.length}</p>
+                  <p className="summary-meta-value">{players.length}</p>
                 </div>
                 <div>
-                  <p className="summary-pill">Anonymous Mode</p>
-                  <p className={"text-lg font-bold " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "ON" : "OFF"}</p>
+                  <p className="summary-pill">Finished Round</p>
+                  <p className={"summary-meta-value " + (summaryAnonymousMode ? "text-amber-300" : "text-emerald-300")}>{summaryAnonymousMode ? "Anonymous" : "Names shown"}</p>
+                  <p className="summary-meta-note">Captured when the round ended</p>
+                </div>
+                <div>
+                  <p className="summary-pill">Next Round Setting</p>
+                  <p className={"summary-meta-value " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "Anonymous" : "Names shown"}</p>
+                  <p className="summary-meta-note">Host toggle updates this for the upcoming game</p>
                 </div>
               </div>
             </div>
@@ -1204,9 +1221,10 @@ function App() {
               {gameSummary && gameSummary.length > 0 ? (
                 <div className="summary-grid">
                   {gameSummary.map((pair, i) => {
-                    const questionAuthor = anonymousMode ? '???' : (pair.questionAuthorName || 'Unknown')
-                    const pairedAuthor = anonymousMode ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')
-                    const actualAuthor = anonymousMode ? '???' : (pair.actualAnswerAuthorName || 'Unknown')
+                    const maskNames = typeof summaryAnonymousMode === 'boolean' ? summaryAnonymousMode : anonymousMode
+                    const questionAuthor = maskNames ? '???' : (pair.questionAuthorName || 'Unknown')
+                    const pairedAuthor = maskNames ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')
+                    const actualAuthor = maskNames ? '???' : (pair.actualAnswerAuthorName || 'Unknown')
                     const pairKey = pair.pairDbId || `${pair.question}-${i}`
                     const voteCount = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
                     const hasPairId = Boolean(pair.pairDbId)
@@ -1275,8 +1293,8 @@ function App() {
                 <div className="summary-actions__toggles">
                   <div className="summary-toggle card">
                     <div>
-                      <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                      <p className="text-[11px] text-gray-400">Hide names in summary + Best Of.</p>
+                      <p className="text-xs text-white font-semibold">Anonymous Results (next round)</p>
+                      <p className="text-[11px] text-gray-400">Toggling only affects future summaries + Best Of.</p>
                     </div>
                     <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}> 
                       <span />
@@ -1674,8 +1692,12 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 to-gray-900 relative">
       {notice && (
-        <div className={"fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-all " + (notice.tone === "success" ? "bg-green-900/90 border border-green-600 text-green-100" : notice.tone === "warn" ? "bg-yellow-900/90 border border-yellow-600 text-yellow-100" : "bg-indigo-900/90 border border-indigo-600 text-indigo-100")}>
-          {notice.message}
+        <div
+          className={"notice-banner " + (notice.tone === "success" ? "notice-banner--success" : notice.tone === "warn" ? "notice-banner--warn" : "notice-banner--info")}
+          role="status"
+          aria-live="polite"
+        >
+          <span>{notice.message}</span>
         </div>
       )}
       {renderContent()}
