@@ -13,7 +13,7 @@ app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
 // Health check endpoint for Render.com
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'what-if-game-backend', players: Object.values(games).reduce((acc, g) => acc + g.players.length, 0) });
 });
 
