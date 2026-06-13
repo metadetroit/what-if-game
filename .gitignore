@@ -37,6 +37,11 @@ lerna-debug.log*
 # OS files
 Thumbs.db
 
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
 # Render/Deployment
 render.yaml
 *.zip
