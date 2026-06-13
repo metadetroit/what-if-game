@@ -1175,6 +1175,19 @@ io.on('connection', (socket) => {
     game.firstAnswerSubmitter = null;
     game.lastQuestionSubmitter = prevLastQuestionSubmitter; // carry for the nudge
     game.lastAnswerSubmitter = null;
+
+    // Clear the previous round's vote rows for this game so players aren't
+    // blocked from voting again in the replayed round. The denormalized
+    // vote_count totals on questions/answers/qa_pairs are preserved, so the
+    // Best Of page still reflects all previously cast votes.
+    try {
+      const db = getDb();
+      db.run("DELETE FROM votes WHERE game_id = ?", [game.dbGameId]);
+      saveDatabase();
+      console.log(`[REPLAY] Cleared previous votes for game ${game.dbGameId} in room ${roomCode}`);
+    } catch (e) {
+      console.error('[REPLAY] Failed to clear previous votes:', e.message);
+    }
     
     // Notify all players to restart. Include lastQuestionSubmitter so non-host clients also get the indicator state + timer.
     io.to(roomCode).emit('game-restarted', { phase: 'writing', lastQuestionSubmitter: game.lastQuestionSubmitter });

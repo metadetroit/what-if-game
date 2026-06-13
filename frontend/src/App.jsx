@@ -755,6 +755,13 @@ function App() {
     return gameAwards.firstQuestionSubmitter
   }, [gameAwards.firstQuestionSubmitter, gameAwards.firstAnswerSubmitter])
 
+  const slowestTyper = useMemo(() => {
+    if (!gameAwards.lastQuestionSubmitter || !gameAwards.lastAnswerSubmitter) return null
+    if (gameAwards.lastQuestionSubmitter !== gameAwards.lastAnswerSubmitter) return null
+    if (fastestTyper && gameAwards.lastQuestionSubmitter === fastestTyper) return null
+    return gameAwards.lastQuestionSubmitter
+  }, [gameAwards.lastQuestionSubmitter, gameAwards.lastAnswerSubmitter, fastestTyper])
+
   const renderContent = () => {
     switch (gameState) {
       case "reconnect-failed":
@@ -1318,18 +1325,6 @@ function App() {
               )}
             </div>
 
-            {fastestTyper && (
-              <div className="summary-fastest card">
-                <div className="summary-fastest__icon">🏆</div>
-                <div>
-                  <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
-                  <p className="text-xl font-extrabold text-white">{fastestTyper}</p>
-                  <p className="text-xs text-amber-100/70">Crushed both the question and answer timers.</p>
-                </div>
-                <div className="summary-fastest__badge">Fastest Typer!</div>
-              </div>
-            )}
-
             <div className="summary-scroll">
               {gameSummary && gameSummary.length > 0 ? (
                 <div className="summary-grid">
@@ -1403,6 +1398,30 @@ function App() {
                 </div>
               )}
             </div>
+
+            {fastestTyper && (
+              <div className="summary-fastest card">
+                <div className="summary-fastest__icon">🏆</div>
+                <div>
+                  <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
+                  <p className="text-xl font-extrabold text-white">{fastestTyper}</p>
+                  <p className="text-xs text-amber-100/70">Crushed both the question and answer timers.</p>
+                </div>
+                <div className="summary-fastest__badge">Fastest Typer!</div>
+              </div>
+            )}
+
+            {slowestTyper && (
+              <div className="summary-slowest card">
+                <div className="summary-slowest__icon">⏰</div>
+                <div>
+                  <p className="text-sm text-sky-200">Slowest typer in both rounds</p>
+                  <p className="text-xl font-extrabold text-white">{slowestTyper}</p>
+                  <p className="text-xs text-sky-100/70">Last to finish both the question and the answer.</p>
+                </div>
+                <div className="summary-slowest__badge">Slowest Typer!</div>
+              </div>
+            )}
 
             {isHost ? (
               <div className="summary-actions">

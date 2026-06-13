@@ -97,6 +97,18 @@
     @apply ml-auto text-xs font-black tracking-widest uppercase bg-amber-400/20 text-amber-100 px-4 py-2 rounded-full border border-amber-400/60;
   }
 
+  .summary-slowest {
+    @apply flex flex-wrap items-center gap-4 bg-gradient-to-r from-sky-600/15 to-blue-500/10 border border-sky-400/40;
+  }
+
+  .summary-slowest__icon {
+    @apply w-16 h-16 rounded-2xl bg-sky-500/30 flex items-center justify-center text-3xl shadow-lg shadow-sky-900/40;
+  }
+
+  .summary-slowest__badge {
+    @apply ml-auto text-xs font-black tracking-widest uppercase bg-sky-400/20 text-sky-100 px-4 py-2 rounded-full border border-sky-400/60;
+  }
+
   .summary-meta-value {
     @apply text-lg font-bold text-white;
   }
