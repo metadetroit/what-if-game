@@ -56,8 +56,10 @@ function App() {
   const [bestOfHasMore, setBestOfHasMore] = useState(true)
   const [bestOfLoading, setBestOfLoading] = useState(false)
   const scrollBestOfIdRef = useRef(null)
+  const bestOfSentinelRef = useRef(null)
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const [showBackToTop, setShowBackToTop] = useState(false)
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -124,17 +126,26 @@ function App() {
 
   useEffect(() => {
     if (gameState !== 'best-of') return
-    const onScroll = () => {
-      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 300
-      if (nearBottom && bestOfHasMore && !bestOfLoading) {
+    const sentinel = bestOfSentinelRef.current
+    if (!sentinel) return
+    const io = new IntersectionObserver((entries) => {
+      const entry = entries[0]
+      if (entry.isIntersecting && bestOfHasMore && !bestOfLoading) {
         const nextOffset = bestOfOffset + bestOfLimit
         setBestOfOffset(nextOffset)
         fetchBestOfData({ offset: nextOffset })
       }
-    }
+    }, { root: null, rootMargin: '0px 0px 400px 0px', threshold: 0.01 })
+    io.observe(sentinel)
+    return () => io.disconnect()
+  }, [gameState, bestOfHasMore, bestOfLoading, bestOfOffset, bestOfLimit, bestOfSort, bestOfData])
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 200)
     window.addEventListener('scroll', onScroll)
+    onScroll()
     return () => window.removeEventListener('scroll', onScroll)
-  }, [gameState, bestOfHasMore, bestOfLoading, bestOfOffset, bestOfLimit, bestOfSort])
+  }, [])
 
   useEffect(() => {
     if (["writing", "answering", "performing"].includes(gameState)) {
@@ -835,6 +846,7 @@ function App() {
                       )}
                     </div>
                   ))}
+                  <div ref={bestOfSentinelRef} className="h-8" />
                   {bestOfLoading && (
                     <div className="pt-2 text-center text-[12px] text-gray-400">Loading…</div>
                   )}
@@ -1803,6 +1815,14 @@ function App() {
             )}
           </div>
         </div>
+      )}
+      {showBackToTop && (
+        <button
+          className="back-to-top"
+          aria-label="Back to top"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          title="Back to top"
+        >↑</button>
       )}
       {renderContent()}
     </div>
