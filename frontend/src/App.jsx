@@ -232,12 +232,6 @@ function App() {
       setPlayerStatuses(players.map(p => ({ name: p.name, submitted: false })))
       setFirstSubmitter(null)
       setShowLastSubmitterIndicator(false)
-      console.log("Setting 10-second timer for last submitter indicator")
-      // Show last submitter indicator after 10 seconds
-      setTimeout(() => {
-        console.log("10-second timer fired, setting showLastSubmitterIndicator to true. lastQuestionSubmitter:", lastQuestionSubmitter)
-        setShowLastSubmitterIndicator(true)
-      }, 10000)
     })
 
     newSocket.on("performance-phase", (data) => {
@@ -972,12 +966,6 @@ function App() {
             )}
             {!submitted ? (
               <div className="flex-1 flex flex-col min-h-0">
-                {showLastSubmitterIndicator && lastQuestionSubmitter && playerName === lastQuestionSubmitter && (
-                  <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700 rounded-lg text-center">
-                    <span className="text-lg mr-1">⏰</span>
-                    <span className="text-xs text-yellow-300">You were last to submit your question - don't be the last this time!</span>
-                  </div>
-                )}
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 text-center">Answer This Question</p>
                 <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
@@ -1011,12 +999,12 @@ function App() {
                           {firstSubmitter && p.name === firstSubmitter && (
                             <span className="text-lg" title="First to submit!">🏆</span>
                           )}
-                          {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
+                          {lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
                             <span className="text-lg" title="You were last to submit your question - don't be the last this time!">⏰</span>
                           )}
                           <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
                         </div>
-                        <span className={p.submitted ? "text-green-400" : "text-gray-600"}>{p.submitted ? "✓ Done" : "writing..."}</span>
+                        <span className={p.submitted ? "text-green-400" : "text-gray-600"}>{p.submitted ? "✓ Done" : "answering..."}</span>
                       </div>
                     ))}
                   </div>
@@ -1180,7 +1168,7 @@ function App() {
                               "{pair.question}" + "{pair.pairedAnswer || 'No game answer'}"
                             </p>
                             {(pair.questionAuthorName || pair.pairedAnswerAuthorName) && (
-                              <p className="text-[10px] text-gray-400 mt-0.5">— {pair.questionAuthorName || 'Unknown'} + {pair.pairedAnswerAuthorName || 'Unknown'}</p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">— {anonymousMode ? '???' : (pair.questionAuthorName || 'Unknown')} + {anonymousMode ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')}</p>
                             )}
                           </div>
                         </div>
@@ -1190,23 +1178,27 @@ function App() {
                           <p className="text-xs font-bold text-green-400 mb-1">Actual Answer:</p>
                           <p className="text-sm text-white leading-relaxed break-words">{pair.actualAnswer}</p>
                           {pair.actualAnswerAuthorName && (
-                            <p className="text-[10px] text-gray-400 mt-0.5">— {pair.actualAnswerAuthorName}</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">— {anonymousMode ? '???' : pair.actualAnswerAuthorName}</p>
                           )}
                         </div>
                       </div>
                       {/* Vote button */}
                       <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50">
-                        <button
-                          onClick={() => handleVote('qa_pair', pair.pairDbId || i)}
-                          className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold w-full ${
-                            userVotes[pair.pairDbId || i]
-                              ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
-                              : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
-                            }`}
-                          title="Vote for best game pairing"
-                        >
-                          👍 Vote ({summaryVotes[pair.pairDbId || i] || 0})
-                        </button>
+                        {pair.pairDbId ? (
+                          <button
+                            onClick={() => handleVote('qa_pair', pair.pairDbId)}
+                            className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold w-full ${
+                              userVotes[pair.pairDbId]
+                                ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50'
+                                : 'bg-gray-700 text-gray-300 hover:bg-amber-600 hover:text-white'
+                              }`}
+                            title="Vote for best game pairing"
+                          >
+                            👍 Vote ({summaryVotes[pair.pairDbId] || 0})
+                          </button>
+                        ) : (
+                          <div className="text-xs text-gray-500 text-center py-1">Voting unavailable for this pairing</div>
+                        )}
                       </div>
                     </div>
                   ))}

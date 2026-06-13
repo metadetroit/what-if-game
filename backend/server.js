@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 const { initDatabase, getDb, saveDatabase } = require('./database');
 
 const app = express();
@@ -131,6 +132,12 @@ app.post('/api/hide-game', (req, res) => {
   saveDatabase();
   
   res.json({ success: true });
+});
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 const server = http.createServer(app);
@@ -760,13 +767,13 @@ io.on('connection', (socket) => {
 
           pairs.push({
             question: turn.question || 'Unknown question',
-            questionAuthorName: isAnonymous ? '???' : qAuthor,
+            questionAuthorName: qAuthor,
             questionDbId: questionData?.dbId || null,
             actualAnswer: turn.actualAnswer || 'Unknown answer',
-            actualAnswerAuthorName: isAnonymous ? '???' : aAuthor,
+            actualAnswerAuthorName: aAuthor,
             actualAnswerDbId: answerData?.dbId || null,
             pairedAnswer: answerTurn ? answerTurn.pairedAnswer : null,
-            pairedAnswerAuthorName: answerTurn ? (isAnonymous ? '???' : pAuthor) : null,
+            pairedAnswerAuthorName: answerTurn ? pAuthor : null,
             pairDbId: pairDbId,
             anonymousMode: isAnonymous
           });
@@ -780,10 +787,10 @@ io.on('connection', (socket) => {
     if (!game.cardPairs) return [];
     return game.cardPairs.map(pair => ({
       question: pair.question?.text || 'Unknown question',
-      questionAuthorName: isAnonymous ? '???' : (pair.question?.authorName || 'Unknown'),
+      questionAuthorName: pair.question?.authorName || 'Unknown',
       questionDbId: pair.question?.dbId || null,
       actualAnswer: pair.answer?.text || 'Unknown answer',
-      actualAnswerAuthorName: isAnonymous ? '???' : (pair.answer?.authorName || 'Unknown'),
+      actualAnswerAuthorName: pair.answer?.authorName || 'Unknown',
       actualAnswerDbId: pair.answer?.dbId || null,
       pairedAnswer: null,
       pairedAnswerAuthorName: null,
@@ -1852,6 +1859,12 @@ io.on('connection', (socket) => {
       }
     }, 90000);
   });
+});
+
+// Serve static frontend build (production)
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3001;
