@@ -71,8 +71,8 @@
 
   @media (min-width: 768px) {
     .game-container {
-      height: 100vh;
-      min-height: 100vh;
+      height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     }
   }
   

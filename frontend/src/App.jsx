@@ -95,7 +95,12 @@ function App() {
       if (offset === 0) {
         setBestOfData(data)
       } else {
-        setBestOfData(prev => Array.isArray(prev) ? [...prev, ...data] : data)
+        setBestOfData(prev => {
+          if (!Array.isArray(prev)) return data
+          const seen = new Set(prev.map(i => `${i.type}:${i.id}`))
+          const deduped = data.filter(i => !seen.has(`${i.type}:${i.id}`))
+          return [...prev, ...deduped]
+        })
       }
       setBestOfHasMore(Array.isArray(data) ? data.length === limit : false)
     } catch (error) {
@@ -1218,7 +1223,7 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 min-h-0">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 pb-8 min-h-0">
                 <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
                 {renderWaitingPanel('writing')}
@@ -1278,7 +1283,7 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 min-h-0">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 pb-8 min-h-0">
                 <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
                 {renderWaitingPanel('answering')}

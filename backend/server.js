@@ -33,7 +33,7 @@ app.get('/api/best-of', (req, res) => {
       SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
       FROM questions q
       JOIN games g ON q.game_id = g.id
-      WHERE g.hidden_from_best_of = 0
+      WHERE g.hidden_from_best_of = 0 AND q.vote_count > 0
       ORDER BY ${orderByQuestions}
       LIMIT ? OFFSET ?
     `, [limit, offset]);
@@ -60,7 +60,7 @@ app.get('/api/best-of', (req, res) => {
       SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
       FROM answers a
       JOIN games g ON a.game_id = g.id
-      WHERE g.hidden_from_best_of = 0
+      WHERE g.hidden_from_best_of = 0 AND a.vote_count > 0
       ORDER BY ${orderByAnswers}
       LIMIT ? OFFSET ?
     `, [limit, offset]);
@@ -91,7 +91,7 @@ app.get('/api/best-of', (req, res) => {
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
       ORDER BY ${orderByPairs}
       LIMIT ? OFFSET ?
     `, [limit, offset]);
