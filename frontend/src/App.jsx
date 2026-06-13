@@ -886,14 +886,14 @@ function App() {
             <div key={i} className={"waiting-player " + (p.submitted ? "waiting-player--done" : "")}>
               <div className="flex items-center gap-2 min-w-0">
                 {firstSubmitter && p.name === firstSubmitter && (
-                  <span className="text-lg" title="First to submit!">🏆</span>
+                  <span className="text-lg" title="First to submit!"><span className="sr-only">First to submit</span>🏆</span>
                 )}
                 {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
-                  <span className="text-lg" title={phase === 'writing' ? "You were last to submit your question - don't be the last this time!" : "Last question submitter warning active"}>⏰</span>
+                  <span className="text-lg" title={phase === 'writing' ? "You were last to submit your question" : "Last question submitter warning active"}><span className="sr-only">{phase === 'writing' ? "You were last to submit your question" : "Last question submitter"}</span>⏰</span>
                 )}
-                <span className={p.submitted ? "text-green-300 truncate" : "text-gray-400 truncate"}>{p.name}</span>
+                <span className={p.submitted ? "text-green-300 truncate" : "text-gray-300 truncate"}>{p.name}</span>
               </div>
-              <span className={p.submitted ? "text-green-400" : "text-gray-500"}>{p.submitted ? "✓ Done" : phase === 'writing' ? "writing..." : "answering..."}</span>
+              <span className={p.submitted ? "text-green-400" : "text-gray-400"}>{p.submitted ? "✓ Done" : phase === 'writing' ? "writing..." : "answering..."}</span>
             </div>
           ))}
         </div>
@@ -1072,7 +1072,7 @@ function App() {
               </div>
             </div>
             <div className="card space-y-3 py-3">
-              <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" className="input-field py-2 text-lg" maxLength={20} />
+              <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" aria-label="Your name" className="input-field py-2 text-lg" maxLength={20} />
               <div className="space-y-2">
                 <label className="text-sm text-indigo-400 font-semibold uppercase tracking-wider">Room Code</label>
                 <input type="text" inputMode="numeric" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="1234" className="input-field py-3 text-2xl font-bold text-center tracking-[0.2em]" maxLength={4} />
@@ -1127,7 +1127,7 @@ function App() {
                     <span className={"text-sm truncate leading-tight " + (player.id === socket?.id ? "text-indigo-300 font-semibold" : "text-white")}>{player.name}{player.id === socket?.id && " (you)"}</span>
                     {player.isHost && (<span className="ml-auto text-[9px] bg-indigo-900/50 text-indigo-400 px-1.5 py-0.5 rounded font-semibold">HOST</span>)}
                     {isHost && player.id !== socket?.id && (
-                      <button onClick={() => setKickConfirm({ id: player.id, name: player.name })} className="ml-1 text-[10px] text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-red-900/30 transition-colors" title="Kick player">✕</button>
+                      <button onClick={() => setKickConfirm({ id: player.id, name: player.name })} className="ml-1 text-[10px] text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-red-900/30 transition-colors" title="Kick player" aria-label={`Kick ${player.name}`}>✕</button>
                     )}
                   </div>
                 ))}
@@ -1140,7 +1140,7 @@ function App() {
                     <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
                     <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
                   </div>
-                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
+                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
                     <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
                   </button>
                 </div>
@@ -1153,7 +1153,7 @@ function App() {
                     <p className="text-xs text-white font-medium leading-tight">No Self-Reading</p>
                     <p className="text-[9px] text-gray-500 leading-tight">Players won't read their own content</p>
                   </div>
-                  <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
+                  <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
                     <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
                   </button>
                 </div>
@@ -1567,7 +1567,7 @@ function App() {
                       <p className="text-xs text-white font-semibold">Anonymous Results (next round)</p>
                       <p className="text-[11px] text-gray-400">Toggling only affects future summaries + Best Of.</p>
                     </div>
-                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}> 
+                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
                       <span />
                     </button>
                   </div>
@@ -1576,7 +1576,7 @@ function App() {
                       <p className="text-xs text-white font-semibold">No Self-Reading</p>
                       <p className="text-[11px] text-gray-400">Keep performances anonymous next round.</p>
                     </div>
-                    <button onClick={() => setNoSelfReading(!noSelfReading)} className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
+                    <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
                       <span />
                     </button>
                   </div>
@@ -1965,7 +1965,7 @@ function App() {
         </div>
       )}
       {showCountdown && ["writing", "answering", "performing"].includes(gameState) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="alert" aria-live="assertive">
           <div className="bg-black/70 border border-gray-700 rounded-2xl px-8 py-6 text-center">
             <div className="text-5xl font-black text-white">{countdown}</div>
             {isHost && (
