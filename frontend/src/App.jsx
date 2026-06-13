@@ -46,6 +46,7 @@ function App() {
   const [performanceVotes, setPerformanceVotes] = useState({}) // Track votes during performing phase: { questionId: count, answerId: count }
   const [userVotes, setUserVotes] = useState({}) // Track user's votes: { questionId: true, answerId: true, pairId: true }
   const [summaryVotes, setSummaryVotes] = useState({}) // Track votes on summary page: { questionId: count, answerId: count, pairId: count }
+  const [summaryPairVoteId, setSummaryPairVoteId] = useState(null)
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
 
@@ -55,6 +56,7 @@ function App() {
   const gameStateRef = useRef("welcome")
   const socketRef = useRef(null)
   const lastSubmitterTimerRef = useRef(null)
+  const pendingVoteRef = useRef(null)
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
@@ -108,6 +110,10 @@ function App() {
       console.log('Vote rejected: already voted')
       return // Already voted
     }
+    if (type === 'qa_pair' && summaryPairVoteId && summaryPairVoteId !== targetId) {
+      setNotice(noticeFor('You already voted for a different pairing', 'warn', 2500))
+      return
+    }
     if (!socketRef.current) {
       console.log('Vote rejected: socket not connected')
       return // Socket not connected
@@ -117,6 +123,7 @@ function App() {
       return // Room code not set
     }
     console.log('Emitting submit-vote:', { type, targetId })
+    pendingVoteRef.current = { type, targetId }
     socketRef.current.emit("submit-vote", { type, targetId })
   }
 
@@ -261,11 +268,16 @@ function App() {
     })
 
     newSocket.on("vote-submitted", (data) => {
+      const pendingVote = pendingVoteRef.current
+      pendingVoteRef.current = null
       if (data.success) {
         setUserVotes(prev => ({
           ...prev,
           [data.targetId]: true
         }))
+        if (pendingVote?.type === 'qa_pair') {
+          setSummaryPairVoteId(data.targetId)
+        }
       } else {
         setNotice(noticeFor(data.message || 'Vote failed', 'warn', 2000))
       }
@@ -304,6 +316,7 @@ function App() {
       setPerformanceVotes({})
       setUserVotes({})
       setSummaryVotes({})
+      setSummaryPairVoteId(null)
 
       // Carry over lastQuestionSubmitter from prior round (if provided) so the "you were last" nudge shows on the writing screen after replay
       const carried = data && data.lastQuestionSubmitter ? data.lastQuestionSubmitter : null
@@ -336,6 +349,7 @@ function App() {
       setPerformanceVotes({})
       setUserVotes({})
       setSummaryVotes({})
+      setSummaryPairVoteId(null)
     })
 
     newSocket.on("anonymous-toggled", (data) => {
@@ -403,6 +417,7 @@ function App() {
       setPerformanceVotes({})
       setUserVotes({})
       setSummaryVotes({})
+      setSummaryPairVoteId(null)
     })
 
     newSocket.on("reconnected", (data) => {
@@ -589,6 +604,7 @@ function App() {
     setPerformanceVotes({})
     setUserVotes({})
     setSummaryVotes({})
+    setSummaryPairVoteId(null)
   }, [socket])
 
   const resetGame = useCallback(() => {
@@ -620,6 +636,7 @@ function App() {
     setPerformanceVotes({})
     setUserVotes({})
     setSummaryVotes({})
+    setSummaryPairVoteId(null)
   }, [socket])
 
   useEffect(() => {
@@ -1194,6 +1211,8 @@ function App() {
                     const voteCount = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
                     const hasPairId = Boolean(pair.pairDbId)
                     const userVotedForPair = hasPairId ? Boolean(userVotes[pair.pairDbId]) : false
+                    const userLockedToDifferentPair = summaryPairVoteId && hasPairId && summaryPairVoteId !== pair.pairDbId
+                    const voteDisabled = userVotedForPair || userLockedToDifferentPair
 
                     return (
                       <article key={pairKey} className="summary-card">
@@ -1228,11 +1247,13 @@ function App() {
                           {hasPairId ? (
                             <button
                               onClick={() => handleVote('qa_pair', pair.pairDbId)}
-                              className={`summary-vote-btn ${userVotedForPair ? 'summary-vote-btn--active' : ''}`}
+                              className={`summary-vote-btn ${
+                                userVotedForPair ? 'summary-vote-btn--active' : ''
+                              } ${voteDisabled && !userVotedForPair ? 'summary-vote-btn--disabled' : ''}`}
                               title="Vote for best game pairing"
-                              disabled={userVotedForPair}
+                              disabled={voteDisabled}
                             >
-                              {userVotedForPair ? 'Voted' : 'Vote for this pairing'}
+                              {userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Already voted' : 'Vote for this pairing'}
                             </button>
                           ) : (
                             <button disabled className="summary-vote-btn summary-vote-btn--disabled">Voting unavailable</button>
@@ -1275,8 +1296,8 @@ function App() {
                   </button>
                 </div>
                 <div className="summary-actions__cta">
-                  <button onClick={disbandGame} className="btn-secondary py-3 text-sm">
-                    🏠 New game
+                  <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
+                    🏠 New game (change number of players)
                   </button>
                   <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
                     🚫 Hide from Best Of
