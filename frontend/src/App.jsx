@@ -200,7 +200,7 @@ function App() {
       updatePlayersAndHost(payload)
     })
     newSocket.on("player-left", updatePlayersAndHost)
-    newSocket.on("game-started", () => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null) })
+    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
     newSocket.on("progress-update", (data) => {
       console.log("Progress-update received:", data)
       setProgress(data)
@@ -258,10 +258,6 @@ function App() {
     })
 
     newSocket.on("vote-update", (data) => {
-      setPerformanceVotes(prev => ({
-        ...prev,
-        [data.targetId]: data.voteCount
-      }))
       setSummaryVotes(prev => ({
         ...prev,
         [data.targetId]: data.voteCount
@@ -1125,12 +1121,6 @@ function App() {
                 </div>
               </div>
             )}
-            {/* Anonymous notice banner */}
-            {gameSummary[0]?.anonymousMode && (
-              <div className="mb-2 p-2 bg-purple-900/30 border border-purple-700 rounded-lg text-center">
-                <p className="text-xs font-bold text-purple-300">🔒 This round was anonymized</p>
-              </div>
-            )}
             <div className="text-center mb-2">
               <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
                 <span className="text-2xl">🎉</span>
@@ -1144,36 +1134,25 @@ function App() {
                   {gameSummary.map((pair, i) => (
                     <div key={i} className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
                       <div className="p-3 space-y-3">
-                        {/* Question */}
-                        <div>
-                          <p className="text-xs font-bold text-indigo-400 mb-1">Question</p>
-                          <p className="text-sm text-white leading-relaxed">{pair.question}</p>
-                        </div>
-
-                        {/* Game Answer */}
-                        <div className="border-t border-gray-700/50 pt-3">
-                          <p className="text-xs font-bold text-purple-400 mb-1">Game Answer</p>
-                          {pair.pairedAnswer ? (
-                            <p className="text-sm text-white leading-relaxed">{pair.pairedAnswer}</p>
-                          ) : (
-                            <p className="text-sm text-gray-500 italic">Not assigned</p>
-                          )}
+                        {/* Game pairing with thumbs up */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-2xl flex-shrink-0">👍</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-amber-400 mb-1">Vote for this pairing:</p>
+                            <p className="text-sm text-white leading-relaxed">
+                              "{pair.question}" + "{pair.pairedAnswer || 'No game answer'}"
+                            </p>
+                          </div>
                         </div>
 
                         {/* Actual Answer */}
                         <div className="border-t border-gray-700/50 pt-3">
-                          <p className="text-xs font-bold text-green-400 mb-1">Actual Answer</p>
+                          <p className="text-xs font-bold text-green-400 mb-1">Actual Answer:</p>
                           <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
                         </div>
                       </div>
-                      {/* Best Pair vote button - voting on GAME PAIRED COMBINATION (Question + Game Answer) */}
+                      {/* Vote button */}
                       <div className="p-3 bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-t border-amber-700/50">
-                        <div className="mb-2">
-                          <p className="text-xs font-bold text-amber-400 mb-1">Vote for this GAME PAIRING:</p>
-                          <p className="text-sm text-gray-300 leading-relaxed">
-                            "{pair.question}" + "{pair.pairedAnswer || 'No game answer'}"
-                          </p>
-                        </div>
                         <button
                           onClick={() => handleVote('qa_pair', pair.pairDbId || i)}
                           className={`text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-bold w-full ${
@@ -1183,7 +1162,7 @@ function App() {
                             }`}
                           title="Vote for best game pairing"
                         >
-                          👍 Vote for this pairing ({summaryVotes[pair.pairDbId || i] || 0} votes)
+                          👍 Vote ({summaryVotes[pair.pairDbId || i] || 0})
                         </button>
                       </div>
                     </div>
@@ -1215,16 +1194,18 @@ function App() {
                       </button>
                     </div>
                   </div>
+                  <button onClick={() => socketRef.current?.emit("replay-game")} className="btn-primary py-2 text-xs px-3 flex-shrink-0">
+                    🔄 Replay
+                  </button>
                 </div>
-                <button onClick={() => socketRef.current?.emit("replay-game")} className="btn-primary py-2 text-sm w-full">
-                  🔄 Replay with same players
-                </button>
-                <button onClick={disbandGame} className="btn-secondary py-2 text-xs w-full">
-                  🏠 New game
-                </button>
-                <button onClick={() => setHideGameConfirm(true)} className="py-1.5 text-[10px] text-red-500 border border-red-800 rounded-lg w-full hover:bg-red-900/20 transition-colors">
-                  🚫 Hide from Best Of
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={disbandGame} className="btn-secondary py-2 text-xs flex-1">
+                    🏠 New game
+                  </button>
+                  <button onClick={() => setHideGameConfirm(true)} className="py-2 text-[10px] text-red-500 border border-red-800 rounded-lg flex-1 hover:bg-red-900/20 transition-colors">
+                    🚫 Hide
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-2">

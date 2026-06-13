@@ -353,7 +353,7 @@ io.on('connection', (socket) => {
     // CRITICAL FIX: Remove any disconnected players from lobby before starting
     game.players = activePlayers;
     game.phase = 'writing';
-    io.to(roomCode).emit('game-started', { phase: 'writing' });
+    io.to(roomCode).emit('game-started', { phase: 'writing', anonymousMode: game.anonymousMode });
   });
 
   // Host toggles anonymous mode (show/hide names in end-of-game summary)
