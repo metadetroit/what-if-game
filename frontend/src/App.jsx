@@ -57,6 +57,7 @@ function App() {
   const [bestOfLoading, setBestOfLoading] = useState(false)
   const scrollBestOfIdRef = useRef(null)
   const bestOfSentinelRef = useRef(null)
+  const bestOfScrollRef = useRef(null)
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [showBackToTop, setShowBackToTop] = useState(false)
@@ -128,6 +129,7 @@ function App() {
     if (gameState !== 'best-of') return
     const sentinel = bestOfSentinelRef.current
     if (!sentinel) return
+    const root = bestOfScrollRef.current || null
     const io = new IntersectionObserver((entries) => {
       const entry = entries[0]
       if (entry.isIntersecting && bestOfHasMore && !bestOfLoading) {
@@ -135,17 +137,20 @@ function App() {
         setBestOfOffset(nextOffset)
         fetchBestOfData({ offset: nextOffset })
       }
-    }, { root: null, rootMargin: '0px 0px 400px 0px', threshold: 0.01 })
+    }, { root, rootMargin: '0px 0px 400px 0px', threshold: 0.01 })
     io.observe(sentinel)
     return () => io.disconnect()
   }, [gameState, bestOfHasMore, bestOfLoading, bestOfOffset, bestOfLimit, bestOfSort, bestOfData])
 
   useEffect(() => {
-    const onScroll = () => setShowBackToTop(window.scrollY > 200)
-    window.addEventListener('scroll', onScroll)
+    if (gameState !== 'best-of') { setShowBackToTop(false); return }
+    const container = bestOfScrollRef.current
+    if (!container) return
+    const onScroll = () => setShowBackToTop(container.scrollTop > 200)
+    container.addEventListener('scroll', onScroll)
     onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    return () => container.removeEventListener('scroll', onScroll)
+  }, [gameState, bestOfData])
 
   useEffect(() => {
     if (["writing", "answering", "performing"].includes(gameState)) {
@@ -794,7 +799,7 @@ function App() {
 
       case "best-of":
         return (
-          <div className="game-container justify-center py-1">
+          <div ref={bestOfScrollRef} className="game-container game-container--scroll py-4">
             <div className="text-center mb-4">
               <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-xl">🏆</span>
@@ -1820,7 +1825,7 @@ function App() {
         <button
           className="back-to-top"
           aria-label="Back to top"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={() => { const c = bestOfScrollRef.current; if (c) c.scrollTo({ top: 0, behavior: 'smooth' }); else window.scrollTo({ top: 0, behavior: 'smooth' }) }}
           title="Back to top"
         >↑</button>
       )}
