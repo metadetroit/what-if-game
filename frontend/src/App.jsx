@@ -1029,7 +1029,7 @@ function App() {
                 <span className="lobby-ready__icon">{players.length >= 3 ? "✅" : "⏳"}</span>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-white leading-tight">{players.length >= 3 ? "Ready to start" : "Waiting for players"}</p>
-                  <p className="text-[10px] text-gray-400 leading-tight">{players.length >= 3 ? "The host can start whenever everyone is settled." : `Need ${3 - players.length} more player${3 - players.length === 1 ? "" : "s"} to begin.`}</p>
+                  <p className="text-[10px] text-gray-400 leading-tight">{players.length >= 3 ? (isHost ? "You can start whenever everyone is settled." : "The host can start whenever everyone is settled.") : `Need ${3 - players.length} more player${3 - players.length === 1 ? "" : "s"} to begin.`}</p>
                 </div>
               </div>
             </div>
