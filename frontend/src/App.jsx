@@ -1112,7 +1112,6 @@ function App() {
                 <div className="phase-banner mb-2">
                   <span>Phase 1</span>
                   <strong>Question Time</strong>
-                  <em>Set up the weirdness.</em>
                 </div>
                 <div className="text-center mb-1">
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
@@ -1137,7 +1136,7 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 min-h-0">
                 <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
                 {renderWaitingPanel('writing')}
@@ -1175,10 +1174,8 @@ function App() {
               <div className="flex-1 flex flex-col min-h-0">
                 <div className="phase-banner mb-2">
                   <span>Phase 2</span>
-                  <strong>Answer Time</strong>
-                  <em>Make it ridiculous.</em>
+                  <strong>Answer this question</strong>
                 </div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 text-center">Answer This Question</p>
                 <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
                 </div>
@@ -1199,7 +1196,7 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 min-h-0">
                 <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
                 {renderWaitingPanel('answering')}
@@ -1238,7 +1235,6 @@ function App() {
                 <div className="phase-banner mb-2">
                   <span>Phase 3</span>
                   <strong>Performance Time</strong>
-                  <em>Read it loud. Sell the chaos.</em>
                 </div>
                 <div className="mb-3">
                   {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
