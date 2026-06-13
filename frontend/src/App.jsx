@@ -1541,7 +1541,7 @@ function App() {
                 <div>
                   <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
                   <p className="text-xl font-extrabold text-white">{fastestTyper}</p>
-                  <p className="text-xs text-amber-100/70">Crushed both the question and answer timers.</p>
+                  <p className="text-xs text-amber-100/70">First to submit both their question and answer!</p>
                 </div>
                 <div className="summary-fastest__badge">Fastest Typer!</div>
               </div>
