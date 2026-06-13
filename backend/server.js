@@ -36,11 +36,13 @@ app.get('/api/best-of', (req, res) => {
     
     if (questions.length > 0) {
       questions[0].values.forEach(row => {
+        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous_mode
+        const isAnon = row[5] === 1 || row[5] === true;
         results.push({
           type: 'question',
           id: row[0],
           content: row[1],
-          author: row[3] ? row[2] : 'Anonymous',
+          author: isAnon ? '???' : (row[2] || 'Unknown'),
           vote_count: row[3],
           game_date: row[4]
         });
@@ -60,11 +62,13 @@ app.get('/api/best-of', (req, res) => {
     
     if (answers.length > 0) {
       answers[0].values.forEach(row => {
+        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous_mode
+        const isAnon = row[5] === 1 || row[5] === true;
         results.push({
           type: 'answer',
           id: row[0],
           content: row[1],
-          author: row[3] ? row[2] : 'Anonymous',
+          author: isAnon ? '???' : (row[2] || 'Unknown'),
           vote_count: row[3],
           game_date: row[4]
         });
@@ -88,13 +92,15 @@ app.get('/api/best-of', (req, res) => {
     
     if (pairs.length > 0) {
       pairs[0].values.forEach(row => {
+        // columns: 0 id, 1 q_text, 2 a_text, 3 q_author, 4 a_author, 5 vote, 6 created, 7 anon_mode
+        const isAnon = row[7] === 1 || row[7] === true;
         results.push({
           type: 'qa_pair',
           id: row[0],
           question: row[1],
           answer: row[2],
-          question_author: row[7] ? row[3] : 'Anonymous',
-          answer_author: row[7] ? row[4] : 'Anonymous',
+          question_author: isAnon ? '???' : (row[3] || 'Unknown'),
+          answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
           vote_count: row[5],
           game_date: row[6]
         });
@@ -678,6 +684,7 @@ io.on('connection', (socket) => {
     if (!game) return [];
 
     const isAnonymous = game.anonymousMode;
+    const db = getDb();
 
     if (game.turnLog && game.turnLog.length > 0) {
       const pairs = [];
@@ -696,6 +703,61 @@ io.on('connection', (socket) => {
           const answerData = Object.values(game.answers).find(a => a.text === turn.actualAnswer);
           const pairData = game.cardPairs?.find(p => p.question?.text === turn.question && p.answer?.text === turn.actualAnswer);
 
+          // CRITICAL: The "game pairing" voted on is the performed/crossed combo shown to players:
+          // turn.question + (answerTurn?.pairedAnswer)
+          // We must ensure a qa_pairs row exists for (this Q, the paired A) so that:
+          // - votes target a real persisted row
+          // - vote_count updates affect best-of
+          // - the exact "winning pair" (the one displayed as the game pairing) appears in best-of with correct authors
+          // This makes performed pairings persist across replays/games.
+          let pairDbId = pairData?.dbId || null;
+          const pairedAText = answerTurn ? answerTurn.pairedAnswer : null;
+          if (game.dbGameId && questionData?.dbId && pairedAText) {
+            const pairedAData = Object.values(game.answers).find(a => a.text === pairedAText);
+            const pairedAId = pairedAData?.dbId || null;
+            if (pairedAId) {
+              try {
+                // Reuse existing row for this (game, q, a) combo if present (e.g. from prior round or original)
+                let existing = db.exec(
+                  "SELECT id FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1",
+                  [game.dbGameId, questionData.dbId, pairedAId]
+                );
+                if (existing.length > 0 && existing[0].values.length > 0) {
+                  pairDbId = existing[0].values[0][0];
+                } else {
+                  db.run(
+                    "INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count) VALUES (?, ?, ?, ?)",
+                    [game.dbGameId, questionData.dbId, pairedAId, 0]
+                  );
+                  pairDbId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+                  saveDatabase();
+                }
+              } catch (e) {
+                console.log('[buildGameSummary] ensure performed qa_pair failed:', e.message);
+              }
+            }
+          }
+          // Fallback to old lookup if we still don't have one
+          if (!pairDbId) {
+            if (pairData?.dbId) pairDbId = pairData.dbId;
+            else if (game.dbGameId && turn.question && turn.actualAnswer) {
+              try {
+                const qRes = db.exec("SELECT id FROM questions WHERE game_id = ? AND text = ? LIMIT 1", [game.dbGameId, turn.question]);
+                const aRes = db.exec("SELECT id FROM answers WHERE game_id = ? AND text = ? LIMIT 1", [game.dbGameId, turn.actualAnswer]);
+                if (qRes.length > 0 && qRes[0].values.length > 0 && aRes.length > 0 && aRes[0].values.length > 0) {
+                  const qid = qRes[0].values[0][0];
+                  const aid = aRes[0].values[0][0];
+                  const pRes = db.exec("SELECT id FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1", [game.dbGameId, qid, aid]);
+                  if (pRes.length > 0 && pRes[0].values.length > 0) {
+                    pairDbId = pRes[0].values[0][0];
+                  }
+                }
+              } catch (e) {
+                console.log('[buildGameSummary] DB lookup for pairDbId failed:', e.message);
+              }
+            }
+          }
+
           pairs.push({
             question: turn.question || 'Unknown question',
             questionAuthorName: isAnonymous ? '???' : qAuthor,
@@ -705,7 +767,7 @@ io.on('connection', (socket) => {
             actualAnswerDbId: answerData?.dbId || null,
             pairedAnswer: answerTurn ? answerTurn.pairedAnswer : null,
             pairedAnswerAuthorName: answerTurn ? (isAnonymous ? '???' : pAuthor) : null,
-            pairDbId: pairData?.dbId || null,
+            pairDbId: pairDbId,
             anonymousMode: isAnonymous
           });
         }
@@ -1038,11 +1100,16 @@ io.on('connection', (socket) => {
   });
 
   // Host replays game with same players
-  socket.on('replay-game', () => {
+  socket.on('replay-game', (payload = {}) => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
     
     if (!game || game.host !== socket.id) return;
+
+    // Honor No Self-Read choice made on the summary screen before replaying
+    if (typeof payload.noSelfReading === 'boolean') {
+      game.noSelfReading = payload.noSelfReading;
+    }
     
     const totalPlayers = game.players.length;
     const activePlayers = game.players.filter(p => p.isActive);
@@ -1071,6 +1138,10 @@ io.on('connection', (socket) => {
     }
     
     // All players present - reset all game state
+    // Preserve the lastQuestionSubmitter from the just-ended game so the "you were last" warning
+    // carries over to the new writing phase (for the affected player, visible to all via badge + personal banner).
+    const prevLastQuestionSubmitter = game.lastQuestionSubmitter;
+
     game.phase = 'writing';
     game.questions = {};
     game.answers = {};
@@ -1082,11 +1153,11 @@ io.on('connection', (socket) => {
     game.playerOrder = [];
     game.firstQuestionSubmitter = null;
     game.firstAnswerSubmitter = null;
-    game.lastQuestionSubmitter = null;
+    game.lastQuestionSubmitter = prevLastQuestionSubmitter; // carry for the nudge
     game.lastAnswerSubmitter = null;
     
-    // Notify all players to restart
-    io.to(roomCode).emit('game-restarted', { phase: 'writing' });
+    // Notify all players to restart. Include lastQuestionSubmitter so non-host clients also get the indicator state + timer.
+    io.to(roomCode).emit('game-restarted', { phase: 'writing', lastQuestionSubmitter: game.lastQuestionSubmitter });
     io.to(roomCode).emit('player-joined', { players: game.players.filter(p => p.isActive), hostId: game.host });
     console.log(`Game replayed in room ${roomCode}`);
   });

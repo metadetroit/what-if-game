@@ -289,7 +289,7 @@ function App() {
       }
     })
 
-    newSocket.on("game-restarted", () => {
+    newSocket.on("game-restarted", (data) => {
       setGameState("writing")
       setSubmitted(false)
       setQuestion("")
@@ -309,6 +309,16 @@ function App() {
       setPerformanceVotes({})
       setUserVotes({})
       setSummaryVotes({})
+
+      // Carry over lastQuestionSubmitter from prior round (if provided) so the "you were last" nudge shows on the writing screen after replay
+      const carried = data && data.lastQuestionSubmitter ? data.lastQuestionSubmitter : null
+      if (carried) {
+        setLastQuestionSubmitter(carried)
+        // Start the 10s timer for the indicator (affects only the affected player's banner; badge is visible to all in status list)
+        setTimeout(() => {
+          setShowLastSubmitterIndicator(true)
+        }, 10000)
+      }
     })
 
     newSocket.on("game-disbanded", (data) => {
@@ -879,6 +889,12 @@ function App() {
                     <p className="text-xs font-bold text-purple-300">🔒 This round is anonymized!</p>
                   </div>
                 )}
+                {showLastSubmitterIndicator && lastQuestionSubmitter && playerName === lastQuestionSubmitter && (
+                  <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700 rounded-lg text-center">
+                    <span className="text-lg mr-1">⏰</span>
+                    <span className="text-xs text-yellow-300">You were last to submit your question - don't be the last this time!</span>
+                  </div>
+                )}
                 <div className="text-center mb-1">
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
                   <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
@@ -913,6 +929,9 @@ function App() {
                         <div className="flex items-center gap-2">
                           {firstSubmitter && p.name === firstSubmitter && (
                             <span className="text-lg" title="First to submit!">🏆</span>
+                          )}
+                          {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
+                            <span className="text-lg" title="You were last to submit your question - don't be the last this time!">⏰</span>
                           )}
                           <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
                         </div>
@@ -1157,16 +1176,22 @@ function App() {
                           <span className="text-2xl flex-shrink-0">👍</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-bold text-amber-400 mb-1">Vote for this pairing:</p>
-                            <p className="text-sm text-white leading-relaxed">
+                            <p className="text-sm text-white leading-relaxed break-words">
                               "{pair.question}" + "{pair.pairedAnswer || 'No game answer'}"
                             </p>
+                            {(pair.questionAuthorName || pair.pairedAnswerAuthorName) && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">— {pair.questionAuthorName || 'Unknown'} + {pair.pairedAnswerAuthorName || 'Unknown'}</p>
+                            )}
                           </div>
                         </div>
 
                         {/* Actual Answer */}
                         <div className="border-t border-gray-700/50 pt-3">
                           <p className="text-xs font-bold text-green-400 mb-1">Actual Answer:</p>
-                          <p className="text-sm text-white leading-relaxed">{pair.actualAnswer}</p>
+                          <p className="text-sm text-white leading-relaxed break-words">{pair.actualAnswer}</p>
+                          {pair.actualAnswerAuthorName && (
+                            <p className="text-[10px] text-gray-400 mt-0.5">— {pair.actualAnswerAuthorName}</p>
+                          )}
                         </div>
                       </div>
                       {/* Vote button */}
@@ -1212,7 +1237,7 @@ function App() {
                       </button>
                     </div>
                   </div>
-                  <button onClick={() => socketRef.current?.emit("replay-game")} className="btn-primary py-2 text-xs px-3 flex-shrink-0">
+                  <button onClick={() => socketRef.current?.emit("replay-game", { noSelfReading })} className="btn-primary py-1.5 text-[10px] px-2 flex-shrink-0">
                     🔄 Replay
                   </button>
                 </div>
