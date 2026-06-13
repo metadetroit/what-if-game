@@ -49,6 +49,7 @@ function App() {
   const [summaryPairVoteId, setSummaryPairVoteId] = useState(null)
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
+  const [votersCount, setVotersCount] = useState(0)
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
   const [bestOfSort, setBestOfSort] = useState(() => sessionStorage.getItem('bestOfSort') || 'votes')
   const [bestOfLimit, setBestOfLimit] = useState(20)
@@ -81,6 +82,10 @@ function App() {
     const t = setTimeout(() => setNotice(null), remaining)
     return () => clearTimeout(t)
   }, [notice])
+
+  useEffect(() => {
+    if (gameState !== 'ended') setVotersCount(0)
+  }, [gameState])
 
   const fetchBestOfData = async (opts = {}) => {
     try {
@@ -402,6 +407,7 @@ function App() {
         ...prev,
         [data.targetId]: data.voteCount
       }))
+      if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
     })
 
     newSocket.on("vote-submitted", (data) => {
@@ -1224,7 +1230,7 @@ function App() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 pb-8 min-h-0">
-                <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
+                <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
                 {renderWaitingPanel('writing')}
                 {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
@@ -1284,7 +1290,7 @@ function App() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 pb-8 min-h-0">
-                <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
+                <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
                 {renderWaitingPanel('answering')}
                 {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
@@ -1323,58 +1329,58 @@ function App() {
                   <span>Phase 3</span>
                   <strong>Performance Time</strong>
                 </div>
-                <div className="mb-3">
+                <div className="mb-2">
                   {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                    <div className="py-4 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
-                      <span className="text-3xl font-black text-white tracking-wider">READ QUESTION</span>
+                    <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
+                      <span className="text-2xl font-black text-white tracking-wider">READ QUESTION</span>
                       <p className="text-green-100 text-sm mt-1">Read aloud, then tap Done</p>
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                    <div className="py-3 rounded-lg text-center bg-gray-700 border border-gray-600">
+                    <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
                       <span className="text-lg font-bold text-gray-400">WAITING</span>
                       <p className="text-gray-500 text-sm mt-1">{currentTurn.answerReader.name} is reading the answer</p>
                     </div>
                   )}
                   {currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                    <div className="py-4 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                      <span className="text-3xl font-black text-white tracking-wider">GET READY</span>
+                    <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
+                      <span className="text-2xl font-black text-white tracking-wider">GET READY</span>
                       <p className="text-purple-100 text-sm mt-1">You're reading the answer next</p>
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                    <div className="py-4 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                      <span className="text-3xl font-black text-white tracking-wider">READ ANSWER</span>
+                    <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
+                      <span className="text-2xl font-black text-white tracking-wider">READ ANSWER</span>
                       <p className="text-purple-100 text-sm mt-1">Read aloud, then tap Done</p>
                     </div>
                   )}
                   {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                    <div className="py-3 rounded-lg text-center bg-gray-700 border border-gray-600">
+                    <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
                       <span className="text-lg font-bold text-gray-400">LISTEN</span>
                       <p className="text-gray-500 text-sm mt-1">{currentTurn.questionReader.name} &rarr; {currentTurn.answerReader.name}</p>
                     </div>
                   )}
                 </div>
                 {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                  <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-3 py-6 px-5">
-                    <p className="text-center text-lg text-green-100 font-bold uppercase tracking-widest mb-3">📖 Read Aloud</p>
-                    <p className="text-center text-2xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
+                  <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-4 px-4">
+                    <p className="text-center text-base text-green-100 font-bold uppercase tracking-widest mb-2">📖 Read Aloud</p>
+                    <p className="text-center text-xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
                   </div>
                 )}
                 {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && currentTurn.answer && (
-                  <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-3 py-6 px-5">
-                    <p className="text-center text-lg text-purple-100 font-bold uppercase tracking-widest mb-3">💬 Read Aloud</p>
-                    <p className="text-center text-2xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
+                  <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-4 px-4">
+                    <p className="text-center text-base text-purple-100 font-bold uppercase tracking-widest mb-2">💬 Read Aloud</p>
+                    <p className="text-center text-xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
                   </div>
                 )}
                 {!hasRead && currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                  <button onClick={completeReading} className="btn-primary mb-3 bg-green-600 hover:bg-green-700 text-xl py-5">Done Reading →</button>
+                  <button onClick={completeReading} className="btn-primary mb-2 bg-green-600 hover:bg-green-700 text-lg py-3">Done Reading →</button>
                 )}
                 {!hasRead && !currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                  <button onClick={completeReading} className="btn-primary mb-3 bg-purple-600 hover:bg-purple-700 text-xl py-5">Done Reading →</button>
+                  <button onClick={completeReading} className="btn-primary mb-2 bg-purple-600 hover:bg-purple-700 text-lg py-3">Done Reading →</button>
                 )}
                 {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                  <div className="card bg-gray-800 border-2 border-gray-700 mb-3 py-4 px-5 text-center">
+                  <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
                     <p className="text-gray-300 text-lg">
                       <span className="text-green-400 font-bold text-xl">{currentTurn.questionReader.name}</span>
                       <span className="text-gray-500 mx-3">→</span>
@@ -1383,7 +1389,7 @@ function App() {
                     <p className="text-gray-500 text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
                   </div>
                 )}
-                <div className="mt-auto pt-3 border-t border-gray-800">
+                <div className="mt-auto pt-2 border-t border-gray-800">
                   <div className="flex justify-center gap-1 mb-2">
                     {Array.from({ length: gameStats.total }).map((_, i) => (
                       <div key={i} className={"w-2 h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
@@ -1397,7 +1403,7 @@ function App() {
                   </div>
                   {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2">{error}</div>)}
                   {isHost && (
-                    <button onClick={() => setForceConfirm(true)} className="w-full text-xs text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-2">
+                    <button onClick={() => setForceConfirm(true)} className="w-full text-xs text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-1">
                       ⚡ Skip Current Turn
                     </button>
                   )}
@@ -1441,9 +1447,9 @@ function App() {
                     <p className="summary-meta-value">{players.length}</p>
                   </div>
                   <div>
-                    <p className="summary-pill">Finished Round</p>
-                    <p className={"summary-meta-value " + (summaryAnonymousMode ? "text-amber-300" : "text-emerald-300")}>{summaryAnonymousMode ? "Anonymous" : "Names shown"}</p>
-                    <p className="summary-meta-note">Captured when the round ended</p>
+                    <p className="summary-pill">Voting Status</p>
+                    <p className={"summary-meta-value " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ Everyone voted" : `${votersCount}/${players.length} voted`}</p>
+                    <p className="summary-meta-note">{votersCount >= players.length ? "Ready to start next round" : "Waiting for votes"}</p>
                   </div>
                   <div>
                     <p className="summary-pill">Next Round Setting</p>

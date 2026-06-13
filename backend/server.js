@@ -1091,8 +1091,10 @@ io.on('connection', (socket) => {
       saveDatabase();
       const result = db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
       const voteCount = result.length > 0 ? result[0].values[0][0] : 0;
+      const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+      const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
       socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: false });
-      io.to(roomCode).emit('vote-update', { type, targetId, voteCount });
+      io.to(roomCode).emit('vote-update', { type, targetId, voteCount, votersCount });
       return;
     }
 
@@ -1115,8 +1117,10 @@ io.on('connection', (socket) => {
 
     const result = db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
     const voteCount = result.length > 0 ? result[0].values[0][0] : 0;
+    const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+    const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
     socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: true });
-    io.to(roomCode).emit('vote-update', { type, targetId, voteCount });
+    io.to(roomCode).emit('vote-update', { type, targetId, voteCount, votersCount });
     return;
   });
 
