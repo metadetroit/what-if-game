@@ -211,6 +211,7 @@ function App() {
         setLastQuestionSubmitter(data.lastQuestionSubmitter)
       }
     })
+    newSocket.on("question-submitted", () => { setSubmitted(true); setError("") })
     newSocket.on("answer-submitted", () => { setSubmitted(true); setError("") })
 
     newSocket.on("answer-phase", (data) => {
@@ -270,6 +271,8 @@ function App() {
           ...prev,
           [data.targetId]: true
         }))
+      } else {
+        setNotice(noticeFor(data.message || 'Vote failed', 'warn', 2000))
       }
     })
 
@@ -303,6 +306,9 @@ function App() {
       setShowLastSubmitterIndicator(false)
       setLastQuestionSubmitter(null)
       setGameAwards({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null, lastAnswerSubmitter: null })
+      setPerformanceVotes({})
+      setUserVotes({})
+      setSummaryVotes({})
     })
 
     newSocket.on("game-disbanded", (data) => {
@@ -325,6 +331,9 @@ function App() {
       setForceConfirm(false)
       setError(data.message)
       setTimeout(() => setError(""), 6000)
+      setPerformanceVotes({})
+      setUserVotes({})
+      setSummaryVotes({})
     })
 
     newSocket.on("anonymous-toggled", (data) => {
@@ -389,6 +398,9 @@ function App() {
       setKickConfirm(null)
       setError(data?.reason || "You were removed from the game.")
       setTimeout(() => setError(""), 6000)
+      setPerformanceVotes({})
+      setUserVotes({})
+      setSummaryVotes({})
     })
 
     newSocket.on("reconnected", (data) => {
@@ -572,6 +584,9 @@ function App() {
     setForceConfirm(false)
     setKickConfirm(null)
     setReconnectPrompt(null)
+    setPerformanceVotes({})
+    setUserVotes({})
+    setSummaryVotes({})
   }, [socket])
 
   const resetGame = useCallback(() => {
@@ -600,6 +615,9 @@ function App() {
     setForceConfirm(false)
     setKickConfirm(null)
     setReconnectPrompt(null)
+    setPerformanceVotes({})
+    setUserVotes({})
+    setSummaryVotes({})
   }, [socket])
 
   const renderContent = () => {
@@ -631,7 +649,7 @@ function App() {
                   setRoomCode(code)
                   setGameState("welcome")
                   setReconnectInfo(null)
-                  socket.emit("reconnect-player", { roomCode: code, playerName: name })
+                  socketRef.current?.emit("reconnect-player", { roomCode: code, playerName: name })
                 }}
                 className="btn-primary py-3 text-base w-full"
               >
@@ -708,7 +726,7 @@ function App() {
                   <div className="space-y-3">
                     <button
                       onClick={() => {
-                        socket.emit("reconnect-player", {
+                        socketRef.current?.emit("reconnect-player", {
                           roomCode: reconnectPrompt.roomCode,
                           playerName: reconnectPrompt.playerName
                         })
@@ -773,7 +791,7 @@ function App() {
                   <p className="text-sm text-gray-400 mb-4">Remove <span className="text-white font-semibold">{kickConfirm.name}</span> from the room?</p>
                   <div className="flex gap-3">
                     <button onClick={() => setKickConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
-                    <button onClick={() => { socket.emit("host-kick-player", { playerId: kickConfirm.id }); setKickConfirm(null) }} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Kick</button>
+                    <button onClick={() => { socketRef.current?.emit("host-kick-player", { playerId: kickConfirm.id }); setKickConfirm(null) }} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Kick</button>
                   </div>
                 </div>
               </div>
@@ -810,7 +828,7 @@ function App() {
                     <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
                     <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
                   </div>
-                  <button onClick={() => socket.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
+                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
                     <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
                   </button>
                 </div>
@@ -1175,22 +1193,22 @@ function App() {
               <div className="space-y-1.5">
                 <div className="flex gap-2">
                   <div className="flex-1 card py-1.5 px-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div>
                         <p className="text-[10px] text-white font-medium leading-tight">Anonymous</p>
                       </div>
-                      <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-8 h-4 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
-                        <div className={"absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-4" : "translate-x-0.5")} />
+                      <button onClick={() => socketRef.current?.emit("toggle-anonymous")} className={"relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
+                        <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
                       </button>
                     </div>
                   </div>
                   <div className="flex-1 card py-1.5 px-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div>
                         <p className="text-[10px] text-white font-medium leading-tight">No Self-Read</p>
                       </div>
-                      <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-8 h-4 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
-                        <div className={"absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-4" : "translate-x-0.5")} />
+                      <button onClick={() => setNoSelfReading(!noSelfReading)} className={"relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
+                        <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
                       </button>
                     </div>
                   </div>

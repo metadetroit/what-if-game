@@ -1031,7 +1031,7 @@ io.on('connection', (socket) => {
       if (result.length > 0) voteCount = result[0].values[0][0];
     }
 
-    socket.emit('vote-submitted', { success: true, voteCount });
+    socket.emit('vote-submitted', { success: true, targetId, voteCount });
 
     // Broadcast vote update to all players
     io.to(roomCode).emit('vote-update', { type, targetId, voteCount });
