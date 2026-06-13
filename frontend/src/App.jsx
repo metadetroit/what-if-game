@@ -1229,13 +1229,15 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 pb-8 min-h-0">
-                <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
-                <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
-                {renderWaitingPanel('writing')}
-                {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
+              <div className="flex-1 flex flex-col items-center text-center gap-4 min-h-0 overflow-hidden">
+                <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto min-h-0 w-full">
+                  <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
+                  <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
+                  {renderWaitingPanel('writing')}
+                  {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
+                </div>
                 {canForceAdvance && (
-                  <div className="host-nudge">
+                  <div className="host-nudge shrink-0 mt-2">
                     <div>
                       <p>Host option</p>
                       <span>Only use this if someone disappeared.</span>
@@ -1289,13 +1291,15 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto py-6 pb-8 min-h-0">
-                <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
-                <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
-                {renderWaitingPanel('answering')}
-                {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
+              <div className="flex-1 flex flex-col items-center text-center gap-4 min-h-0 overflow-hidden">
+                <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto min-h-0 w-full">
+                  <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
+                  <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
+                  {renderWaitingPanel('answering')}
+                  {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
+                </div>
                 {canForceAdvance && (
-                  <div className="host-nudge">
+                  <div className="host-nudge shrink-0 mt-2">
                     <div>
                       <p>Host option</p>
                       <span>Only use this if someone disappeared.</span>
@@ -1324,13 +1328,14 @@ function App() {
               </div>
             )}
             {currentTurn ? (
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div className="phase-banner mb-2">
                   <span>Phase 3</span>
                   <strong>Performance Time</strong>
                 </div>
-                <div className="mb-2">
-                  {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className="mb-2">
+                    {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
                     <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
                       <span className="text-2xl font-black text-white tracking-wider">READ QUESTION</span>
                       <p className="text-green-100 text-sm mt-1">Read aloud, then tap Done</p>
@@ -1389,7 +1394,8 @@ function App() {
                     <p className="text-gray-500 text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
                   </div>
                 )}
-                <div className="mt-auto pt-2 border-t border-gray-800">
+                </div>
+                <div className="shrink-0 pt-2 border-t border-gray-800">
                   <div className="flex justify-center gap-1 mb-2">
                     {Array.from({ length: gameStats.total }).map((_, i) => (
                       <div key={i} className={"w-2 h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
