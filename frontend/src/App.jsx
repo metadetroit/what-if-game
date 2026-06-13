@@ -762,6 +762,66 @@ function App() {
     return gameAwards.lastQuestionSubmitter
   }, [gameAwards.lastQuestionSubmitter, gameAwards.lastAnswerSubmitter, fastestTyper])
 
+  const roundLeader = useMemo(() => {
+    if (!Array.isArray(gameSummary) || gameSummary.length === 0) return null
+    const ranked = gameSummary
+      .filter(pair => pair.pairDbId)
+      .map(pair => ({ ...pair, voteCount: summaryVotes[pair.pairDbId] || 0 }))
+      .filter(pair => pair.voteCount > 0)
+      .sort((a, b) => b.voteCount - a.voteCount)
+    if (ranked.length === 0) return null
+    const top = ranked[0]
+    return { ...top, tied: ranked.filter(pair => pair.voteCount === top.voteCount).length > 1 }
+  }, [gameSummary, summaryVotes])
+
+  const getWaitingMessage = (phase) => {
+    const remaining = Math.max((progress.total || 0) - (progress.submitted || 0), 0)
+    if (remaining <= 0) return phase === 'writing' ? 'Everyone is in — answers are loading.' : 'Everyone is in — performance is loading.'
+    if (remaining === 1) return 'One player left. Almost there.'
+    return `${remaining} players are still finishing up.`
+  }
+
+  const getWaitingTip = (phase) => {
+    const remaining = Math.max((progress.total || 0) - (progress.submitted || 0), 0)
+    if (remaining <= 0) return 'The next phase should start any second.'
+    if (phase === 'writing') return 'While you wait, start thinking of the weirdest answer you can give.'
+    return 'While you wait, get ready to perform it with maximum drama.'
+  }
+
+  const renderWaitingPanel = (phase) => (
+    <div className="waiting-panel">
+      <div className="waiting-panel__top">
+        <div>
+          <p className="summary-pill">Waiting Room</p>
+          <h3 className="waiting-panel__title">{getWaitingMessage(phase)}</h3>
+        </div>
+        <span className="waiting-panel__count">{progress.submitted}/{progress.total}</span>
+      </div>
+      <p className="waiting-panel__tip">{getWaitingTip(phase)}</p>
+      {playerStatuses.length > 0 && (
+        <div className="waiting-panel__players">
+          {playerStatuses.map((p, i) => (
+            <div key={i} className={"waiting-player " + (p.submitted ? "waiting-player--done" : "")}>
+              <div className="flex items-center gap-2 min-w-0">
+                {firstSubmitter && p.name === firstSubmitter && (
+                  <span className="text-lg" title="First to submit!">🏆</span>
+                )}
+                {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
+                  <span className="text-lg" title={phase === 'writing' ? "You were last to submit your question - don't be the last this time!" : "Last question submitter warning active"}>⏰</span>
+                )}
+                <span className={p.submitted ? "text-green-300 truncate" : "text-gray-400 truncate"}>{p.name}</span>
+              </div>
+              <span className={p.submitted ? "text-green-400" : "text-gray-500"}>{p.submitted ? "✓ Done" : phase === 'writing' ? "writing..." : "answering..."}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="waiting-panel__bar">
+        <div style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} />
+      </div>
+    </div>
+  )
+
   const renderContent = () => {
     switch (gameState) {
       case "reconnect-failed":
@@ -962,7 +1022,7 @@ function App() {
             <div className="card mb-2 py-2">
               <div className="text-center">
                 <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Room Code</p>
-                <div className="text-3xl font-black text-gradient tracking-[0.2em] cursor-pointer active:scale-95 transition-transform" onClick={() => { navigator.clipboard?.writeText(roomCode) }} title="Tap to copy">{roomCode}</div>
+                <div className="text-3xl font-black text-gradient tracking-[0.2em] cursor-pointer active:scale-95 transition-transform" onClick={() => { navigator.clipboard?.writeText(roomCode); setNotice(noticeFor('Room code copied', 'success', 1200)) }} title="Tap to copy">{roomCode}</div>
                 <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
               </div>
             </div>
@@ -983,6 +1043,13 @@ function App() {
                   </div>
                 ))}
               </div>
+            </div>
+            <div className={"lobby-ready " + (players.length >= 3 ? "lobby-ready--ready" : "")}>
+              <div>
+                <p className="text-xs font-bold text-white">{players.length >= 3 ? "Ready to start" : "Waiting for players"}</p>
+                <p className="text-[10px] text-gray-400">{players.length >= 3 ? "The host can start whenever everyone is settled." : `Need ${3 - players.length} more player${3 - players.length === 1 ? "" : "s"} to begin.`}</p>
+              </div>
+              <span>{players.length >= 3 ? "✅" : "⏳"}</span>
             </div>
             {isHost && (
               <div className="card mb-2 py-2 px-3">
@@ -1042,6 +1109,11 @@ function App() {
                     <p className="text-xs font-bold text-purple-300">🔒 This round is anonymized!</p>
                   </div>
                 )}
+                <div className="phase-banner mb-2">
+                  <span>Phase 1</span>
+                  <strong>Question Time</strong>
+                  <em>Set up the weirdness.</em>
+                </div>
                 <div className="text-center mb-1">
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
                   <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
@@ -1065,37 +1137,19 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
                 <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
-                <p className="text-gray-400 text-sm mb-4">Waiting for others...</p>
-                {playerStatuses.length > 0 && (
-                  <div className="w-full max-w-xs mb-4 space-y-1">
-                    {playerStatuses.map((p, i) => (
-                      <div key={i} className={"flex items-center justify-between px-3 py-1.5 rounded-lg text-sm " + (p.submitted ? "bg-green-900/30 border border-green-800" : "bg-gray-800 border border-gray-700")}>
-                        <div className="flex items-center gap-2">
-                          {firstSubmitter && p.name === firstSubmitter && (
-                            <span className="text-lg" title="First to submit!">🏆</span>
-                          )}
-                          {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
-                            <span className="text-lg" title="You were last to submit your question - don't be the last this time!">⏰</span>
-                          )}
-                          <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
-                        </div>
-                        <span className={p.submitted ? "text-green-400" : "text-gray-600"}>{p.submitted ? "✓ Done" : "waiting..."}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="w-full max-w-xs">
-                  <div className={"flex justify-between text-xs mb-1 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Progress</span><span>{progress.submitted}/{progress.total}</span></div>
-                  <div className={"w-full h-2 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
-                </div>
+                {renderWaitingPanel('writing')}
                 {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
                 {canForceAdvance && (
-                  <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
-                    ⚡ Force Advance (skip waiting players)
-                  </button>
+                  <div className="host-nudge">
+                    <div>
+                      <p>Host option</p>
+                      <span>Only use this if someone disappeared.</span>
+                    </div>
+                    <button onClick={() => setForceConfirm(true)}>Skip waiting players</button>
+                  </div>
                 )}
               </div>
             )}
@@ -1119,6 +1173,11 @@ function App() {
             )}
             {!submitted ? (
               <div className="flex-1 flex flex-col min-h-0">
+                <div className="phase-banner mb-2">
+                  <span>Phase 2</span>
+                  <strong>Answer Time</strong>
+                  <em>Make it ridiculous.</em>
+                </div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 text-center">Answer This Question</p>
                 <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
@@ -1140,37 +1199,19 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
                 <div className="w-16 h-16 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-3xl">✓</span></div>
                 <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
-                <p className="text-gray-400 text-sm mb-4">Waiting for others...</p>
-                {playerStatuses.length > 0 && (
-                  <div className="w-full max-w-xs mb-4 space-y-1">
-                    {playerStatuses.map((p, i) => (
-                      <div key={i} className={"flex items-center justify-between px-3 py-1.5 rounded-lg text-sm " + (p.submitted ? "bg-green-900/30 border border-green-800" : "bg-gray-800 border border-gray-700")}>
-                        <div className="flex items-center gap-2">
-                          {firstSubmitter && p.name === firstSubmitter && (
-                            <span className="text-lg" title="First to submit!">🏆</span>
-                          )}
-                          {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
-                            <span className="text-lg" title="Last question submitter warning active">⏰</span>
-                          )}
-                          <span className={p.submitted ? "text-green-300" : "text-gray-400"}>{p.name}</span>
-                        </div>
-                        <span className={p.submitted ? "text-green-400" : "text-gray-600"}>{p.submitted ? "✓ Done" : "answering..."}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="w-full max-w-xs">
-                  <div className={"flex justify-between text-xs mb-1 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Progress</span><span>{progress.submitted}/{progress.total}</span></div>
-                  <div className={"w-full h-2 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
-                </div>
+                {renderWaitingPanel('answering')}
                 {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
                 {canForceAdvance && (
-                  <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
-                    ⚡ Force Advance (skip waiting players)
-                  </button>
+                  <div className="host-nudge">
+                    <div>
+                      <p>Host option</p>
+                      <span>Only use this if someone disappeared.</span>
+                    </div>
+                    <button onClick={() => setForceConfirm(true)}>Skip waiting players</button>
+                  </div>
                 )}
               </div>
             )}
@@ -1194,6 +1235,11 @@ function App() {
             )}
             {currentTurn ? (
               <div className="flex-1 flex flex-col min-h-0">
+                <div className="phase-banner mb-2">
+                  <span>Phase 3</span>
+                  <strong>Performance Time</strong>
+                  <em>Read it loud. Sell the chaos.</em>
+                </div>
                 <div className="mb-3">
                   {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
                     <div className="py-4 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
@@ -1398,6 +1444,18 @@ function App() {
                 </div>
               )}
             </div>
+
+            {roundLeader && (
+              <div className="summary-leader card">
+                <div className="summary-leader__icon">🔥</div>
+                <div>
+                  <p className="text-sm text-rose-200">{roundLeader.tied ? 'Current tie for top pairing' : 'Current top pairing'}</p>
+                  <p className="text-base font-extrabold text-white leading-snug">{roundLeader.question}</p>
+                  <p className="text-sm text-rose-100/80 leading-snug">Performed with: {roundLeader.pairedAnswer || 'No pairing was performed'}</p>
+                </div>
+                <div className="summary-leader__badge">{roundLeader.voteCount} vote{roundLeader.voteCount === 1 ? '' : 's'}</div>
+              </div>
+            )}
 
             {fastestTyper && (
               <div className="summary-fastest card">
