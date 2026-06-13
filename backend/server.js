@@ -23,6 +23,7 @@ app.get('/api/best-of', (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
   const sort = (req.query.sort || 'votes').toLowerCase(); // 'votes' | 'newest'
+  const offset = parseInt(req.query.offset) || 0;
 
   let results = [];
 
@@ -34,8 +35,8 @@ app.get('/api/best-of', (req, res) => {
       JOIN games g ON q.game_id = g.id
       WHERE g.hidden_from_best_of = 0
       ORDER BY ${orderByQuestions}
-      LIMIT ?
-    `, [limit]);
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
     
     if (questions.length > 0) {
       questions[0].values.forEach(row => {
@@ -61,8 +62,8 @@ app.get('/api/best-of', (req, res) => {
       JOIN games g ON a.game_id = g.id
       WHERE g.hidden_from_best_of = 0
       ORDER BY ${orderByAnswers}
-      LIMIT ?
-    `, [limit]);
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
     
     if (answers.length > 0) {
       answers[0].values.forEach(row => {
@@ -92,8 +93,8 @@ app.get('/api/best-of', (req, res) => {
       JOIN games g ON qp.game_id = g.id
       WHERE g.hidden_from_best_of = 0
       ORDER BY ${orderByPairs}
-      LIMIT ?
-    `, [limit]);
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
     
     if (pairs.length > 0) {
       pairs[0].values.forEach(row => {

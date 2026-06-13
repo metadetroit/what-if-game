@@ -52,6 +52,9 @@ function App() {
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
   const [bestOfSort, setBestOfSort] = useState(() => sessionStorage.getItem('bestOfSort') || 'votes')
   const [bestOfLimit, setBestOfLimit] = useState(20)
+  const [bestOfOffset, setBestOfOffset] = useState(0)
+  const [bestOfHasMore, setBestOfHasMore] = useState(true)
+  const [bestOfLoading, setBestOfLoading] = useState(false)
   const scrollBestOfIdRef = useRef(null)
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdown, setCountdown] = useState(0)
@@ -77,16 +80,24 @@ function App() {
 
   const fetchBestOfData = async (opts = {}) => {
     try {
+      if (bestOfLoading) return
+      setBestOfLoading(true)
       const sort = opts.sort || bestOfSort
       const limit = opts.limit || bestOfLimit
-      const url = `${SOCKET_URL}/api/best-of?type=qa_pairs&limit=${limit}&sort=${sort}`
+      const offset = opts.offset ?? bestOfOffset
+      const url = `${SOCKET_URL}/api/best-of?type=qa_pairs&limit=${limit}&sort=${sort}&offset=${offset}`
       const response = await fetch(url)
       const data = await response.json()
-      setBestOfData(data)
+      if (offset === 0) {
+        setBestOfData(data)
+      } else {
+        setBestOfData(prev => Array.isArray(prev) ? [...prev, ...data] : data)
+      }
+      setBestOfHasMore(Array.isArray(data) ? data.length === limit : false)
     } catch (error) {
       console.error('Failed to fetch best of data:', error)
       setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
-    }
+    } finally { setBestOfLoading(false) }
   }
 
   useEffect(() => {
@@ -97,7 +108,8 @@ function App() {
       if (view === 'best-of') {
         setGameState('best-of')
         if (pairId) scrollBestOfIdRef.current = pairId
-        fetchBestOfData()
+        setBestOfOffset(0)
+        fetchBestOfData({ offset: 0 })
       }
     } catch (_) {}
   }, [])
@@ -109,6 +121,20 @@ function App() {
       scrollBestOfIdRef.current = null
     }
   }, [bestOfData])
+
+  useEffect(() => {
+    if (gameState !== 'best-of') return
+    const onScroll = () => {
+      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 300
+      if (nearBottom && bestOfHasMore && !bestOfLoading) {
+        const nextOffset = bestOfOffset + bestOfLimit
+        setBestOfOffset(nextOffset)
+        fetchBestOfData({ offset: nextOffset })
+      }
+    }
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [gameState, bestOfHasMore, bestOfLoading, bestOfOffset, bestOfLimit, bestOfSort])
 
   useEffect(() => {
     if (["writing", "answering", "performing"].includes(gameState)) {
@@ -766,11 +792,11 @@ function App() {
               <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
               <div className="mt-2 inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
                 <button
-                  onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); fetchBestOfData({ sort: 'votes' }) }}
+                  onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); setBestOfOffset(0); fetchBestOfData({ sort: 'votes', offset: 0 }) }}
                   className={"px-3 py-1 " + (bestOfSort === 'votes' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
                 >Most votes</button>
                 <button
-                  onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); fetchBestOfData({ sort: 'newest' }) }}
+                  onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); setBestOfOffset(0); fetchBestOfData({ sort: 'newest', offset: 0 }) }}
                   className={"px-3 py-1 border-l border-gray-700 " + (bestOfSort === 'newest' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
                 >Newest</button>
               </div>
@@ -809,12 +835,9 @@ function App() {
                       )}
                     </div>
                   ))}
-                  <div className="pt-2 text-center">
-                    <button
-                      onClick={() => { const next = bestOfLimit + 20; setBestOfLimit(next); fetchBestOfData({ limit: next }) }}
-                      className="text-[12px] text-indigo-300 hover:text-indigo-200 underline"
-                    >Load more</button>
-                  </div>
+                  {bestOfLoading && (
+                    <div className="pt-2 text-center text-[12px] text-gray-400">Loading…</div>
+                  )}
                 </div>
               )}
             </div>
