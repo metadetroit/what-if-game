@@ -50,6 +50,11 @@ function App() {
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
+  const [bestOfSort, setBestOfSort] = useState(() => sessionStorage.getItem('bestOfSort') || 'votes')
+  const [bestOfLimit, setBestOfLimit] = useState(20)
+  const scrollBestOfIdRef = useRef(null)
+  const [showCountdown, setShowCountdown] = useState(false)
+  const [countdown, setCountdown] = useState(0)
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -70,9 +75,11 @@ function App() {
     return () => clearTimeout(t)
   }, [notice])
 
-  const fetchBestOfData = async () => {
+  const fetchBestOfData = async (opts = {}) => {
     try {
-      const url = `${SOCKET_URL}/api/best-of?type=qa_pairs&limit=20`
+      const sort = opts.sort || bestOfSort
+      const limit = opts.limit || bestOfLimit
+      const url = `${SOCKET_URL}/api/best-of?type=qa_pairs&limit=${limit}&sort=${sort}`
       const response = await fetch(url)
       const data = await response.json()
       setBestOfData(data)
@@ -81,6 +88,41 @@ function App() {
       setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
     }
   }
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const view = params.get('view')
+      const pairId = params.get('pair')
+      if (view === 'best-of') {
+        setGameState('best-of')
+        if (pairId) scrollBestOfIdRef.current = pairId
+        fetchBestOfData()
+      }
+    } catch (_) {}
+  }, [])
+
+  useEffect(() => {
+    if (Array.isArray(bestOfData) && scrollBestOfIdRef.current) {
+      const el = document.getElementById(`bestof-${scrollBestOfIdRef.current}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      scrollBestOfIdRef.current = null
+    }
+  }, [bestOfData])
+
+  useEffect(() => {
+    if (["writing", "answering", "performing"].includes(gameState)) {
+      setShowCountdown(true)
+      setCountdown(3)
+      const iv = setInterval(() => {
+        setCountdown((c) => {
+          if (c <= 1) { clearInterval(iv); setShowCountdown(false); return 0 }
+          return c - 1
+        })
+      }, 1000)
+      return () => clearInterval(iv)
+    }
+  }, [gameState])
 
   const handleHideGame = async () => {
     console.log('handleHideGame called:', { roomCode, SOCKET_URL })
@@ -116,6 +158,10 @@ function App() {
   }, [])
 
   const handleVote = (type, targetId) => {
+    if (pendingVoteRef.current) {
+      setNotice(noticeFor('Please wait…', 'info', 1200))
+      return
+    }
     console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id, roomCode: roomCodeRef.current, socketRoomCode: socketRef.current?.roomCode })
     if (type === 'qa_pair' && summaryPairVoteId && summaryPairVoteId !== targetId) {
       setNotice(noticeFor('You already voted for a different pairing', 'warn', 2500))
@@ -285,7 +331,12 @@ function App() {
         }))
         if (pendingVote?.type === 'qa_pair') {
           setSummaryPairVoteId(isVoted ? data.targetId : null)
+          const el = document.getElementById(`pair-${data.targetId}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
         }
+        setNotice(noticeFor(isVoted ? 'Vote saved' : 'Vote removed', 'success', 1200))
       } else {
         setNotice(noticeFor(data.message || 'Vote failed', 'warn', 2000))
       }
@@ -713,6 +764,16 @@ function App() {
               </div>
               <h1 className="text-xl font-extrabold text-gradient mb-1">Best Of</h1>
               <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
+              <div className="mt-2 inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
+                <button
+                  onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); fetchBestOfData({ sort: 'votes' }) }}
+                  className={"px-3 py-1 " + (bestOfSort === 'votes' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
+                >Most votes</button>
+                <button
+                  onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); fetchBestOfData({ sort: 'newest' }) }}
+                  className={"px-3 py-1 border-l border-gray-700 " + (bestOfSort === 'newest' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
+                >Newest</button>
+              </div>
             </div>
             <div className="card py-3">
               {/* Content */}
@@ -725,14 +786,21 @@ function App() {
                   <p className="text-gray-500 text-sm">No content yet. Play some games to see the best content here!</p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
                   {bestOfData.map((item, i) => (
-                    <div key={i} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                    <div key={i} id={`bestof-${item.id}`} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
                       {item.type === 'qa_pair' && (
                         <>
                           <div className="flex justify-between items-start mb-2">
                             <span className="text-xs font-bold text-amber-400">🎯 GAME PAIRING</span>
-                            <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}?view=best-of&pair=${item.id}`); setNotice(noticeFor('Link copied', 'success', 1200)) }}
+                                className="text-[10px] text-indigo-300 hover:text-indigo-200 underline"
+                                title="Copy shareable link"
+                              >🔗 Copy link</button>
+                              <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
+                            </div>
                           </div>
                           <p className="text-sm text-white mb-1"><span className="text-indigo-400">Q:</span> {item.question}</p>
                           <p className="text-sm text-white mb-2"><span className="text-purple-400">A:</span> {item.answer}</p>
@@ -741,6 +809,12 @@ function App() {
                       )}
                     </div>
                   ))}
+                  <div className="pt-2 text-center">
+                    <button
+                      onClick={() => { const next = bestOfLimit + 20; setBestOfLimit(next); fetchBestOfData({ limit: next }) }}
+                      className="text-[12px] text-indigo-300 hover:text-indigo-200 underline"
+                    >Load more</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1181,25 +1255,27 @@ function App() {
             <div className="summary-header card">
               <div className="flex flex-col gap-1">
                 <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Round Complete</p>
-                <h2 className="text-2xl font-black text-white leading-tight">Vote for tonight's sharpest pairing</h2>
-                <p className="text-sm text-gray-400">Scroll through the performances, tap your favorite combo, and crown the champions.</p>
+                <h2 className="text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
+                <p className="text-sm text-gray-400">Scroll through and vote for the best game-paired combo</p>
               </div>
-              <div className="summary-header__meta">
-                <div>
-                  <p className="summary-pill">Players</p>
-                  <p className="summary-meta-value">{players.length}</p>
+              {isHost && (
+                <div className="summary-header__meta">
+                  <div>
+                    <p className="summary-pill">Players</p>
+                    <p className="summary-meta-value">{players.length}</p>
+                  </div>
+                  <div>
+                    <p className="summary-pill">Finished Round</p>
+                    <p className={"summary-meta-value " + (summaryAnonymousMode ? "text-amber-300" : "text-emerald-300")}>{summaryAnonymousMode ? "Anonymous" : "Names shown"}</p>
+                    <p className="summary-meta-note">Captured when the round ended</p>
+                  </div>
+                  <div>
+                    <p className="summary-pill">Next Round Setting</p>
+                    <p className={"summary-meta-value " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "Anonymous" : "Names shown"}</p>
+                    <p className="summary-meta-note">Host toggle updates this for the upcoming game</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="summary-pill">Finished Round</p>
-                  <p className={"summary-meta-value " + (summaryAnonymousMode ? "text-amber-300" : "text-emerald-300")}>{summaryAnonymousMode ? "Anonymous" : "Names shown"}</p>
-                  <p className="summary-meta-note">Captured when the round ended</p>
-                </div>
-                <div>
-                  <p className="summary-pill">Next Round Setting</p>
-                  <p className={"summary-meta-value " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "Anonymous" : "Names shown"}</p>
-                  <p className="summary-meta-note">Host toggle updates this for the upcoming game</p>
-                </div>
-              </div>
+              )}
             </div>
 
             {fastestTyper && (
@@ -1227,10 +1303,11 @@ function App() {
                     const hasPairId = Boolean(pair.pairDbId)
                     const userVotedForPair = hasPairId ? Boolean(userVotes[pair.pairDbId]) : false
                     const userLockedToDifferentPair = summaryPairVoteId && hasPairId && summaryPairVoteId !== pair.pairDbId
-                    const voteDisabled = userLockedToDifferentPair
+                    const inFlight = pendingVoteRef.current && pendingVoteRef.current.type === 'qa_pair' && pendingVoteRef.current.targetId === pair.pairDbId
+                    const voteDisabled = userLockedToDifferentPair || inFlight
 
                     return (
-                      <article key={pairKey} className="summary-card">
+                      <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card " + (userVotedForPair ? "summary-card--active" : "")}>
                         <div className="summary-card__body">
                           <div className="summary-pill summary-pill--accent">
                             <span className="text-xs font-semibold tracking-widest">Game Pairing</span>
@@ -1250,6 +1327,7 @@ function App() {
                           <div className="summary-vote-meta">
                             <span className="text-gray-400 text-xs uppercase tracking-widest">Live Votes</span>
                             <p className="text-2xl font-black text-amber-300">{voteCount}</p>
+                            {userVotedForPair && (<span className="you-badge">You</span>)}
                           </div>
                           {hasPairId ? (
                             <button
@@ -1259,6 +1337,7 @@ function App() {
                               } ${voteDisabled ? 'summary-vote-btn--disabled' : ''}`}
                               title="Vote for best game pairing"
                               disabled={voteDisabled}
+                              aria-busy={inFlight ? 'true' : 'false'}
                             >
                               {userVotedForPair ? 'Voted (click to undo)' : userLockedToDifferentPair ? 'Already voted' : 'Vote for this pairing'}
                             </button>
@@ -1306,8 +1385,8 @@ function App() {
                       <span />
                     </button>
                   </div>
-                  <button onClick={() => socketRef.current?.emit("replay-game", { noSelfReading })} className="summary-quick-btn">
-                    🔄 Replay with same crew
+                  <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
+                    🔄 Replay (same players)
                   </button>
                 </div>
                 <div className="summary-actions__cta">
@@ -1319,14 +1398,7 @@ function App() {
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="summary-guest">
-                <p className="text-sm text-indigo-300">Waiting for the host to set up the next round…</p>
-                <button onClick={resetGame} className="btn-secondary py-3 text-sm">
-                  🚪 Leave game
-                </button>
-              </div>
-            )}
+            ) : (null)}
           </div>
         )
 
@@ -1695,6 +1767,18 @@ function App() {
           aria-live="polite"
         >
           <span>{notice.message}</span>
+        </div>
+      )}
+      {showCountdown && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="bg-black/70 border border-gray-700 rounded-2xl px-8 py-6 text-center">
+            <div className="text-5xl font-black text-white">{countdown}</div>
+            {isHost && (
+              <button onClick={() => { setShowCountdown(false); setCountdown(0) }} className="mt-3 text-xs text-indigo-300 underline">
+                Skip
+              </button>
+            )}
+          </div>
         </div>
       )}
       {renderContent()}

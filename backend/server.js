@@ -22,16 +22,18 @@ app.get('/api/best-of', (req, res) => {
   const db = getDb();
   const limit = parseInt(req.query.limit) || 20;
   const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
+  const sort = (req.query.sort || 'votes').toLowerCase(); // 'votes' | 'newest'
 
   let results = [];
 
   if (!type || type === 'questions') {
+    const orderByQuestions = sort === 'newest' ? 'g.created_at DESC' : 'q.vote_count DESC';
     const questions = db.exec(`
       SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
       FROM questions q
       JOIN games g ON q.game_id = g.id
       WHERE g.hidden_from_best_of = 0
-      ORDER BY q.vote_count DESC
+      ORDER BY ${orderByQuestions}
       LIMIT ?
     `, [limit]);
     
@@ -52,12 +54,13 @@ app.get('/api/best-of', (req, res) => {
   }
 
   if (!type || type === 'answers') {
+    const orderByAnswers = sort === 'newest' ? 'g.created_at DESC' : 'a.vote_count DESC';
     const answers = db.exec(`
       SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
       FROM answers a
       JOIN games g ON a.game_id = g.id
       WHERE g.hidden_from_best_of = 0
-      ORDER BY a.vote_count DESC
+      ORDER BY ${orderByAnswers}
       LIMIT ?
     `, [limit]);
     
@@ -78,6 +81,7 @@ app.get('/api/best-of', (req, res) => {
   }
 
   if (!type || type === 'qa_pairs') {
+    const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
     const pairs = db.exec(`
       SELECT qp.id, q.text as question_text, a.text as answer_text, 
              q.author_name as question_author, a.author_name as answer_author,
@@ -87,7 +91,7 @@ app.get('/api/best-of', (req, res) => {
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
       WHERE g.hidden_from_best_of = 0
-      ORDER BY qp.vote_count DESC
+      ORDER BY ${orderByPairs}
       LIMIT ?
     `, [limit]);
     
