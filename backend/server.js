@@ -27,7 +27,7 @@ app.get('/api/best-of', (req, res) => {
 
   if (!type || type === 'questions') {
     const questions = db.exec(`
-      SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, g.anonymous_mode
+      SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
       FROM questions q
       JOIN games g ON q.game_id = g.id
       WHERE g.hidden_from_best_of = 0
@@ -37,7 +37,7 @@ app.get('/api/best-of', (req, res) => {
     
     if (questions.length > 0) {
       questions[0].values.forEach(row => {
-        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous_mode
+        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous
         const isAnon = row[5] === 1 || row[5] === true;
         results.push({
           type: 'question',
@@ -53,7 +53,7 @@ app.get('/api/best-of', (req, res) => {
 
   if (!type || type === 'answers') {
     const answers = db.exec(`
-      SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, g.anonymous_mode
+      SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
       FROM answers a
       JOIN games g ON a.game_id = g.id
       WHERE g.hidden_from_best_of = 0
@@ -63,7 +63,7 @@ app.get('/api/best-of', (req, res) => {
     
     if (answers.length > 0) {
       answers[0].values.forEach(row => {
-        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous_mode
+        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous
         const isAnon = row[5] === 1 || row[5] === true;
         results.push({
           type: 'answer',
@@ -81,7 +81,7 @@ app.get('/api/best-of', (req, res) => {
     const pairs = db.exec(`
       SELECT qp.id, q.text as question_text, a.text as answer_text, 
              q.author_name as question_author, a.author_name as answer_author,
-             qp.vote_count, g.created_at, g.anonymous_mode
+             qp.vote_count, g.created_at, qp.anonymous
       FROM qa_pairs qp
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
@@ -93,7 +93,7 @@ app.get('/api/best-of', (req, res) => {
     
     if (pairs.length > 0) {
       pairs[0].values.forEach(row => {
-        // columns: 0 id, 1 q_text, 2 a_text, 3 q_author, 4 a_author, 5 vote, 6 created, 7 anon_mode
+        // columns: 0 id, 1 q_text, 2 a_text, 3 q_author, 4 a_author, 5 vote, 6 created, 7 anonymous
         const isAnon = row[7] === 1 || row[7] === true;
         results.push({
           type: 'qa_pair',
@@ -290,7 +290,8 @@ io.on('connection', (socket) => {
       answers: {},
       currentReaderIndex: 0,
       playerOrder: [],
-      anonymousMode: false
+      anonymousMode: false,
+      currentRoundAnonymousMode: false
     };
     games[roomCode] = game;
     
@@ -366,6 +367,7 @@ io.on('connection', (socket) => {
     // CRITICAL FIX: Remove any disconnected players from lobby before starting
     game.players = activePlayers;
     game.phase = 'writing';
+    game.currentRoundAnonymousMode = game.anonymousMode;
     io.to(roomCode).emit('game-started', { phase: 'writing', anonymousMode: game.anonymousMode });
   });
 
@@ -423,8 +425,8 @@ io.on('connection', (socket) => {
 
     // Save question to database
     const db = getDb();
-    db.run("INSERT INTO questions (game_id, text, author_id, author_name, vote_count) VALUES (?, ?, ?, ?, ?)", 
-      [game.dbGameId, question, socket.id, player?.name || 'Unknown', 0]);
+    db.run("INSERT INTO questions (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
+      [game.dbGameId, question, socket.id, player?.name || 'Unknown', 0, game.currentRoundAnonymousMode ? 1 : 0]);
     const questionId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
     game.questions[socket.id].dbId = questionId;
     saveDatabase();
@@ -645,8 +647,8 @@ io.on('connection', (socket) => {
 
     // Save answer to database
     const db = getDb();
-    db.run("INSERT INTO answers (game_id, text, author_id, author_name, vote_count) VALUES (?, ?, ?, ?, ?)", 
-      [game.dbGameId, answer, socket.id, player.name || 'Unknown', 0]);
+    db.run("INSERT INTO answers (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
+      [game.dbGameId, answer, socket.id, player.name || 'Unknown', 0, game.currentRoundAnonymousMode ? 1 : 0]);
     const answerId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
     game.answers[socket.id].dbId = answerId;
     saveDatabase();
@@ -690,7 +692,7 @@ io.on('connection', (socket) => {
     const game = games[roomCode];
     if (!game) return [];
 
-    const isAnonymous = game.anonymousMode;
+    const isAnonymous = typeof game.currentRoundAnonymousMode === 'boolean' ? game.currentRoundAnonymousMode : game.anonymousMode;
     const db = getDb();
 
     if (game.turnLog && game.turnLog.length > 0) {
@@ -733,8 +735,8 @@ io.on('connection', (socket) => {
                   pairDbId = existing[0].values[0][0];
                 } else {
                   db.run(
-                    "INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count) VALUES (?, ?, ?, ?)",
-                    [game.dbGameId, questionData.dbId, pairedAId, 0]
+                    "INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count, anonymous) VALUES (?, ?, ?, ?, ?)",
+                    [game.dbGameId, questionData.dbId, pairedAId, 0, isAnonymous ? 1 : 0]
                   );
                   pairDbId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
                   saveDatabase();
@@ -834,8 +836,8 @@ io.on('connection', (socket) => {
     const db = getDb();
     for (const pair of game.cardPairs) {
       if (pair.question.dbId && pair.answer.dbId) {
-        db.run("INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count) VALUES (?, ?, ?, ?)",
-          [game.dbGameId, pair.question.dbId, pair.answer.dbId, 0]);
+        db.run("INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count, anonymous) VALUES (?, ?, ?, ?, ?)",
+          [game.dbGameId, pair.question.dbId, pair.answer.dbId, 0, game.currentRoundAnonymousMode ? 1 : 0]);
         const pairId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
         pair.dbId = pairId;
       }
@@ -1150,6 +1152,7 @@ io.on('connection', (socket) => {
     const prevLastQuestionSubmitter = game.lastQuestionSubmitter;
 
     game.phase = 'writing';
+    game.currentRoundAnonymousMode = game.anonymousMode;
     game.questions = {};
     game.answers = {};
     game.questionAssignments = {};

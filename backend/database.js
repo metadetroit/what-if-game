@@ -81,6 +81,23 @@ async function initDatabase() {
     )
   `);
 
+  // Add anonymous column to ensure per-round/per-item anonymity persists correctly
+  try {
+    db.run("ALTER TABLE questions ADD COLUMN anonymous BOOLEAN DEFAULT 0");
+  } catch (e) {
+    // Already exists or table not initialized
+  }
+  try {
+    db.run("ALTER TABLE answers ADD COLUMN anonymous BOOLEAN DEFAULT 0");
+  } catch (e) {
+    // Already exists or table not initialized
+  }
+  try {
+    db.run("ALTER TABLE qa_pairs ADD COLUMN anonymous BOOLEAN DEFAULT 0");
+  } catch (e) {
+    // Already exists or table not initialized
+  }
+
   // Save database
   saveDatabase();
   

@@ -117,10 +117,6 @@ function App() {
 
   const handleVote = (type, targetId) => {
     console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id, roomCode: roomCodeRef.current, socketRoomCode: socketRef.current?.roomCode })
-    if (userVotes[targetId]) {
-      console.log('Vote rejected: already voted')
-      return // Already voted
-    }
     if (type === 'qa_pair' && summaryPairVoteId && summaryPairVoteId !== targetId) {
       setNotice(noticeFor('You already voted for a different pairing', 'warn', 2500))
       return
@@ -282,12 +278,13 @@ function App() {
       const pendingVote = pendingVoteRef.current
       pendingVoteRef.current = null
       if (data.success) {
+        const isVoted = typeof data.isVoted === 'boolean' ? data.isVoted : true
         setUserVotes(prev => ({
           ...prev,
-          [data.targetId]: true
+          [data.targetId]: isVoted
         }))
         if (pendingVote?.type === 'qa_pair') {
-          setSummaryPairVoteId(data.targetId)
+          setSummaryPairVoteId(isVoted ? data.targetId : null)
         }
       } else {
         setNotice(noticeFor(data.message || 'Vote failed', 'warn', 2000))
@@ -1230,7 +1227,7 @@ function App() {
                     const hasPairId = Boolean(pair.pairDbId)
                     const userVotedForPair = hasPairId ? Boolean(userVotes[pair.pairDbId]) : false
                     const userLockedToDifferentPair = summaryPairVoteId && hasPairId && summaryPairVoteId !== pair.pairDbId
-                    const voteDisabled = userVotedForPair || userLockedToDifferentPair
+                    const voteDisabled = userLockedToDifferentPair
 
                     return (
                       <article key={pairKey} className="summary-card">
@@ -1267,11 +1264,11 @@ function App() {
                               onClick={() => handleVote('qa_pair', pair.pairDbId)}
                               className={`summary-vote-btn ${
                                 userVotedForPair ? 'summary-vote-btn--active' : ''
-                              } ${voteDisabled && !userVotedForPair ? 'summary-vote-btn--disabled' : ''}`}
+                              } ${voteDisabled ? 'summary-vote-btn--disabled' : ''}`}
                               title="Vote for best game pairing"
                               disabled={voteDisabled}
                             >
-                              {userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Already voted' : 'Vote for this pairing'}
+                              {userVotedForPair ? 'Voted (click to undo)' : userLockedToDifferentPair ? 'Already voted' : 'Vote for this pairing'}
                             </button>
                           ) : (
                             <button disabled className="summary-vote-btn summary-vote-btn--disabled">Voting unavailable</button>
