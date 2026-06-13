@@ -56,6 +56,7 @@ function App() {
   const [bestOfHasMore, setBestOfHasMore] = useState(true)
   const [bestOfLoading, setBestOfLoading] = useState(false)
   const scrollBestOfIdRef = useRef(null)
+  const wakeLockRef = useRef(null)
   const bestOfSentinelRef = useRef(null)
   const bestOfScrollRef = useRef(null)
   const [showCountdown, setShowCountdown] = useState(false)
@@ -223,7 +224,11 @@ function App() {
   }
 
   useEffect(() => {
-    const newSocket = io(SOCKET_URL)
+    const newSocket = io(SOCKET_URL, {
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
+    })
     setSocket(newSocket)
     socketRef.current = newSocket
 
@@ -252,15 +257,23 @@ function App() {
         return
       }
       reconnectAttemptedRef.current = true
-      console.log("Prompting reconnect to room:", session.roomCode, "for player:", session.playerName)
-      setReconnectPrompt({ roomCode: session.roomCode, playerName: session.playerName })
+      if (gameStateRef.current !== "welcome") {
+        // Mid-session reconnect (e.g. phone woke up): re-register silently without showing the prompt
+        console.log("Mid-game socket reconnect — auto-emitting reconnect-player")
+        newSocket.emit("reconnect-player", { roomCode: session.roomCode, playerName: session.playerName })
+      } else {
+        console.log("Prompting reconnect to room:", session.roomCode, "for player:", session.playerName)
+        setReconnectPrompt({ roomCode: session.roomCode, playerName: session.playerName })
+      }
     })
 
     newSocket.on("disconnect", () => {
       console.log("Socket disconnected")
+      // CRITICAL: reset so the next 'connect' event can re-emit reconnect-player
+      reconnectAttemptedRef.current = false
       // Only show notice if user is mid-game; pre-game disconnect is silent.
       if (gameStateRef.current !== "welcome" && gameStateRef.current !== "reconnect-failed") {
-        setNotice(noticeFor("Connection lost — trying to reconnect…", "warn", 8000))
+        setNotice(noticeFor("Connection lost — reconnecting…", "warn", 15000))
       }
       const savedSession = sessionStorage.getItem("gameSession")
       if (savedSession) {
@@ -279,6 +292,30 @@ function App() {
       }
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
+
+    // Page Visibility: detect phone wake-up / tab switch back.
+    // If socket is connected, ask server whether we're still active.
+    // If socket is not yet connected, just ensure the flag lets the next 'connect' fire reconnect-player.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return
+      const state = gameStateRef.current
+      if (state === "welcome" || state === "reconnect-failed") return
+      const saved = sessionStorage.getItem("gameSession")
+      if (!saved) return
+      try {
+        const session = JSON.parse(saved)
+        if (!session.roomCode || !session.playerName) return
+        if (socketRef.current?.connected) {
+          console.log("[visibility] Page visible — sending check-presence")
+          socketRef.current.emit("check-presence", { roomCode: session.roomCode, playerName: session.playerName })
+        } else {
+          // Socket not connected yet — ensure reconnect-player fires when it does
+          reconnectAttemptedRef.current = false
+          console.log("[visibility] Page visible — socket offline, cleared reconnect flag")
+        }
+      } catch (e) {}
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     const updatePlayersAndHost = (payload) => {
       if (!payload) return;
@@ -579,6 +616,20 @@ function App() {
       }
     })
 
+    // Server tells us we are no longer active in the room (detected via check-presence).
+    // Silently re-emit reconnect-player so the server restores our state.
+    newSocket.on("presence-stale", () => {
+      const saved = sessionStorage.getItem("gameSession")
+      if (!saved) return
+      try {
+        const session = JSON.parse(saved)
+        if (!session.roomCode || !session.playerName) return
+        console.log("[presence-stale] Re-registering with server")
+        reconnectAttemptedRef.current = true
+        newSocket.emit("reconnect-player", { roomCode: session.roomCode, playerName: session.playerName })
+      } catch (e) {}
+    })
+
     newSocket.on("reconnect-failed", (data) => {
       console.log("Reconnect failed:", data)
       sessionStorage.removeItem("gameSession")
@@ -595,9 +646,41 @@ function App() {
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
       newSocket.close()
     }
   }, [])
+
+  // Screen Wake Lock: keep the screen on during active game phases so the phone
+  // doesn't blank and drop the connection mid-round.
+  useEffect(() => {
+    const activePhases = ["writing", "answering", "performing"]
+    if (!activePhases.includes(gameState) || !("wakeLock" in navigator)) {
+      if (wakeLockRef.current) { wakeLockRef.current.release(); wakeLockRef.current = null }
+      return
+    }
+    let cancelled = false
+    navigator.wakeLock.request("screen").then(lock => {
+      if (cancelled) { lock.release(); return }
+      wakeLockRef.current = lock
+      lock.addEventListener("release", () => { if (!cancelled) wakeLockRef.current = null })
+    }).catch(() => {})
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && activePhases.includes(gameStateRef.current) && !wakeLockRef.current) {
+        navigator.wakeLock.request("screen").then(lock => {
+          if (cancelled) { lock.release(); return }
+          wakeLockRef.current = lock
+          lock.addEventListener("release", () => { if (!cancelled) wakeLockRef.current = null })
+        }).catch(() => {})
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      cancelled = true
+      document.removeEventListener("visibilitychange", onVisible)
+      if (wakeLockRef.current) { wakeLockRef.current.release(); wakeLockRef.current = null }
+    }
+  }, [gameState])
 
   const createRoom = useCallback(() => {
     if (!playerName.trim()) { setError("Please enter your name"); return }

@@ -150,7 +150,9 @@ const io = new Server(server, {
   cors: {
     origin: corsOrigin,
     methods: ["GET", "POST"]
-  }
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // Store games in memory (use Redis for production)
@@ -222,7 +224,7 @@ function ensureHost(roomCode) {
   // Check if original host is still in the game (even if disconnected)
   const originalHost = game.players.find(p => p.id === game.host);
   if (originalHost) {
-    // Keep original host as host - they can reconnect within 90s
+    // Keep original host as host - they can reconnect within 180s
     // Only transfer if they've been permanently removed from game
     return false;
   }
@@ -1418,6 +1420,16 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Lightweight presence check: client asks "am I still active in this room?"
+  // Used by the Page Visibility handler after phone wake-up.
+  socket.on('check-presence', ({ roomCode, playerName }) => {
+    const game = games[roomCode];
+    if (!game) { socket.emit('presence-stale', { reason: 'room-gone' }); return; }
+    const player = game.players.find(p => p.id === socket.id && p.isActive);
+    if (!player) { socket.emit('presence-stale', { reason: 'reconnect-needed' }); }
+    // If player is found and active, no response needed – client is fine.
+  });
+
   // Handle player reconnection within grace period
   socket.on('reconnect-player', ({ roomCode, playerName }) => {
     console.log(`[RECONNECT] Attempt: ${playerName} to room ${roomCode} (new socket: ${socket.id})`);
@@ -1480,9 +1492,9 @@ io.on('connection', (socket) => {
     const timeSinceDisconnect = Date.now() - player.disconnectedAt;
     console.log(`[RECONNECT] Time since disconnect: ${timeSinceDisconnect}ms`);
     
-    if (timeSinceDisconnect > 90000) {
+    if (timeSinceDisconnect > 180000) {
       game.players = game.players.filter(p => p.name !== playerName);
-      socket.emit('reconnect-failed', { reason: 'Reconnection window expired (90 seconds)', roomCode, playerName });
+      socket.emit('reconnect-failed', { reason: 'Reconnection window expired (3 minutes)', roomCode, playerName });
       return;
     }
     
@@ -1750,7 +1762,7 @@ io.on('connection', (socket) => {
     }
 
     // In-game disconnect: mark inactive and start grace period.
-    console.log(`Disconnect (${game.phase}) - ${player.name} marked inactive, 90s grace`);
+    console.log(`Disconnect (${game.phase}) - ${player.name} marked inactive, 180s grace`);
     player.isActive = false;
     player.disconnectedAt = Date.now();
 
@@ -1772,7 +1784,7 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('player-disconnected', {
       players: game.players.filter(p => p.isActive),
       disconnectedPlayer: player.name,
-      gracePeriod: 90
+      gracePeriod: 180
     });
 
     if (hostTransferredTo) {
@@ -1846,7 +1858,7 @@ io.on('connection', (socket) => {
       }
     }, 250);
 
-    // Set 90-second grace timeout for permanent removal
+    // Set 180-second grace timeout for permanent removal
     player.reconnectTimeout = setTimeout(() => {
       const stillThere = games[roomCode];
       if (!stillThere) return;
@@ -1883,7 +1895,7 @@ io.on('connection', (socket) => {
           playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!stillThere.answers[p.id], isActive: true }))
         });
       }
-    }, 90000);
+    }, 180000);
   });
 });
 
