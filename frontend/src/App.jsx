@@ -163,7 +163,7 @@ function App() {
           return c - 1
         })
       }, 1000)
-      return () => clearInterval(iv)
+      return () => { clearInterval(iv); setShowCountdown(false) }
     }
   }, [gameState])
 
@@ -1964,7 +1964,7 @@ function App() {
           <span>{notice.message}</span>
         </div>
       )}
-      {showCountdown && (
+      {showCountdown && ["writing", "answering", "performing"].includes(gameState) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="bg-black/70 border border-gray-700 rounded-2xl px-8 py-6 text-center">
             <div className="text-5xl font-black text-white">{countdown}</div>
