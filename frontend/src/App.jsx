@@ -1246,14 +1246,6 @@ function App() {
                           </div>
                         </div>
 
-                        <div className="summary-actual">
-                          <p className="summary-actual__label">Actual Answer</p>
-                          <p className="summary-actual__text">{pair.actualAnswer}</p>
-                          {pair.actualAnswerAuthorName && (
-                            <p className="summary-actual__author">— {actualAuthor}</p>
-                          )}
-                        </div>
-
                         <div className="summary-card__footer">
                           <div className="summary-vote-meta">
                             <span className="text-gray-400 text-xs uppercase tracking-widest">Live Votes</span>
@@ -1272,6 +1264,14 @@ function App() {
                             </button>
                           ) : (
                             <button disabled className="summary-vote-btn summary-vote-btn--disabled">Voting unavailable</button>
+                          )}
+                        </div>
+
+                        <div className="summary-actual">
+                          <p className="summary-actual__label">Actual Answer</p>
+                          <p className="summary-actual__text">{pair.actualAnswer}</p>
+                          {pair.actualAnswerAuthorName && (
+                            <p className="summary-actual__author">— {actualAuthor}</p>
                           )}
                         </div>
                       </article>

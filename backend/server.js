@@ -1062,50 +1062,55 @@ io.on('connection', (socket) => {
 
     const db = getDb();
 
-    // Check if player already voted for this item
+    // Resolve target table by vote type
+    let tableName = null;
+    if (type === 'question') tableName = 'questions';
+    else if (type === 'answer') tableName = 'answers';
+    else if (type === 'qa_pair') tableName = 'qa_pairs';
+    else {
+      socket.emit('vote-submitted', { success: false, message: 'Invalid vote type' });
+      return;
+    }
+
+    // Toggle behavior: if already voted on this exact item, unvote it
     const existingVote = db.exec(
       "SELECT id FROM votes WHERE game_id = ? AND player_id = ? AND vote_type = ? AND target_id = ?",
       [game.dbGameId, socket.id, type, targetId]
     );
-
     if (existingVote.length > 0 && existingVote[0].values.length > 0) {
-      // Already voted, just acknowledge
-      socket.emit('vote-submitted', { success: false, message: 'Already voted' });
+      const voteId = existingVote[0].values[0][0];
+      db.run("DELETE FROM votes WHERE id = ?", [voteId]);
+      db.run(`UPDATE ${tableName} SET vote_count = CASE WHEN vote_count > 0 THEN vote_count - 1 ELSE 0 END WHERE id = ?`, [targetId]);
+      saveDatabase();
+      const result = db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
+      const voteCount = result.length > 0 ? result[0].values[0][0] : 0;
+      socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: false });
+      io.to(roomCode).emit('vote-update', { type, targetId, voteCount });
       return;
     }
 
-    // Insert vote
-    db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)",
-      [game.dbGameId, socket.id, type, targetId]);
-
-    // Update vote count on target
-    if (type === 'question') {
-      db.run("UPDATE questions SET vote_count = vote_count + 1 WHERE id = ?", [targetId]);
-    } else if (type === 'answer') {
-      db.run("UPDATE answers SET vote_count = vote_count + 1 WHERE id = ?", [targetId]);
-    } else if (type === 'qa_pair') {
-      db.run("UPDATE qa_pairs SET vote_count = vote_count + 1 WHERE id = ?", [targetId]);
+    // Enforce single active vote per player for qa_pair across different targets
+    if (type === 'qa_pair') {
+      const otherVote = db.exec(
+        "SELECT id FROM votes WHERE game_id = ? AND player_id = ? AND vote_type = ? LIMIT 1",
+        [game.dbGameId, socket.id, type]
+      );
+      if (otherVote.length > 0 && otherVote[0].values.length > 0) {
+        socket.emit('vote-submitted', { success: false, message: 'Already voted for another pairing. Click your vote to undo first.' });
+        return;
+      }
     }
 
+    // Insert new vote and increment count
+    db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)", [game.dbGameId, socket.id, type, targetId]);
+    db.run(`UPDATE ${tableName} SET vote_count = vote_count + 1 WHERE id = ?`, [targetId]);
     saveDatabase();
 
-    // Get updated vote count
-    let voteCount = 0;
-    if (type === 'question') {
-      const result = db.exec("SELECT vote_count FROM questions WHERE id = ?", [targetId]);
-      if (result.length > 0) voteCount = result[0].values[0][0];
-    } else if (type === 'answer') {
-      const result = db.exec("SELECT vote_count FROM answers WHERE id = ?", [targetId]);
-      if (result.length > 0) voteCount = result[0].values[0][0];
-    } else if (type === 'qa_pair') {
-      const result = db.exec("SELECT vote_count FROM qa_pairs WHERE id = ?", [targetId]);
-      if (result.length > 0) voteCount = result[0].values[0][0];
-    }
-
-    socket.emit('vote-submitted', { success: true, targetId, voteCount });
-
-    // Broadcast vote update to all players
+    const result = db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
+    const voteCount = result.length > 0 ? result[0].values[0][0] : 0;
+    socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: true });
     io.to(roomCode).emit('vote-update', { type, targetId, voteCount });
+    return;
   });
 
   // Host replays game with same players
