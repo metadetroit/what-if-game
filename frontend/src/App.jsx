@@ -189,6 +189,7 @@ function App() {
   const [userVotes, setUserVotes] = useState({}) // Track user's votes: { questionId: true, answerId: true, pairId: true }
   const [summaryVotes, setSummaryVotes] = useState({}) // Track votes on summary page: { questionId: count, answerId: count, pairId: count }
   const [summaryPairVoteId, setSummaryPairVoteId] = useState(null)
+  const [votedCardId, setVotedCardId] = useState(null) // DOM id of the card the user voted for
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [votersCount, setVotersCount] = useState(0)
@@ -613,6 +614,7 @@ function App() {
         }))
         if (pendingVote?.type === 'qa_pair') {
           setSummaryPairVoteId(isVoted ? data.targetId : null)
+          setVotedCardId(isVoted ? `pair-${data.targetId}` : null)
           const el = document.getElementById(`pair-${data.targetId}`)
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -1085,6 +1087,28 @@ function App() {
     }
   }, [])
 
+  // Keyboard navigation for summary voting: Arrow Up/Down moves between vote buttons.
+  useEffect(() => {
+    if (gameState !== 'ended') return
+    const handleKeyDown = (e) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter' && e.key !== ' ') return
+      const buttons = Array.from(document.querySelectorAll('.summary-vote-btn:not([disabled])'))
+      if (buttons.length === 0) return
+      const active = document.activeElement
+      let idx = buttons.findIndex((b) => b === active)
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (idx >= 0) { e.preventDefault(); buttons[idx].click() }
+        return
+      }
+      if (idx < 0) { idx = 0 } // Nothing focused yet; start at top
+      else if (e.key === 'ArrowDown') { e.preventDefault(); idx = Math.min(idx + 1, buttons.length - 1) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(idx - 1, 0) }
+      buttons[idx].focus()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [gameState])
+
   const fastestTyper = useMemo(() => {
     if (!gameAwards.firstQuestionSubmitter || !gameAwards.firstAnswerSubmitter) return null
     if (gameAwards.firstQuestionSubmitter !== gameAwards.firstAnswerSubmitter) return null
@@ -1154,6 +1178,13 @@ function App() {
       <div className="waiting-panel__bar">
         <div style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} />
       </div>
+      {progress.submitted < progress.total && progress.total > 0 && (
+        <p className="text-xs text-center text-indigo-300 mt-2">
+          {progress.total - progress.submitted === 1
+            ? "Almost there — just waiting on one more player…"
+            : `Almost there — just waiting on ${progress.total - progress.submitted} more players…`}
+        </p>
+      )}
     </div>
   )
 
@@ -1369,6 +1400,16 @@ function App() {
                   </button>
                 </div>
                 <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
+                {(anonymousMode || noSelfReading) && (
+                  <div className="flex justify-center gap-2 mt-2">
+                    {anonymousMode && (
+                      <span className="text-[10px] bg-purple-900/40 text-purple-300 border border-purple-700/50 rounded-full px-2 py-0.5">🙈 Anonymous</span>
+                    )}
+                    {noSelfReading && (
+                      <span className="text-[10px] bg-indigo-900/40 text-indigo-300 border border-indigo-700/50 rounded-full px-2 py-0.5">🚫 No Self-Read</span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className={"lobby-ready mt-2 " + (players.length >= 3 ? "lobby-ready--ready" : "")}>
                 <span className="lobby-ready__icon">{players.length >= 3 ? "✅" : "⏳"}</span>
@@ -1743,6 +1784,12 @@ function App() {
                             <p className="summary-paired__label">Performed with</p>
                             <p className="summary-paired__answer">{pair.pairedAnswer || 'No pairing was performed'}</p>
                           </div>
+                          {maskNames && (
+                            <div className="inline-flex items-center gap-1 text-[10px] text-purple-300 bg-purple-900/30 border border-purple-700/50 rounded-full px-2 py-0.5 w-fit">
+                              <span>🙈</span>
+                              <span>Anonymous</span>
+                            </div>
+                          )}
                           <div className="summary-authors">
                             <span>Q by {questionAuthor}</span>
                             {pair.pairedAnswer && <span>↗ Paired by {pairedAuthor}</span>}
@@ -1870,6 +1917,17 @@ function App() {
                   </button>
                 </div>
               </div>
+            )}
+            {votedCardId && (
+              <button
+                onClick={() => {
+                  const el = document.getElementById(votedCardId)
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }}
+                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg shadow-indigo-900/50 hover:bg-indigo-500 transition-colors"
+              >
+                ⬆ Jump to your vote
+              </button>
             )}
           </div>
         )
@@ -2242,11 +2300,14 @@ function App() {
         </div>
       )}
       {showCountdown && ["writing", "answering", "performing"].includes(gameState) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" role="alert" aria-live="assertive">
-          <div className="bg-black/70 border border-gray-700 rounded-2xl px-8 py-6 text-center">
-            <div className="text-5xl font-black text-white">{countdown}</div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="alert" aria-live="assertive">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl px-8 py-8 text-center shadow-2xl max-w-xs">
+            <p className="text-sm text-indigo-300 uppercase tracking-widest font-bold mb-3">
+              {gameState === 'writing' ? 'Starting new round…' : gameState === 'answering' ? 'Answer time!' : 'Reading time!'}
+            </p>
+            <div className="text-6xl font-black text-white">{countdown}</div>
             {isHost && (
-              <button onClick={() => { setShowCountdown(false); setCountdown(0) }} className="mt-3 text-xs text-indigo-300 underline">
+              <button onClick={() => { setShowCountdown(false); setCountdown(0) }} className="mt-4 text-xs text-indigo-300 underline">
                 Skip
               </button>
             )}
