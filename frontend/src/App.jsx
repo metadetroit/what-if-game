@@ -4,12 +4,66 @@ import { io } from "socket.io-client"
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
 // Notice channel: tone is "success" | "info" | "warn" — not the same as a hard error.
+// Pass durationMs = null for a persistent notice that must be cleared manually.
 function noticeFor(message, tone = "info", durationMs = 3000) {
-  return { message, tone, expiresAt: Date.now() + durationMs }
+  return { message, tone, expiresAt: durationMs == null ? null : Date.now() + durationMs }
 }
 
 function draftKey(roomCode, phase) {
   return `whatif-draft:${roomCode}:${phase}`
+}
+
+// Persisted session + drafts use localStorage so they survive a mobile browser
+// killing/evicting a backgrounded tab (sessionStorage is wiped on full tab close).
+const SESSION_KEY = "gameSession"
+// TTL keeps a returning player auto-rejoining within a reasonable window while
+// avoiding stale auto-rejoins to long-dead rooms (the server is the final authority).
+const SESSION_TTL_MS = 1000 * 60 * 30 // 30 minutes
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const session = JSON.parse(raw)
+    if (!session || !session.roomCode || !session.playerName) {
+      localStorage.removeItem(SESSION_KEY)
+      return null
+    }
+    if (session.timestamp && Date.now() - session.timestamp > SESSION_TTL_MS) {
+      localStorage.removeItem(SESSION_KEY)
+      return null
+    }
+    return session
+  } catch (e) {
+    return null
+  }
+}
+
+function saveSession(session) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...session, timestamp: Date.now() }))
+  } catch (e) { /* ignore */ }
+}
+
+function touchSession() {
+  const session = loadSession()
+  if (session) saveSession(session)
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY) } catch (e) { /* ignore */ }
+}
+
+function saveDraft(roomCode, phase, value) {
+  try { localStorage.setItem(draftKey(roomCode, phase), value) } catch (e) { /* ignore */ }
+}
+
+function loadDraft(roomCode, phase) {
+  try { return localStorage.getItem(draftKey(roomCode, phase)) } catch (e) { return null }
+}
+
+function clearDraft(roomCode, phase) {
+  try { localStorage.removeItem(draftKey(roomCode, phase)) } catch (e) { /* ignore */ }
 }
 
 function App() {
@@ -78,6 +132,7 @@ function App() {
   // Auto-clear notice
   useEffect(() => {
     if (!notice) return
+    if (notice.expiresAt == null) return // persistent notice; cleared manually
     const remaining = Math.max(0, notice.expiresAt - Date.now())
     const t = setTimeout(() => setNotice(null), remaining)
     return () => clearTimeout(t)
@@ -260,13 +315,15 @@ function App() {
 
     newSocket.on("connect", () => {
       console.log("Connected to server")
-      // Show "Back online" if we previously emitted a "Connection lost" notice
-      if (reconnectAttemptedRef.current && gameStateRef.current !== "welcome") {
+      // Clear the persistent "Connection lost" notice now that we're back online.
+      if (gameStateRef.current !== "welcome" && gameStateRef.current !== "reconnect-failed") {
         setNotice(noticeFor("Back online", "success", 1500))
+      } else {
+        setNotice((prev) => (prev && prev.tone === "warn" ? null : prev))
       }
 
-      const savedSession = sessionStorage.getItem("gameSession")
-      if (!savedSession) {
+      const session = loadSession()
+      if (!session) {
         console.log("No saved session found")
         return
       }
@@ -274,12 +331,6 @@ function App() {
       // socket.io fires multiple "connect" events (transport upgrade, etc.).
       if (reconnectAttemptedRef.current) {
         console.log("Reconnect already attempted - skipping duplicate emit")
-        return
-      }
-      const session = JSON.parse(savedSession)
-      if (!session.roomCode || !session.playerName) {
-        console.log("Session invalid, clearing...")
-        sessionStorage.removeItem("gameSession")
         return
       }
       reconnectAttemptedRef.current = true
@@ -298,50 +349,47 @@ function App() {
       // CRITICAL: reset so the next 'connect' event can re-emit reconnect-player
       reconnectAttemptedRef.current = false
       // Only show notice if user is mid-game; pre-game disconnect is silent.
+      // Persistent (no auto-expiry) so it stays visible until we actually reconnect.
       if (gameStateRef.current !== "welcome" && gameStateRef.current !== "reconnect-failed") {
-        setNotice(noticeFor("Connection lost — reconnecting…", "warn", 15000))
+        setNotice(noticeFor("Connection lost — reconnecting…", "warn", null))
       }
-      const savedSession = sessionStorage.getItem("gameSession")
-      if (savedSession) {
-        const session = JSON.parse(savedSession)
-        session.timestamp = Date.now()
-        sessionStorage.setItem("gameSession", JSON.stringify(session))
-      }
+      touchSession()
     })
 
     const handleBeforeUnload = () => {
-      const savedSession = sessionStorage.getItem("gameSession")
-      if (savedSession) {
-        const session = JSON.parse(savedSession)
-        session.timestamp = Date.now()
-        sessionStorage.setItem("gameSession", JSON.stringify(session))
-      }
+      touchSession()
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
 
-    // Page Visibility: detect phone wake-up / tab switch back.
-    // If socket is connected, ask server whether we're still active.
-    // If socket is not yet connected, just ensure the flag lets the next 'connect' fire reconnect-player.
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") return
+    // Re-validate our presence with the server after the page becomes visible
+    // again (phone wake-up / tab switch) or is restored from the bfcache.
+    const revalidatePresence = () => {
       const state = gameStateRef.current
       if (state === "welcome" || state === "reconnect-failed") return
-      const saved = sessionStorage.getItem("gameSession")
-      if (!saved) return
-      try {
-        const session = JSON.parse(saved)
-        if (!session.roomCode || !session.playerName) return
-        if (socketRef.current?.connected) {
-          console.log("[visibility] Page visible — sending check-presence")
-          socketRef.current.emit("check-presence", { roomCode: session.roomCode, playerName: session.playerName })
-        } else {
-          // Socket not connected yet — ensure reconnect-player fires when it does
-          reconnectAttemptedRef.current = false
-          console.log("[visibility] Page visible — socket offline, cleared reconnect flag")
-        }
-      } catch (e) {}
+      const session = loadSession()
+      if (!session) return
+      if (socketRef.current?.connected) {
+        console.log("[presence] Page active — sending check-presence")
+        socketRef.current.emit("check-presence", { roomCode: session.roomCode, playerName: session.playerName })
+      } else {
+        // Socket not connected yet — ensure reconnect-player fires when it does
+        reconnectAttemptedRef.current = false
+        console.log("[presence] Page active — socket offline, cleared reconnect flag")
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return
+      revalidatePresence()
     }
     document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    // iOS Safari restores pages from the back/forward cache without firing
+    // "connect"; pageshow is a more reliable trigger to re-validate presence.
+    const handlePageShow = () => {
+      revalidatePresence()
+    }
+    window.addEventListener("pageshow", handlePageShow)
 
     const updatePlayersAndHost = (payload) => {
       if (!payload) return;
@@ -494,7 +542,7 @@ function App() {
 
     newSocket.on("game-disbanded", (data) => {
       console.log("Game disbanded:", data.message)
-      sessionStorage.removeItem("gameSession")
+      clearSession()
       setGameState("welcome")
       setRoomCode("")
       setPlayers([])
@@ -552,15 +600,13 @@ function App() {
     // Player was kicked (force-progress non-submitter or host-kick)
     newSocket.on("kicked-from-game", (data) => {
       console.log("kicked-from-game received:", data)
-      sessionStorage.removeItem("gameSession")
+      clearSession()
       // Clear any drafts for the active room
-      try {
-        const code = roomCodeRef.current
-        if (code) {
-          sessionStorage.removeItem(draftKey(code, "writing"))
-          sessionStorage.removeItem(draftKey(code, "answering"))
-        }
-      } catch (e) { /* ignore */ }
+      const kickCode = roomCodeRef.current
+      if (kickCode) {
+        clearDraft(kickCode, "writing")
+        clearDraft(kickCode, "answering")
+      }
       reconnectAttemptedRef.current = false
       setGameState("welcome")
       setRoomCode("")
@@ -592,10 +638,9 @@ function App() {
       console.log("Should be host?", newSocket.id === data.hostId)
       setReconnectPrompt(null)
       if (data.success) {
-        const savedSession = sessionStorage.getItem("gameSession")
+        const savedSession = loadSession()
         if (savedSession) {
-          const session = JSON.parse(savedSession)
-          setPlayerName(session.playerName)
+          setPlayerName(savedSession.playerName)
         }
         setReconnectInfo(null)
         setRoomCode(data.roomCode)
@@ -624,10 +669,10 @@ function App() {
           try {
             const code = data.roomCode
             if (data.phase === "writing") {
-              const draft = sessionStorage.getItem(draftKey(code, "writing"))
+              const draft = loadDraft(code, "writing")
               if (draft) setQuestion(draft)
             } else if (data.phase === "answering") {
-              const draft = sessionStorage.getItem(draftKey(code, "answering"))
+              const draft = loadDraft(code, "answering")
               if (draft) setAnswer(draft)
             }
           } catch (e) { /* ignore */ }
@@ -648,11 +693,9 @@ function App() {
     // Server tells us we are no longer active in the room (detected via check-presence).
     // Silently re-emit reconnect-player so the server restores our state.
     newSocket.on("presence-stale", () => {
-      const saved = sessionStorage.getItem("gameSession")
-      if (!saved) return
+      const session = loadSession()
+      if (!session) return
       try {
-        const session = JSON.parse(saved)
-        if (!session.roomCode || !session.playerName) return
         console.log("[presence-stale] Re-registering with server")
         reconnectAttemptedRef.current = true
         newSocket.emit("reconnect-player", { roomCode: session.roomCode, playerName: session.playerName })
@@ -661,7 +704,7 @@ function App() {
 
     newSocket.on("reconnect-failed", (data) => {
       console.log("Reconnect failed:", data)
-      sessionStorage.removeItem("gameSession")
+      clearSession()
       reconnectAttemptedRef.current = false
       setReconnectInfo({ roomCode: data.roomCode, playerName: data.playerName, reason: data.reason })
       setGameState("reconnect-failed")
@@ -676,6 +719,7 @@ function App() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("pageshow", handlePageShow)
       newSocket.close()
     }
   }, [])
@@ -714,7 +758,7 @@ function App() {
   const createRoom = useCallback(() => {
     if (!playerName.trim()) { setError("Please enter your name"); return }
     if (!socket) { setError("Not connected to server"); return }
-    sessionStorage.removeItem("gameSession")
+    clearSession()
     reconnectAttemptedRef.current = false
     socket.emit("create-room", playerName, (response) => {
       if (response.success) {
@@ -723,11 +767,7 @@ function App() {
         setGameState("lobby")
         setError("")
         setAnonymousMode(false)
-        sessionStorage.setItem("gameSession", JSON.stringify({
-          roomCode: response.roomCode,
-          playerName: playerName,
-          timestamp: Date.now()
-        }))
+        saveSession({ roomCode: response.roomCode, playerName: playerName })
       } else {
         setError(response.error || "Failed to create room")
       }
@@ -738,18 +778,14 @@ function App() {
     if (!playerName.trim()) { setError("Please enter your name"); return }
     if (!roomCode.trim()) { setError("Please enter a room code"); return }
     if (!socket) { setError("Not connected to server"); return }
-    sessionStorage.removeItem("gameSession")
+    clearSession()
     reconnectAttemptedRef.current = false
     socket.emit("join-room", roomCode, playerName, (response) => {
       if (response.success) {
         setIsHost(false)
         setGameState("lobby")
         setError("")
-        sessionStorage.setItem("gameSession", JSON.stringify({
-          roomCode: roomCode,
-          playerName: playerName,
-          timestamp: Date.now()
-        }))
+        saveSession({ roomCode: roomCode, playerName: playerName })
       } else {
         setError(response.error || "Failed to join room")
       }
@@ -768,14 +804,14 @@ function App() {
     socket.emit("submit-question", question)
     setSubmitted(true)
     setError("")
-    try { sessionStorage.removeItem(draftKey(roomCodeRef.current, "writing")) } catch (e) { /* ignore */ }
+    clearDraft(roomCodeRef.current, "writing")
   }, [socket, question])
 
   const submitAnswer = useCallback(() => {
     if (!answer.trim()) { setError("Please enter an answer"); return }
     socket.emit("submit-answer", answer)
     setError("")
-    try { sessionStorage.removeItem(draftKey(roomCodeRef.current, "answering")) } catch (e) { /* ignore */ }
+    clearDraft(roomCodeRef.current, "answering")
   }, [socket, answer])
 
   const completeReading = useCallback(() => {
@@ -790,7 +826,7 @@ function App() {
 
   const disbandGame = useCallback(() => {
     if (socket && roomCodeRef.current) { socket.emit("disband-room") }
-    sessionStorage.removeItem("gameSession")
+    clearSession()
     reconnectAttemptedRef.current = false
     setGameState("welcome")
     setPlayerName("")
@@ -822,7 +858,7 @@ function App() {
 
   const resetGame = useCallback(() => {
     if (socket && roomCodeRef.current) { socket.emit("leave-room") }
-    sessionStorage.removeItem("gameSession")
+    clearSession()
     reconnectAttemptedRef.current = false
     setGameState("welcome")
     setPlayerName("")
@@ -856,7 +892,7 @@ function App() {
     if (socketRef.current) {
       socketRef.current.emit("player-abandon")
     }
-    sessionStorage.removeItem("gameSession")
+    clearSession()
     reconnectAttemptedRef.current = false
     setGameState("welcome")
     setPlayerName("")
@@ -991,7 +1027,7 @@ function App() {
                 onClick={() => {
                   const name = reconnectInfo?.playerName || ""
                   const code = reconnectInfo?.roomCode || ""
-                  sessionStorage.setItem("gameSession", JSON.stringify({ roomCode: code, playerName: name, timestamp: Date.now() }))
+                  saveSession({ roomCode: code, playerName: name })
                   setPlayerName(name)
                   setRoomCode(code)
                   setGameState("welcome")
@@ -1106,7 +1142,7 @@ function App() {
                     </button>
                     <button
                       onClick={() => {
-                        sessionStorage.removeItem("gameSession")
+                        clearSession()
                         reconnectAttemptedRef.current = false
                         setReconnectPrompt(null)
                       }}
@@ -1263,7 +1299,7 @@ function App() {
                   <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
                   <p className="text-[10px] text-indigo-400 leading-tight">Must begin with "What if..."</p>
                 </div>
-                <textarea value={question} onChange={(e) => { setQuestion(e.target.value); try { sessionStorage.setItem(draftKey(roomCodeRef.current, "writing"), e.target.value) } catch (err) { /* ignore */ } }} placeholder="Type your question here" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={300} />
+                <textarea value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={300} />
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500">{question.length}/300</span>
                   {question && !question.toLowerCase().startsWith("what if") && (<span className="text-xs text-red-500 font-semibold">Must start with "What if"</span>)}
@@ -1326,7 +1362,7 @@ function App() {
                 <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
                 </div>
-                <textarea value={answer} onChange={(e) => { setAnswer(e.target.value); try { sessionStorage.setItem(draftKey(roomCodeRef.current, "answering"), e.target.value) } catch (err) { /* ignore */ } }} placeholder="Type your answer here..." className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={400} />
+                <textarea value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={400} />
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs text-gray-500">{answer.length}/400 characters</span>
                 </div>
