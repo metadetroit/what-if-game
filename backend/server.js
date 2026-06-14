@@ -727,6 +727,7 @@ io.on('connection', (socket) => {
           // - the exact "winning pair" (the one displayed as the game pairing) appears in best-of with correct authors
           // This makes performed pairings persist across replays/games.
           let pairDbId = pairData?.dbId || null;
+          let voteCount = 0;
           const pairedAText = answerTurn ? answerTurn.pairedAnswer : null;
           if (game.dbGameId && questionData?.dbId && pairedAText) {
             const pairedAData = Object.values(game.answers).find(a => a.text === pairedAText);
@@ -735,11 +736,12 @@ io.on('connection', (socket) => {
               try {
                 // Reuse existing row for this (game, q, a) combo if present (e.g. from prior round or original)
                 let existing = db.exec(
-                  "SELECT id FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1",
+                  "SELECT id, vote_count FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1",
                   [game.dbGameId, questionData.dbId, pairedAId]
                 );
                 if (existing.length > 0 && existing[0].values.length > 0) {
                   pairDbId = existing[0].values[0][0];
+                  voteCount = existing[0].values[0][1] || 0;
                 } else {
                   db.run(
                     "INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count, anonymous) VALUES (?, ?, ?, ?, ?)",
@@ -763,9 +765,10 @@ io.on('connection', (socket) => {
                 if (qRes.length > 0 && qRes[0].values.length > 0 && aRes.length > 0 && aRes[0].values.length > 0) {
                   const qid = qRes[0].values[0][0];
                   const aid = aRes[0].values[0][0];
-                  const pRes = db.exec("SELECT id FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1", [game.dbGameId, qid, aid]);
+                  const pRes = db.exec("SELECT id, vote_count FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1", [game.dbGameId, qid, aid]);
                   if (pRes.length > 0 && pRes[0].values.length > 0) {
                     pairDbId = pRes[0].values[0][0];
+                    voteCount = pRes[0].values[0][1] || 0;
                   }
                 }
               } catch (e) {
@@ -784,6 +787,7 @@ io.on('connection', (socket) => {
             pairedAnswer: answerTurn ? answerTurn.pairedAnswer : null,
             pairedAnswerAuthorName: answerTurn ? pAuthor : null,
             pairDbId: pairDbId,
+            voteCount: voteCount || 0,
             anonymousMode: isAnonymous
           });
         }
@@ -923,9 +927,13 @@ io.on('connection', (socket) => {
     
     if (game.currentReaderIndex >= totalTurns) {
       const summary = buildGameSummary(roomCode);
+      const db = getDb();
+      const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+      const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
       io.to(roomCode).emit('game-ended', {
         message: 'Thanks for playing!',
         summary: summary,
+        votersCount: votersCount,
         firstQuestionSubmitter: game.firstQuestionSubmitter,
         firstAnswerSubmitter: game.firstAnswerSubmitter,
         lastQuestionSubmitter: game.lastQuestionSubmitter,
@@ -1624,9 +1632,12 @@ io.on('connection', (socket) => {
       anonymousMode: !!game.anonymousMode
     };
 
-    // If reconnecting during ended phase, include the game summary
+    // If reconnecting during ended phase, include the game summary and current vote state
     if (game.phase === 'ended') {
       reconnectData.summary = buildGameSummary(roomCode);
+      const db = getDb();
+      const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+      reconnectData.votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
     }
 
     // If reconnecting during performance phase, include current turn data

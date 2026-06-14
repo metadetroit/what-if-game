@@ -84,8 +84,24 @@ function App() {
   }, [notice])
 
   useEffect(() => {
-    if (gameState !== 'ended') setVotersCount(0)
+    if (gameState !== 'ended') {
+      setVotersCount(0)
+      setSummaryVotes({})
+      setSummaryPairVoteId(null)
+    }
   }, [gameState])
+
+  useEffect(() => {
+    if (gameState === 'ended' && gameSummary && Array.isArray(gameSummary)) {
+      const derivedVotes = {}
+      gameSummary.forEach(pair => {
+        if (pair.pairDbId && typeof pair.voteCount === 'number') {
+          derivedVotes[pair.pairDbId] = pair.voteCount
+        }
+      })
+      setSummaryVotes(prev => ({ ...derivedVotes, ...prev }))
+    }
+  }, [gameState, gameSummary])
 
   const fetchBestOfData = async (opts = {}) => {
     try {
@@ -435,6 +451,7 @@ function App() {
     newSocket.on("game-ended", (data) => {
       setGameState("ended")
       if (data.summary) { applySummaryData(data.summary, anonymousMode) }
+      if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
       if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
         setGameAwards({
           firstQuestionSubmitter: data.firstQuestionSubmitter,
@@ -620,6 +637,7 @@ function App() {
           if (data.progress.playerStatuses) setPlayerStatuses(data.progress.playerStatuses)
         }
         if (data.summary) { applySummaryData(data.summary, typeof data.anonymousMode === "boolean" ? data.anonymousMode : anonymousMode) }
+        if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
         if (data.currentTurn) { setCurrentTurn(data.currentTurn) }
         setNotice(noticeFor("Reconnected", "success", 2000))
       } else {

@@ -651,6 +651,7 @@ io.on('connection', (socket) => {
       io.to(roomCode).emit('game-ended', {
         message: 'Thanks for playing!',
         summary: summary,
+        votersCount: 0,
         firstQuestionSubmitter: game.firstQuestionSubmitter,
         firstAnswerSubmitter: game.firstAnswerSubmitter,
         lastQuestionSubmitter: game.lastQuestionSubmitter,
@@ -1167,6 +1168,7 @@ io.on('connection', (socket) => {
 
     if (game.phase === 'ended') {
       reconnectData.summary = buildGameSummary(roomCode);
+      reconnectData.votersCount = 0;
     }
 
     socket.emit('reconnected', reconnectData);
