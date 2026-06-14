@@ -1429,7 +1429,9 @@ io.on('connection', (socket) => {
   socket.on('check-presence', ({ roomCode, playerName }) => {
     const game = games[roomCode];
     if (!game) { socket.emit('presence-stale', { reason: 'room-gone' }); return; }
-    const player = game.players.find(p => p.id === socket.id && p.isActive);
+    // CRITICAL FIX: Look up by player name instead of socket.id, because
+    // reconnection changes the player's id to the new socket.id
+    const player = game.players.find(p => p.name === playerName && p.isActive);
     if (!player) { socket.emit('presence-stale', { reason: 'reconnect-needed' }); }
     // If player is found and active, no response needed – client is fine.
   });
