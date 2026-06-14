@@ -1628,13 +1628,12 @@ function App() {
               </div>
             ) : (
               <div className="summary-actions">
-                <div className="card text-center py-4">
-                  <p className="text-sm text-gray-300 mb-2">⏳ Waiting for host to start the next round</p>
-                  <p className="text-xs text-gray-500 mb-4">The host can replay with the same players or start a new game</p>
-                  <button onClick={disbandGame} className="btn-secondary py-2 text-xs">
-                    🏠 Return to main screen
+                <div className="card text-center py-5 px-6">
+                  <p className="text-sm text-gray-200 mb-1">Please wait for the host to start a new round</p>
+                  <p className="text-xs text-gray-500 mb-5">Your screen will automatically refresh</p>
+                  <button onClick={disbandGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs">
+                    Abandon game (exit to main screen)
                   </button>
-                  <p className="text-[10px] text-gray-600 mt-2">Preferred: wait for host to restart</p>
                 </div>
               </div>
             )}
