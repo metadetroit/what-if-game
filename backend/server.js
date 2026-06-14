@@ -1475,7 +1475,9 @@ io.on('connection', (socket) => {
         // Remove the old socket from the room so it doesn't receive broadcasts
         // Do NOT call oldSocket.disconnect() as that triggers game logic in the disconnect handler
         console.log(`[RECONNECT] Removing stale socket ${player.id} from room ${roomCode}`);
-        oldSocket.leave(roomCode);
+        if (oldSocket.rooms && oldSocket.rooms.has(roomCode)) {
+          oldSocket.leave(roomCode);
+        }
         oldSocket.roomCode = null; // Prevent disconnect handler from finding game
       }
       
@@ -1801,7 +1803,9 @@ io.on('connection', (socket) => {
     setTimeout(() => {
       const stillThere = games[roomCode];
       if (!stillThere) return;
-      const stillPlayer = stillThere.players.find(p => p.id === socket.id);
+      // CRITICAL FIX: Look up by player name instead of socket.id, because
+      // reconnection changes the player's id to the new socket.id
+      const stillPlayer = stillThere.players.find(p => p.name === player.name);
       // If they reconnected (id changed) or are active again, skip side effects.
       if (!stillPlayer || stillPlayer.isActive) {
         console.log(`[disconnect-deferred] ${player.name} reconnected before grace - skipping side effects`);
@@ -1848,7 +1852,9 @@ io.on('connection', (socket) => {
         } else {
           expectedReaderId = playerIds[((stillThere.currentReaderIndex + 1) / 2) % playerIds.length];
         }
-        if (expectedReaderId === socket.id) {
+        // CRITICAL FIX: Compare against stillPlayer.id (current id after potential reconnection)
+        // instead of socket.id (old id from disconnect event)
+        if (stillPlayer && expectedReaderId === stillPlayer.id) {
           console.log(`Active reader ${player.name} disconnected - advancing turn`);
           stillThere.currentReaderIndex++;
           setTimeout(() => startNextReading(roomCode), 300);
@@ -1866,13 +1872,15 @@ io.on('connection', (socket) => {
     player.reconnectTimeout = setTimeout(() => {
       const stillThere = games[roomCode];
       if (!stillThere) return;
-      const stillDisconnected = stillThere.players.find(p => p.id === socket.id && !p.isActive);
+      // CRITICAL FIX: Look up by player name instead of socket.id, because
+      // reconnection changes the player's id to the new socket.id
+      const stillDisconnected = stillThere.players.find(p => p.name === player.name && !p.isActive);
       if (!stillDisconnected) {
-        console.log(`[grace-timeout] ${socket.id} no longer matches a disconnected player - skipping`);
+        console.log(`[grace-timeout] ${player.name} no longer matches a disconnected player - skipping`);
         return;
       }
       console.log(`[grace-timeout] Permanently removing ${stillDisconnected.name}`);
-      removePlayerFromGame(roomCode, socket.id);
+      removePlayerFromGame(roomCode, stillDisconnected.id);
 
       if (stillThere.players.length === 0) {
         delete games[roomCode];
