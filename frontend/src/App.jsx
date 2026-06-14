@@ -1474,13 +1474,11 @@ function App() {
                   <p className={"summary-meta-value " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ Everyone voted" : `${votersCount}/${players.length} voted`}</p>
                   <p className="summary-meta-note">{votersCount >= players.length ? "Ready to start next round" : "Waiting for votes"}</p>
                 </div>
-                {isHost && (
-                  <div>
-                    <p className="summary-pill">Next Round Setting</p>
-                    <p className={"summary-meta-value " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "Anonymous" : "Names shown"}</p>
-                    <p className="summary-meta-note">Host toggle updates this for the upcoming game</p>
-                  </div>
-                )}
+                <div>
+                  <p className="summary-pill">Next Round Setting</p>
+                  <p className={"summary-meta-value " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "Anonymous" : "Names shown"}</p>
+                  <p className="summary-meta-note">{isHost ? "You control this setting" : "Host controls this setting"}</p>
+                </div>
               </div>
             </div>
 
