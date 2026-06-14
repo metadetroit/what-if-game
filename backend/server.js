@@ -162,6 +162,10 @@ const games = {};
 const recentRoomCodes = new Set();
 const MAX_RECENT_CODES = 100;
 
+// Vote rate limiter: min ms between votes per socket
+const lastVoteTime = new Map();
+const VOTE_RATE_LIMIT_MS = 500;
+
 function generateRoomCode() {
   const existingCodes = new Set(Object.keys(games));
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -1104,6 +1108,15 @@ io.on('connection', (socket) => {
       return
     }
 
+    // Rate limit votes per socket
+    const now = Date.now();
+    const last = lastVoteTime.get(socket.id) || 0;
+    if (now - last < VOTE_RATE_LIMIT_MS) {
+      socket.emit('vote-submitted', { success: false, message: 'Please wait a moment before voting again' });
+      return;
+    }
+    lastVoteTime.set(socket.id, now);
+
     const db = getDb();
 
     // Resolve target table by vote type
@@ -1794,6 +1807,7 @@ io.on('connection', (socket) => {
   // Handle disconnect: lobby = immediate removal, in-game = 90s grace
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
+    lastVoteTime.delete(socket.id);
 
     const roomCode = socket.roomCode;
     if (!roomCode || !games[roomCode]) return;

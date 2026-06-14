@@ -31,6 +31,10 @@ const games = {};
 const recentRoomCodes = new Set();
 const MAX_RECENT_CODES = 100;
 
+// Vote rate limiter: min ms between votes per socket
+const lastVoteTime = new Map();
+const VOTE_RATE_LIMIT_MS = 500;
+
 function generateRoomCode() {
   const existingCodes = new Set(Object.keys(games));
   for (let attempt = 0; attempt < 10; attempt++) {
