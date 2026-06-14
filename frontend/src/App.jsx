@@ -1190,7 +1190,7 @@ function App() {
         <div style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} />
       </div>
       {progress.submitted < progress.total && progress.total > 0 && (
-        <p className="text-xs text-center text-indigo-300 mt-2">
+        <p className="text-xs text-center text-indigo-300 mt-2" role="status" aria-live="polite">
           {progress.total - progress.submitted === 1
             ? "Almost there — just waiting on one more player…"
             : `Almost there — just waiting on ${progress.total - progress.submitted} more players…`}
@@ -1515,7 +1515,8 @@ function App() {
                   <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
                   <p className="text-[10px] text-indigo-400 leading-tight">Must begin with "What if..."</p>
                 </div>
-                <textarea value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoCapitalize="sentences" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={300} />
+                <label htmlFor="question-input" className="sr-only">Your question</label>
+                <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoCapitalize="sentences" aria-label="Your question" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={300} />
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500">{question.length}/300</span>
                   {question && !question.toLowerCase().startsWith("what if") && (<span className="text-xs text-red-500 font-semibold">Must start with "What if"</span>)}
@@ -1578,7 +1579,8 @@ function App() {
                 <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
                 </div>
-                <textarea value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoCapitalize="sentences" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={400} />
+                <label htmlFor="answer-input" className="sr-only">Your answer</label>
+                <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoCapitalize="sentences" aria-label="Your answer" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={400} />
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs text-gray-500">{answer.length}/400 characters</span>
                 </div>
@@ -2384,7 +2386,9 @@ function App() {
           title="Back to top"
         >↑</button>
       )}
-      {renderContent()}
+      <main aria-label="Game" className="contents">
+        {renderContent()}
+      </main>
     </div>
   )
 }
