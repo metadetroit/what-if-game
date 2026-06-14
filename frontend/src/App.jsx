@@ -95,7 +95,7 @@ function isSoundMuted() {
   try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false }
 }
 
-function setSoundMuted(muted) {
+function writeSoundMuted(muted) {
   try { localStorage.setItem("fluke-muted", muted ? "1" : "0") } catch (e) { /* ignore */ }
 }
 
@@ -193,6 +193,7 @@ function App() {
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
   const [roundHistory, setRoundHistory] = useState([]) // Past round summaries
   const [showRoundHistory, setShowRoundHistory] = useState(false)
+  const [soundMuted, setSoundMuted] = useState(() => { try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false } })
   const [reactions, setReactions] = useState([]) // { id, emoji, x, y, createdAt }
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [votersCount, setVotersCount] = useState(0)
@@ -1324,6 +1325,14 @@ function App() {
       case "welcome":
         return (
           <div className="game-container justify-center py-1 relative">
+            <button
+              onClick={() => { const next = !soundMuted; writeSoundMuted(next); setSoundMuted(next) }}
+              className="absolute top-2 right-2 z-10 bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center text-lg hover:bg-gray-700 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
+              aria-label={soundMuted ? "Unmute sounds" : "Mute sounds"}
+              title={soundMuted ? "Sounds muted — click to unmute" : "Sounds on — click to mute"}
+            >
+              {soundMuted ? "🔇" : "🔊"}
+            </button>
             {reconnectPrompt && (
               <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl">
