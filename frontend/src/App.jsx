@@ -191,6 +191,8 @@ function App() {
   const [summaryPairVoteId, setSummaryPairVoteId] = useState(null)
   const [votedCardId, setVotedCardId] = useState(null) // DOM id of the card the user voted for
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
+  const [roundHistory, setRoundHistory] = useState([]) // Past round summaries
+  const [showRoundHistory, setShowRoundHistory] = useState(false)
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [votersCount, setVotersCount] = useState(0)
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
@@ -629,7 +631,10 @@ function App() {
     newSocket.on("game-ended", (data) => {
       setGameState("ended")
       playSound("chime")
-      if (data.summary) { applySummaryData(data.summary, anonymousMode) }
+      if (data.summary) {
+        applySummaryData(data.summary, anonymousMode)
+        setRoundHistory(prev => [...prev, { summary: data.summary, anonymousMode, timestamp: Date.now() }])
+      }
       if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
       if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
         setGameAwards({
@@ -1010,6 +1015,8 @@ function App() {
     setUserVotes({})
     setSummaryVotes({})
     setSummaryPairVoteId(null)
+    setRoundHistory([])
+    setShowRoundHistory(false)
   }, [socket])
 
   const resetGame = useCallback(() => {
@@ -1042,6 +1049,8 @@ function App() {
     setUserVotes({})
     setSummaryVotes({})
     setSummaryPairVoteId(null)
+    setRoundHistory([])
+    setShowRoundHistory(false)
   }, [socket])
 
   const handleAbandonGame = useCallback(() => {
@@ -1076,6 +1085,8 @@ function App() {
     setUserVotes({})
     setSummaryVotes({})
     setSummaryPairVoteId(null)
+    setRoundHistory([])
+    setShowRoundHistory(false)
   }, [])
 
   useEffect(() => {
@@ -1740,6 +1751,14 @@ function App() {
                 <p className="text-sm text-gray-400">Scroll through and vote for the best game-paired combo</p>
               </div>
               <div className="summary-header__meta">
+                {roundHistory.length > 0 && (
+                  <div>
+                    <p className="summary-pill">History</p>
+                    <button onClick={() => setShowRoundHistory(true)} className="text-xs text-indigo-300 hover:text-indigo-200 underline">
+                      {roundHistory.length} past round{roundHistory.length === 1 ? '' : 's'}
+                    </button>
+                  </div>
+                )}
                 <div>
                   <p className="summary-pill">Players</p>
                   <p className="summary-meta-value">{players.length}</p>
@@ -1772,12 +1791,14 @@ function App() {
                     const userLockedToDifferentPair = summaryPairVoteId && hasPairId && summaryPairVoteId !== pair.pairDbId
                     const inFlight = pendingVoteRef.current && pendingVoteRef.current.type === 'qa_pair' && pendingVoteRef.current.targetId === pair.pairDbId
                     const voteDisabled = userLockedToDifferentPair || inFlight
+                    const isWinner = roundLeader && roundLeader.pairDbId === pair.pairDbId && !roundLeader.tied
 
                     return (
-                      <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card " + (userVotedForPair ? "summary-card--active" : "")}>
+                      <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card " + (userVotedForPair ? "summary-card--active " : "") + (isWinner ? "summary-card--winner" : "")}>
                         <div className="summary-card__body">
                           <div className="summary-pill summary-pill--accent">
                             <span className="text-xs font-semibold tracking-widest">Game Pairing</span>
+                            {isWinner && <span className="ml-auto text-sm" title="Top voted!">👑</span>}
                           </div>
                           <p className="summary-question">{pair.question}</p>
                           <div className="summary-paired">
@@ -1837,6 +1858,35 @@ function App() {
               )}
             </div>
 
+            {showRoundHistory && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                    <h3 className="text-lg font-bold text-white">Round History</h3>
+                    <button onClick={() => setShowRoundHistory(false)} className="text-gray-400 hover:text-white text-sm">✕ Close</button>
+                  </div>
+                  <div className="overflow-y-auto flex-1 p-4 space-y-4">
+                    {roundHistory.map((round, idx) => (
+                      <div key={idx} className="card p-3">
+                        <p className="text-xs text-gray-400 mb-2">Round {idx + 1} — {new Date(round.timestamp).toLocaleTimeString()}</p>
+                        <div className="space-y-2">
+                          {round.summary.slice(0, 3).map((pair, pIdx) => (
+                            <div key={pIdx} className="text-sm">
+                              <p className="text-white font-medium">{pair.question}</p>
+                              <p className="text-gray-400 text-xs">↗ {pair.pairedAnswer || 'No pairing'}</p>
+                            </div>
+                          ))}
+                          {round.summary.length > 3 && (
+                            <p className="text-xs text-gray-500">+{round.summary.length - 3} more pairings</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {roundLeader && (
               <div className="summary-leader card">
                 <div className="summary-leader__icon">🔥</div>
@@ -1870,6 +1920,18 @@ function App() {
                   <p className="text-xs text-sky-100/70">Last to finish both the question and the answer.</p>
                 </div>
                 <div className="summary-slowest__badge">Slowest Typer!</div>
+              </div>
+            )}
+
+            {roundLeader && !roundLeader.tied && (
+              <div className="summary-mvp card">
+                <div className="summary-mvp__icon">🌟</div>
+                <div>
+                  <p className="text-sm text-yellow-200">Round MVP</p>
+                  <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (roundLeader.questionAuthorName || 'Unknown')}</p>
+                  <p className="text-xs text-yellow-100/70">Their question earned the most votes!</p>
+                </div>
+                <div className="summary-mvp__badge">MVP!</div>
               </div>
             )}
 

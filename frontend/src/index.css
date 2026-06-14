@@ -124,6 +124,18 @@
     @apply ml-auto text-xs font-black tracking-widest uppercase bg-sky-400/20 text-sky-100 px-4 py-2 rounded-full border border-sky-400/60;
   }
 
+  .summary-mvp {
+    @apply flex flex-wrap items-center gap-4 bg-gradient-to-r from-yellow-600/15 to-amber-500/10 border border-yellow-400/40;
+  }
+
+  .summary-mvp__icon {
+    @apply w-16 h-16 rounded-2xl bg-yellow-500/30 flex items-center justify-center text-3xl shadow-lg shadow-yellow-900/40;
+  }
+
+  .summary-mvp__badge {
+    @apply ml-auto text-xs font-black tracking-widest uppercase bg-yellow-400/20 text-yellow-100 px-4 py-2 rounded-full border border-yellow-400/60;
+  }
+
   .summary-leader {
     @apply flex flex-wrap items-center gap-4 bg-gradient-to-r from-rose-600/15 to-fuchsia-500/10 border border-rose-400/40;
   }
@@ -222,6 +234,10 @@
 
   .summary-card--active {
     @apply ring-2 ring-amber-400/40 border-amber-400/40;
+  }
+
+  .summary-card--winner {
+    @apply ring-2 ring-yellow-400/60 border-yellow-400/50 shadow-lg shadow-yellow-900/20;
   }
 
   .phase-banner {
