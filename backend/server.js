@@ -1089,6 +1089,13 @@ io.on('connection', (socket) => {
     startNextReading(roomCode);
   });
 
+  // Reaction handler (emoji reactions during performance)
+  socket.on('reaction', ({ emoji, x, y }) => {
+    const roomCode = socket.roomCode;
+    if (!roomCode || !games[roomCode]) return;
+    socket.to(roomCode).emit('reaction', { emoji, x, y });
+  });
+
   // Player submits a vote (non-blocking during performance phase)
   socket.on('submit-vote', ({ type, targetId }) => {
     let roomCode = socket.roomCode;

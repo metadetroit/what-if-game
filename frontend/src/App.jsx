@@ -193,6 +193,7 @@ function App() {
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
   const [roundHistory, setRoundHistory] = useState([]) // Past round summaries
   const [showRoundHistory, setShowRoundHistory] = useState(false)
+  const [reactions, setReactions] = useState([]) // { id, emoji, x, y, createdAt }
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [votersCount, setVotersCount] = useState(0)
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
@@ -595,6 +596,11 @@ function App() {
       if (data.questionReader?.id === newSocket.id || data.answerReader?.id === newSocket.id) { playSound("ding") }
       // Reset performance votes for new turn
       setPerformanceVotes({})
+    })
+
+    newSocket.on("reaction", (data) => {
+      const id = Math.random().toString(36).slice(2)
+      setReactions(prev => [...prev, { id, emoji: data.emoji, x: data.x, y: data.y, createdAt: Date.now() }])
     })
 
     newSocket.on("vote-update", (data) => {
@@ -1096,6 +1102,13 @@ function App() {
         lastSubmitterTimerRef.current = null
       }
     }
+  }, [])
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setReactions(prev => prev.filter(r => Date.now() - r.createdAt < 3000))
+    }, 1000)
+    return () => clearInterval(id)
   }, [])
 
   // Keyboard navigation for summary voting: Arrow Up/Down moves between vote buttons.
@@ -1714,6 +1727,23 @@ function App() {
                     </div>
                   </div>
                   {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2">{error}</div>)}
+                  <div className="flex justify-center gap-2 mt-2">
+                    {['🔥', '😂', '👏', '❤️', '🤯'].map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          const x = 20 + Math.random() * 60
+                          const y = 20 + Math.random() * 60
+                          socketRef.current?.emit('reaction', { emoji, x, y })
+                          setReactions(prev => [...prev, { id: Math.random().toString(36).slice(2), emoji, x, y, createdAt: Date.now() }])
+                        }}
+                        className="text-xl bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-700 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
+                        aria-label={`React with ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
                   {isHost && (
                     <button onClick={() => setForceConfirm(true)} className="w-full text-xs text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-1">
                       ⚡ Skip Current Turn
@@ -1980,6 +2010,26 @@ function App() {
                     Abandon game (exit to main screen)
                   </button>
                 </div>
+              </div>
+            )}
+            {gameSummary && gameSummary.length > 0 && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => {
+                    const lines = gameSummary.map((pair, i) => {
+                      const q = pair.question || 'No question'
+                      const a = pair.pairedAnswer || 'No pairing'
+                      const votes = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
+                      return `${i + 1}. ${q}\n   → ${a} (${votes} vote${votes === 1 ? '' : 's'})`
+                    })
+                    const text = `What If Game — Round Summary\n\n${lines.join('\n\n')}`
+                    navigator.clipboard?.writeText(text)
+                    setNotice(noticeFor('Summary copied as text', 'success', 1500))
+                  }}
+                  className="text-xs text-gray-400 hover:text-white underline"
+                >
+                  📋 Copy summary as text
+                </button>
               </div>
             )}
             {votedCardId && (
@@ -2389,6 +2439,16 @@ function App() {
       <main aria-label="Game" className="contents">
         {renderContent()}
       </main>
+      {reactions.map(r => (
+        <div
+          key={r.id}
+          className="fixed z-40 text-3xl pointer-events-none animate-bounce"
+          style={{ left: `${r.x}%`, top: `${r.y}%`, transform: 'translate(-50%, -50%)' }}
+          aria-hidden="true"
+        >
+          {r.emoji}
+        </div>
+      ))}
     </div>
   )
 }
