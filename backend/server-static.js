@@ -952,6 +952,30 @@ io.on('connection', (socket) => {
     delete games[roomCode];
   });
 
+  // Non-host player abandons the game from the summary screen
+  socket.on('player-abandon', () => {
+    const roomCode = socket.roomCode;
+    if (!roomCode || !games[roomCode]) return;
+    const game = games[roomCode];
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    console.log(`[ABANDON] ${player.name} abandoned game in room ${roomCode}`);
+
+    player.isActive = false;
+    player.disconnectedAt = Date.now();
+
+    socket.leave(roomCode);
+    socket.roomCode = null;
+
+    const activePlayers = game.players.filter(p => p.isActive);
+    io.to(roomCode).emit('player-left', { players: activePlayers, hostId: game.host });
+
+    if (activePlayers.length === 0) {
+      delete games[roomCode];
+    }
+  });
+
   socket.on('leave-room', () => {
     const roomCode = socket.roomCode;
     if (roomCode && games[roomCode]) {

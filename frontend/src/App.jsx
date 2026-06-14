@@ -852,6 +852,40 @@ function App() {
     setSummaryPairVoteId(null)
   }, [socket])
 
+  const handleAbandonGame = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.emit("player-abandon")
+    }
+    sessionStorage.removeItem("gameSession")
+    reconnectAttemptedRef.current = false
+    setGameState("welcome")
+    setPlayerName("")
+    setRoomCode("")
+    setPlayers([])
+    setIsHost(false)
+    setError("")
+    setNotice(null)
+    setQuestion("")
+    setAnswer("")
+    setAssignedQuestion("")
+    setSubmitted(false)
+    setProgress({ submitted: 0, total: 0 })
+    setCurrentTurn(null)
+    setGameStats({ round: 0, total: 0 })
+    setHasRead(false)
+    applySummaryData(null, false)
+    setAnonymousMode(false)
+    setReconnectInfo(null)
+    setPlayerStatuses([])
+    setForceConfirm(false)
+    setKickConfirm(null)
+    setReconnectPrompt(null)
+    setPerformanceVotes({})
+    setUserVotes({})
+    setSummaryVotes({})
+    setSummaryPairVoteId(null)
+  }, [])
+
   useEffect(() => {
     return () => {
       if (lastSubmitterTimerRef.current) {
@@ -1631,7 +1665,7 @@ function App() {
                 <div className="card text-center py-5 px-6">
                   <p className="text-sm text-gray-200 mb-1">Please wait for the host to start a new round</p>
                   <p className="text-xs text-gray-500 mb-5">Your screen will automatically refresh</p>
-                  <button onClick={disbandGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs">
+                  <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs">
                     Abandon game (exit to main screen)
                   </button>
                 </div>
