@@ -1446,24 +1446,24 @@ function App() {
                 <h2 className="text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
                 <p className="text-sm text-gray-400">Scroll through and vote for the best game-paired combo</p>
               </div>
-              {isHost && (
-                <div className="summary-header__meta">
-                  <div>
-                    <p className="summary-pill">Players</p>
-                    <p className="summary-meta-value">{players.length}</p>
-                  </div>
-                  <div>
-                    <p className="summary-pill">Voting Status</p>
-                    <p className={"summary-meta-value " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ Everyone voted" : `${votersCount}/${players.length} voted`}</p>
-                    <p className="summary-meta-note">{votersCount >= players.length ? "Ready to start next round" : "Waiting for votes"}</p>
-                  </div>
+              <div className="summary-header__meta">
+                <div>
+                  <p className="summary-pill">Players</p>
+                  <p className="summary-meta-value">{players.length}</p>
+                </div>
+                <div>
+                  <p className="summary-pill">Voting Status</p>
+                  <p className={"summary-meta-value " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ Everyone voted" : `${votersCount}/${players.length} voted`}</p>
+                  <p className="summary-meta-note">{votersCount >= players.length ? "Ready to start next round" : "Waiting for votes"}</p>
+                </div>
+                {isHost && (
                   <div>
                     <p className="summary-pill">Next Round Setting</p>
                     <p className={"summary-meta-value " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "Anonymous" : "Names shown"}</p>
                     <p className="summary-meta-note">Host toggle updates this for the upcoming game</p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="summary-scroll">
@@ -1610,7 +1610,18 @@ function App() {
                   </button>
                 </div>
               </div>
-            ) : (null)}
+            ) : (
+              <div className="summary-actions">
+                <div className="card text-center py-4">
+                  <p className="text-sm text-gray-300 mb-2">⏳ Waiting for host to start the next round</p>
+                  <p className="text-xs text-gray-500 mb-4">The host can replay with the same players or start a new game</p>
+                  <button onClick={disbandGame} className="btn-secondary py-2 text-xs">
+                    🏠 Return to main screen
+                  </button>
+                  <p className="text-[10px] text-gray-600 mt-2">Preferred: wait for host to restart</p>
+                </div>
+              </div>
+            )}
           </div>
         )
 
