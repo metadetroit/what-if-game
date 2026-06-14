@@ -66,6 +66,13 @@ function clearDraft(roomCode, phase) {
   try { localStorage.removeItem(draftKey(roomCode, phase)) } catch (e) { /* ignore */ }
 }
 
+// Human-readable label naming the player(s) currently disconnected.
+function waitingForLabel(names) {
+  if (!names || names.length === 0) return ""
+  if (names.length === 1) return `${names[0]} disconnected — waiting for them to reconnect…`
+  return `${names.join(", ")} disconnected — waiting for them to reconnect…`
+}
+
 function App() {
   const [socket, setSocket] = useState(null)
   const [gameState, setGameState] = useState("welcome")
@@ -125,9 +132,17 @@ function App() {
   const socketRef = useRef(null)
   const lastSubmitterTimerRef = useRef(null)
   const pendingVoteRef = useRef(null)
+  const playerNameRef = useRef("")
+  // Names of OTHER players currently disconnected (within their reconnect grace window).
+  const disconnectedPlayersRef = useRef([])
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
+  useEffect(() => { playerNameRef.current = playerName }, [playerName])
+  // Outside an active game there is no one to "wait for" — clear the disconnected list.
+  useEffect(() => {
+    if (gameState === "welcome" || gameState === "lobby") disconnectedPlayersRef.current = []
+  }, [gameState])
 
   // Auto-clear notice
   useEffect(() => {
@@ -351,7 +366,7 @@ function App() {
       // Only show notice if user is mid-game; pre-game disconnect is silent.
       // Persistent (no auto-expiry) so it stays visible until we actually reconnect.
       if (gameStateRef.current !== "welcome" && gameStateRef.current !== "reconnect-failed") {
-        setNotice(noticeFor("Connection lost — reconnecting…", "warn", null))
+        setNotice(noticeFor("You disconnected. If you don't automatically reconnect, try refreshing your screen.", "warn", null))
       }
       touchSession()
     })
@@ -413,7 +428,15 @@ function App() {
       console.log("player-joined event received:", payload)
       updatePlayersAndHost(payload)
     })
-    newSocket.on("player-left", updatePlayersAndHost)
+    newSocket.on("player-left", (payload) => {
+      updatePlayersAndHost(payload)
+      // A player was removed (left/abandoned, or dropped after the grace window).
+      // Stop showing any stale "waiting for…" notice for disconnected players.
+      if (disconnectedPlayersRef.current.length > 0) {
+        disconnectedPlayersRef.current = []
+        setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
+      }
+    })
     newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
     newSocket.on("progress-update", (data) => {
       console.log("Progress-update received:", data)
@@ -572,7 +595,13 @@ function App() {
 
     newSocket.on("player-disconnected", (data) => {
       setPlayers(data.players)
-      setNotice(noticeFor(`${data.disconnectedPlayer} disconnected (90s to reconnect)`, "warn", 4000))
+      // Track every other player currently disconnected so the notice can name
+      // all of them, and persist until they reconnect (or are removed).
+      const name = data.disconnectedPlayer
+      if (name && !disconnectedPlayersRef.current.includes(name)) {
+        disconnectedPlayersRef.current = [...disconnectedPlayersRef.current, name]
+      }
+      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
     })
 
     newSocket.on("player-rejoined", (data) => {
@@ -581,7 +610,17 @@ function App() {
         setHostId(data.hostId)
         setIsHost(newSocket.id === data.hostId)
       }
-      setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2000))
+      // Drop the reconnected player from the waiting list.
+      disconnectedPlayersRef.current = disconnectedPlayersRef.current.filter((n) => n !== data.playerName)
+      // Don't announce our own reconnection here — the "reconnected" handler covers that.
+      if (data.playerName === playerNameRef.current) return
+      const remaining = disconnectedPlayersRef.current
+      if (remaining.length === 0) {
+        setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2500))
+      } else {
+        // Someone reconnected but others are still gone — keep naming who we're waiting on.
+        setNotice(noticeFor(`${data.playerName} reconnected — still waiting for ${remaining.join(", ")}…`, "info", null))
+      }
     })
 
     // Host transferred during game (e.g. previous host disconnected)
@@ -638,6 +677,8 @@ function App() {
       console.log("Should be host?", newSocket.id === data.hostId)
       setReconnectPrompt(null)
       if (data.success) {
+        // Fresh authoritative state on our own reconnect — drop any stale waiting list.
+        disconnectedPlayersRef.current = []
         const savedSession = loadSession()
         if (savedSession) {
           setPlayerName(savedSession.playerName)
