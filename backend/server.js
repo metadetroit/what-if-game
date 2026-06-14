@@ -158,8 +158,37 @@ const io = new Server(server, {
 // Store games in memory (use Redis for production)
 const games = {};
 
+// Ring buffer of recently-used room codes to avoid immediate reuse
+const recentRoomCodes = new Set();
+const MAX_RECENT_CODES = 100;
+
 function generateRoomCode() {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  const existingCodes = new Set(Object.keys(games));
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    if (!existingCodes.has(code) && !recentRoomCodes.has(code)) {
+      recentRoomCodes.add(code);
+      if (recentRoomCodes.size > MAX_RECENT_CODES) {
+        const first = recentRoomCodes.values().next().value;
+        recentRoomCodes.delete(first);
+      }
+      return code;
+    }
+  }
+  // Fallback to 5-digit if 4-digit exhausted
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = Math.floor(10000 + Math.random() * 90000).toString();
+    if (!existingCodes.has(code) && !recentRoomCodes.has(code)) {
+      recentRoomCodes.add(code);
+      if (recentRoomCodes.size > MAX_RECENT_CODES) {
+        const first = recentRoomCodes.values().next().value;
+        recentRoomCodes.delete(first);
+      }
+      return code;
+    }
+  }
+  // Extremely unlikely — just timestamp-based
+  return Date.now().toString().slice(-5);
 }
 
 function shuffleArray(array) {
@@ -1904,7 +1933,7 @@ io.on('connection', (socket) => {
           disbandIfBelowMinimum(roomCode);
         }
       }
-    }, 250);
+    }, 1000);
 
     // Set 180-second grace timeout for permanent removal
     player.reconnectTimeout = setTimeout(() => {

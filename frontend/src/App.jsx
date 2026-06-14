@@ -67,10 +67,91 @@ function clearDraft(roomCode, phase) {
 }
 
 // Human-readable label naming the player(s) currently disconnected.
-function waitingForLabel(names) {
+function waitingForLabel(names, msLeft = null) {
   if (!names || names.length === 0) return ""
-  if (names.length === 1) return `${names[0]} disconnected — waiting for them to reconnect…`
-  return `${names.join(", ")} disconnected — waiting for them to reconnect…`
+  const suffix = msLeft != null && msLeft > 0 ? ` (${formatTimeLeft(msLeft)})` : ""
+  if (names.length === 1) return `${names[0]} disconnected — waiting for them to reconnect…${suffix}`
+  return `${names.join(", ")} disconnected — waiting for them to reconnect…${suffix}`
+}
+
+function formatTimeLeft(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}:${s.toString().padStart(2, "0")}`
+}
+
+// Simple Web Audio API tone generator (no external assets).
+// AudioContext is lazily created on first user interaction to avoid autoplay blocks.
+let audioCtx = null
+function ensureAudioContext() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)() } catch (e) { /* ignore */ }
+  }
+  return audioCtx
+}
+
+function isSoundMuted() {
+  try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false }
+}
+
+function setSoundMuted(muted) {
+  try { localStorage.setItem("fluke-muted", muted ? "1" : "0") } catch (e) { /* ignore */ }
+}
+
+function playSound(type) {
+  if (isSoundMuted()) return
+  const ctx = ensureAudioContext()
+  if (!ctx) return
+  if (ctx.state === "suspended") ctx.resume()
+
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+
+  const now = ctx.currentTime
+  switch (type) {
+    case "ding": // your turn
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(523, now)
+      osc.frequency.exponentialRampToValueAtTime(784, now + 0.1)
+      gain.gain.setValueAtTime(0.15, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+      osc.start(now)
+      osc.stop(now + 0.3)
+      break
+    case "chime": // phase transition / all submitted
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(440, now)
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.15)
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4)
+      osc.start(now)
+      osc.stop(now + 0.4)
+      break
+    case "success": // vote for your pairing / reconnected
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(523, now)
+      osc.frequency.setValueAtTime(659, now + 0.1)
+      osc.frequency.setValueAtTime(784, now + 0.2)
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5)
+      osc.start(now)
+      osc.stop(now + 0.5)
+      break
+    case "warn": // subtle alert
+      osc.type = "triangle"
+      osc.frequency.setValueAtTime(300, now)
+      osc.frequency.linearRampToValueAtTime(200, now + 0.2)
+      gain.gain.setValueAtTime(0.08, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
+      osc.start(now)
+      osc.stop(now + 0.25)
+      break
+    default:
+      osc.stop(now)
+  }
 }
 
 function App() {
@@ -135,13 +216,17 @@ function App() {
   const playerNameRef = useRef("")
   // Names of OTHER players currently disconnected (within their reconnect grace window).
   const disconnectedPlayersRef = useRef([])
+  const disconnectDeadlineRef = useRef(null)
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
   useEffect(() => { playerNameRef.current = playerName }, [playerName])
   // Outside an active game there is no one to "wait for" — clear the disconnected list.
   useEffect(() => {
-    if (gameState === "welcome" || gameState === "lobby") disconnectedPlayersRef.current = []
+    if (gameState === "welcome" || gameState === "lobby") {
+      disconnectedPlayersRef.current = []
+      disconnectDeadlineRef.current = null
+    }
   }, [gameState])
 
   // Auto-clear notice
@@ -152,6 +237,21 @@ function App() {
     const t = setTimeout(() => setNotice(null), remaining)
     return () => clearTimeout(t)
   }, [notice])
+
+  // Live countdown for disconnected players — tick every second while a deadline exists.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (disconnectedPlayersRef.current.length === 0 || !disconnectDeadlineRef.current) return
+      const msLeft = disconnectDeadlineRef.current - Date.now()
+      if (msLeft <= 0) {
+        // Grace period expired — drop the time suffix, keep the static label
+        setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
+        return
+      }
+      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current, msLeft), "warn", null))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     if (gameState !== 'ended') {
@@ -434,6 +534,7 @@ function App() {
       // Stop showing any stale "waiting for…" notice for disconnected players.
       if (disconnectedPlayersRef.current.length > 0) {
         disconnectedPlayersRef.current = []
+        disconnectDeadlineRef.current = null
         setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
       }
     })
@@ -442,6 +543,7 @@ function App() {
       console.log("Progress-update received:", data)
       setProgress(data)
       if (data.playerStatuses) { setPlayerStatuses(data.playerStatuses) }
+      if (data.submitted > 0 && data.total > 0 && data.submitted === data.total) { playSound("chime") }
       if (data.firstSubmitter) { setFirstSubmitter(data.firstSubmitter) }
       if (data.lastQuestionSubmitter) {
         console.log("Setting lastQuestionSubmitter to:", data.lastQuestionSubmitter)
@@ -465,6 +567,7 @@ function App() {
       setAssignedQuestion(data.question)
       setGameState("answering")
       setSubmitted(false)
+      playSound("chime")
       setProgress({ submitted: 0, total: players.length })
       setPlayerStatuses(players.map(p => ({ name: p.name, submitted: false })))
       setFirstSubmitter(null)
@@ -474,6 +577,7 @@ function App() {
     newSocket.on("performance-phase", (data) => {
       setGameState("performing")
       setGameStats({ round: 1, total: data.totalRounds })
+      playSound("chime")
       setProgress({ submitted: 0, total: 0 })
       setPlayerStatuses([])
       setForceConfirm(false)
@@ -485,6 +589,7 @@ function App() {
       setCurrentTurn(data)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
+      if (data.questionReader?.id === newSocket.id || data.answerReader?.id === newSocket.id) { playSound("ding") }
       // Reset performance votes for new turn
       setPerformanceVotes({})
     })
@@ -521,6 +626,7 @@ function App() {
 
     newSocket.on("game-ended", (data) => {
       setGameState("ended")
+      playSound("chime")
       if (data.summary) { applySummaryData(data.summary, anonymousMode) }
       if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
       if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
@@ -601,7 +707,11 @@ function App() {
       if (name && !disconnectedPlayersRef.current.includes(name)) {
         disconnectedPlayersRef.current = [...disconnectedPlayersRef.current, name]
       }
-      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
+      if (typeof data.gracePeriod === "number" && !disconnectDeadlineRef.current) {
+        disconnectDeadlineRef.current = Date.now() + data.gracePeriod * 1000
+      }
+      const msLeft = disconnectDeadlineRef.current ? disconnectDeadlineRef.current - Date.now() : null
+      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current, msLeft), "warn", null))
     })
 
     newSocket.on("player-rejoined", (data) => {
@@ -616,6 +726,7 @@ function App() {
       if (data.playerName === playerNameRef.current) return
       const remaining = disconnectedPlayersRef.current
       if (remaining.length === 0) {
+        disconnectDeadlineRef.current = null
         setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2500))
       } else {
         // Someone reconnected but others are still gone — keep naming who we're waiting on.
@@ -677,8 +788,10 @@ function App() {
       console.log("Should be host?", newSocket.id === data.hostId)
       setReconnectPrompt(null)
       if (data.success) {
+        playSound("success")
         // Fresh authoritative state on our own reconnect — drop any stale waiting list.
         disconnectedPlayersRef.current = []
+        disconnectDeadlineRef.current = null
         const savedSession = loadSession()
         if (savedSession) {
           setPlayerName(savedSession.playerName)
@@ -1215,7 +1328,7 @@ function App() {
               <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" aria-label="Your name" className="input-field py-2 text-lg" maxLength={20} />
               <div className="space-y-2">
                 <label className="text-sm text-indigo-400 font-semibold uppercase tracking-wider">Room Code</label>
-                <input type="text" inputMode="numeric" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="1234" className="input-field py-3 text-2xl font-bold text-center tracking-[0.2em]" maxLength={4} />
+                <input type="text" inputMode="numeric" enterKeyHint="done" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="1234" className="input-field py-3 text-2xl font-bold text-center tracking-[0.2em]" maxLength={4} />
               </div>
               <div className="flex gap-3">
                 <button onClick={joinRoom} className="btn-primary py-3 px-5 text-lg whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join Game" : "..."}</button>
@@ -1244,7 +1357,17 @@ function App() {
             <div className="card mb-2 py-2">
               <div className="text-center">
                 <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Room Code</p>
-                <div className="text-3xl font-black text-gradient tracking-[0.2em] cursor-pointer active:scale-95 transition-transform" onClick={() => { navigator.clipboard?.writeText(roomCode); setNotice(noticeFor('Room code copied', 'success', 1200)) }} title="Tap to copy">{roomCode}</div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="text-3xl font-black text-gradient tracking-[0.2em]">{roomCode}</div>
+                  <button
+                    onClick={() => { navigator.clipboard?.writeText(roomCode); setNotice(noticeFor('Room code copied', 'success', 1200)) }}
+                    className="shrink-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm hover:bg-gray-700 transition-colors"
+                    title="Copy room code"
+                    aria-label="Copy room code"
+                  >
+                    📋
+                  </button>
+                </div>
                 <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
               </div>
               <div className={"lobby-ready mt-2 " + (players.length >= 3 ? "lobby-ready--ready" : "")}>
@@ -1340,7 +1463,7 @@ function App() {
                   <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
                   <p className="text-[10px] text-indigo-400 leading-tight">Must begin with "What if..."</p>
                 </div>
-                <textarea value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={300} />
+                <textarea value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoCapitalize="sentences" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={300} />
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500">{question.length}/300</span>
                   {question && !question.toLowerCase().startsWith("what if") && (<span className="text-xs text-red-500 font-semibold">Must start with "What if"</span>)}
@@ -1403,7 +1526,7 @@ function App() {
                 <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
                 </div>
-                <textarea value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={400} />
+                <textarea value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoCapitalize="sentences" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={400} />
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs text-gray-500">{answer.length}/400 characters</span>
                 </div>
@@ -1642,7 +1765,7 @@ function App() {
                               disabled={voteDisabled}
                               aria-busy={inFlight ? 'true' : 'false'}
                             >
-                              {userVotedForPair ? 'Voted (click to undo)' : userLockedToDifferentPair ? 'Already voted' : 'Vote for this pairing'}
+                              {inFlight ? 'Voting…' : userVotedForPair ? 'Voted (click to undo)' : userLockedToDifferentPair ? 'Already voted' : 'Vote for this pairing'}
                             </button>
                           ) : (
                             <button disabled className="summary-vote-btn summary-vote-btn--disabled">Voting unavailable</button>

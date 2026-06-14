@@ -7,6 +7,9 @@ let db = null;
 
 // Initialize database
 async function initDatabase() {
+  // Recover from partial write if main DB is missing
+  recoverDatabase();
+
   const SQL = await initSqlJs();
   
   // Load existing database or create new one
@@ -104,11 +107,20 @@ async function initDatabase() {
   return db;
 }
 
-// Save database to file
+// Save database to file atomically (temp file + rename)
 function saveDatabase() {
   const data = db.export();
   const buffer = Buffer.from(data);
-  fs.writeFileSync(dbPath, buffer);
+  const tmpPath = dbPath + '.tmp';
+  fs.writeFileSync(tmpPath, buffer);
+  fs.renameSync(tmpPath, dbPath);
+}
+
+// Recover from temp file if main DB is missing (e.g. crash during write)
+function recoverDatabase() {
+  if (!fs.existsSync(dbPath) && fs.existsSync(dbPath + '.tmp')) {
+    fs.renameSync(dbPath + '.tmp', dbPath);
+  }
 }
 
 // Get database instance
