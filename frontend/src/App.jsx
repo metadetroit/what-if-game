@@ -235,6 +235,7 @@ function App() {
   const disconnectDeadlineRef = useRef(null)
   const disconnectNoticeTimerRef = useRef(null)
   const prefillWhatIfRef = useRef(getPrefillWhatIf())
+  const skipNextCountdownRef = useRef(false)
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { prefillWhatIfRef.current = prefillWhatIf }, [prefillWhatIf])
@@ -365,6 +366,10 @@ function App() {
 
   useEffect(() => {
     if (["writing", "answering", "performing"].includes(gameState)) {
+      if (skipNextCountdownRef.current) {
+        skipNextCountdownRef.current = false
+        return
+      }
       setShowCountdown(true)
       setCountdown(3)
       const iv = setInterval(() => {
@@ -837,6 +842,8 @@ function App() {
       console.log("Socket ID:", newSocket.id, "Host ID from data:", data.hostId)
       console.log("Should be host?", newSocket.id === data.hostId)
       setReconnectPrompt(null)
+      // Prevent phase-start countdown from flashing when restoring an in-progress phase.
+      skipNextCountdownRef.current = true
       if (data.success) {
         playSound("success")
         // Fresh authoritative state on our own reconnect — drop any stale waiting list.
