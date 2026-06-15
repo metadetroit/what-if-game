@@ -545,7 +545,7 @@ function App() {
         setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
       }
     })
-    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); setProgress({ submitted: 0, total: players.length }); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
+    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); setProgress({ submitted: 0, total: data.totalPlayers || players.length }); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
     newSocket.on("progress-update", (data) => {
       console.log("Progress-update received:", data)
       setProgress(data)
@@ -1725,17 +1725,9 @@ function App() {
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                    <div>
-                      <div className="text-center mb-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30">
-                          <span className="text-base">🎤</span>
-                          <span className="font-medium">{currentTurn.questionReader.name}</span> read the question to you
-                        </span>
-                      </div>
-                      <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                        <span className="text-2xl font-black text-white tracking-wider">READ ANSWER</span>
-                        <p className="text-purple-100 text-sm mt-1">Read aloud, then tap Done</p>
-                      </div>
+                    <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
+                      <span className="text-2xl font-black text-white tracking-wider">READ ANSWER</span>
+                      <p className="text-purple-100 text-sm mt-1">Read aloud, then tap Done</p>
                     </div>
                   )}
                   {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (

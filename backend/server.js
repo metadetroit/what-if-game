@@ -410,7 +410,7 @@ io.on('connection', (socket) => {
     game.players = activePlayers;
     game.phase = 'writing';
     game.currentRoundAnonymousMode = game.anonymousMode;
-    io.to(roomCode).emit('game-started', { phase: 'writing', anonymousMode: game.anonymousMode });
+    io.to(roomCode).emit('game-started', { phase: 'writing', anonymousMode: game.anonymousMode, totalPlayers: activePlayers.length });
   });
 
   // Host toggles anonymous mode (show/hide names in end-of-game summary)
