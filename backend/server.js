@@ -889,9 +889,11 @@ io.on('connection', (socket) => {
     }
     entries.sort((a, b) => b.total - a.total);
     const top = entries[0];
-    const tied = entries.filter(e => e.total === top.total).length > 1;
-    console.log(`[computeMostAdoredWriter] Winner: ${top.name} with ${top.total} reactions (tied=${tied})`);
-    return { name: top.name, total: top.total, tied };
+    const tiedEntries = entries.filter(e => e.total === top.total);
+    const tied = tiedEntries.length > 1;
+    const names = tiedEntries.map(e => e.name);
+    console.log(`[computeMostAdoredWriter] Winner(s): ${names.join(', ')} with ${top.total} reactions (tied=${tied})`);
+    return { names, total: top.total, tied };
   }
 
   // Prepare the performance/reading phase

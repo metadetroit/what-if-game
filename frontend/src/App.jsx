@@ -2099,12 +2099,12 @@ function App() {
                   <p className="text-sm text-yellow-200">Round's most-adored writer</p>
                   {mostAdoredWriter.tied ? (
                     <>
-                      <p className="text-xl font-extrabold text-white">It's a tie!</p>
-                      <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'} each</p>
+                      <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : mostAdoredWriter.names.join(' & ')}</p>
+                      <p className="text-xs text-yellow-100/70">Tied with {mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'} each!</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (mostAdoredWriter.name || 'Unknown')}</p>
+                      <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (mostAdoredWriter.names[0] || 'Unknown')}</p>
                       <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
                     </>
                   )}
