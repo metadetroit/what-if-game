@@ -18,7 +18,7 @@ function draftKey(roomCode, phase) {
 const SESSION_KEY = "gameSession"
 // TTL keeps a returning player auto-rejoining within a reasonable window while
 // avoiding stale auto-rejoins to long-dead rooms (the server is the final authority).
-const SESSION_TTL_MS = 1000 * 60 * 30 // 30 minutes
+const SESSION_TTL_MS = 1000 * 60 * 3 // 3 minutes — matches server reconnection grace period
 
 function loadSession() {
   try {
