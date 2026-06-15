@@ -194,6 +194,9 @@ function App() {
   const [soundMuted, setSoundMuted] = useState(() => { try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false } })
   const [tick, setTick] = useState(0) // Forces re-render every second for live countdowns
   const [reactions, setReactions] = useState([]) // { id, emoji, x, y, createdAt }
+  const [reactionCounts, setReactionCounts] = useState({}) // { contentDbId: { emoji: count } }
+  const [myReactions, setMyReactions] = useState(new Set()) // Set<contentDbId> that this player reacted to
+  const [currentContent, setCurrentContent] = useState(null) // { dbId, authorId, type } for the currently-read content
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [votersCount, setVotersCount] = useState(0)
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
@@ -533,7 +536,7 @@ function App() {
         setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
       }
     })
-    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
+    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
     newSocket.on("progress-update", (data) => {
       console.log("Progress-update received:", data)
       setProgress(data)
@@ -572,6 +575,9 @@ function App() {
     newSocket.on("performance-phase", (data) => {
       setGameState("performing")
       setGameStats({ round: 1, total: data.totalRounds })
+      setReactionCounts({})
+      setMyReactions(new Set())
+      setCurrentContent(null)
       playSound("chime")
       setProgress({ submitted: 0, total: 0 })
       setPlayerStatuses([])
@@ -584,6 +590,14 @@ function App() {
       setCurrentTurn(data)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
+      // Track what content is currently being read (for reaction self-checks)
+      if (data.currentContentDbId) {
+        setCurrentContent({
+          dbId: data.currentContentDbId,
+          authorId: data.currentContentAuthorId,
+          type: data.currentContentType
+        })
+      }
       // No sounds between individual readings to avoid interrupting the flow
       // Reset performance votes for new turn
       setPerformanceVotes({})
@@ -592,6 +606,10 @@ function App() {
     newSocket.on("reaction", (data) => {
       const id = Math.random().toString(36).slice(2)
       setReactions(prev => [...prev, { id, emoji: data.emoji, x: data.x, y: data.y, createdAt: Date.now() }])
+    })
+
+    newSocket.on("reaction-counts", (data) => {
+      setReactionCounts(prev => ({ ...prev, [data.contentDbId]: data.counts }))
     })
 
     newSocket.on("vote-update", (data) => {
@@ -622,6 +640,8 @@ function App() {
 
     newSocket.on("game-ended", (data) => {
       setGameState("ended")
+      setCurrentContent(null)
+      setMyReactions(new Set())
       playSound("chime")
       if (data.summary) {
         applySummaryData(data.summary, anonymousMode)
@@ -835,7 +855,16 @@ function App() {
         }
         if (data.summary) { applySummaryData(data.summary, typeof data.anonymousMode === "boolean" ? data.anonymousMode : anonymousMode) }
         if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
-        if (data.currentTurn) { setCurrentTurn(data.currentTurn) }
+        if (data.currentTurn) {
+          setCurrentTurn(data.currentTurn)
+          if (data.currentTurn.currentContentDbId) {
+            setCurrentContent({
+              dbId: data.currentTurn.currentContentDbId,
+              authorId: data.currentTurn.currentContentAuthorId,
+              type: data.currentTurn.currentContentType
+            })
+          }
+        }
         setNotice(noticeFor("Reconnected", "success", 2000))
       } else {
         console.log("Reconnection failed:", data)
@@ -1008,6 +1037,9 @@ function App() {
     setSummaryPairVoteId(null)
     setRoundHistory([])
     setShowRoundHistory(false)
+    setCurrentContent(null)
+    setMyReactions(new Set())
+    setReactionCounts({})
   }, [socket])
 
   const resetGame = useCallback(() => {
@@ -1042,6 +1074,9 @@ function App() {
     setSummaryPairVoteId(null)
     setRoundHistory([])
     setShowRoundHistory(false)
+    setCurrentContent(null)
+    setMyReactions(new Set())
+    setReactionCounts({})
   }, [socket])
 
   const handleAbandonGame = useCallback(() => {
@@ -1078,6 +1113,9 @@ function App() {
     setSummaryPairVoteId(null)
     setRoundHistory([])
     setShowRoundHistory(false)
+    setCurrentContent(null)
+    setMyReactions(new Set())
+    setReactionCounts({})
   }, [])
 
   useEffect(() => {
@@ -1713,23 +1751,47 @@ function App() {
                     </div>
                   </div>
                   {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2">{error}</div>)}
-                  <div className="flex justify-center gap-2 mt-2">
-                    {['🔥', '😂', '👏', '❤️', '🤯'].map(emoji => (
-                      <button
-                        key={emoji}
-                        onClick={() => {
-                          const x = 20 + Math.random() * 60
-                          const y = 20 + Math.random() * 60
-                          socketRef.current?.emit('reaction', { emoji, x, y })
-                          setReactions(prev => [...prev, { id: Math.random().toString(36).slice(2), emoji, x, y, createdAt: Date.now() }])
-                        }}
-                        className="text-xl bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-700 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
-                        aria-label={`React with ${emoji}`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const isSelfContent = currentContent && socketRef.current?.id === currentContent.authorId
+                    const alreadyReacted = currentContent && myReactions.has(currentContent.dbId)
+                    const currentCounts = currentContent ? reactionCounts[currentContent.dbId] : null
+                    const canReact = !isSelfContent && !alreadyReacted
+                    return (
+                      <div className="flex justify-center gap-2 mt-2">
+                        {isSelfContent && (
+                          <span className="text-[10px] text-gray-500 self-center mr-1">You wrote this — no self-reactions</span>
+                        )}
+                        {alreadyReacted && !isSelfContent && (
+                          <span className="text-[10px] text-gray-500 self-center mr-1">You reacted ✓</span>
+                        )}
+                        {['🔥', '😂', '👏', '❤️', '🤯'].map(emoji => {
+                          const count = currentCounts?.[emoji] || 0
+                          return (
+                            <button
+                              key={emoji}
+                              onClick={() => {
+                                if (!canReact || !currentContent) return
+                                const x = 20 + Math.random() * 60
+                                const y = 20 + Math.random() * 60
+                                socketRef.current?.emit('reaction', { emoji, x, y, contentDbId: currentContent.dbId })
+                                setReactions(prev => [...prev, { id: Math.random().toString(36).slice(2), emoji, x, y, createdAt: Date.now() }])
+                                setMyReactions(prev => new Set(prev).add(currentContent.dbId))
+                              }}
+                              disabled={!canReact}
+                              className={`text-xl bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none relative ${canReact ? 'hover:bg-gray-700' : 'opacity-30 cursor-not-allowed'}`}
+                              aria-label={`React with ${emoji}${count > 0 ? ` (${count})` : ''}`}
+                              title={`React with ${emoji}${count > 0 ? ` — ${count} reaction${count === 1 ? '' : 's'}` : ''}`}
+                            >
+                              {emoji}
+                              {count > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{count}</span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
                   {isHost && (
                     <button onClick={() => setForceConfirm(true)} className="w-full text-xs text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-1">
                       ⚡ Skip Current Turn
@@ -1865,6 +1927,30 @@ function App() {
                             <p className="summary-actual__author">— {actualAuthor}</p>
                           )}
                         </div>
+                        {(pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0) ? (
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-800/50">
+                            {pair.questionReactions && Object.keys(pair.questionReactions).length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">Q:</span>
+                                {Object.entries(pair.questionReactions).map(([emoji, count]) => (
+                                  <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+                                    {emoji} {count}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {pair.answerReactions && Object.keys(pair.answerReactions).length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">A:</span>
+                                {Object.entries(pair.answerReactions).map(([emoji, count]) => (
+                                  <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+                                    {emoji} {count}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
                       </article>
                     )
                   })}

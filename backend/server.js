@@ -331,7 +331,9 @@ io.on('connection', (socket) => {
       currentReaderIndex: 0,
       playerOrder: [],
       anonymousMode: false,
-      currentRoundAnonymousMode: false
+      currentRoundAnonymousMode: false,
+      reactions: {},      // { contentId: { emoji: count, ... } }
+      playerReactions: {} // { contentId: Set(playerId) }
     };
     games[roomCode] = game;
     
@@ -810,18 +812,22 @@ io.on('connection', (socket) => {
             }
           }
 
+          const qDbId = questionData?.dbId || null;
+          const aDbId = answerData?.dbId || null;
           pairs.push({
             question: turn.question || 'Unknown question',
             questionAuthorName: qAuthor,
-            questionDbId: questionData?.dbId || null,
+            questionDbId: qDbId,
             actualAnswer: turn.actualAnswer || 'Unknown answer',
             actualAnswerAuthorName: aAuthor,
-            actualAnswerDbId: answerData?.dbId || null,
+            actualAnswerDbId: aDbId,
             pairedAnswer: answerTurn ? answerTurn.pairedAnswer : null,
             pairedAnswerAuthorName: answerTurn ? pAuthor : null,
             pairDbId: pairDbId,
             voteCount: voteCount || 0,
-            anonymousMode: isAnonymous
+            anonymousMode: isAnonymous,
+            questionReactions: qDbId ? (game.reactions[qDbId] || {}) : {},
+            answerReactions: aDbId ? (game.reactions[aDbId] || {}) : {}
           });
         }
       }
@@ -1046,6 +1052,9 @@ io.on('connection', (socket) => {
       answer: answer,
       questionDbId: isQuestionTurn ? cardForQuestion.question?.dbId : null,
       answerDbId: isQuestionTurn ? cardForQuestion.answer?.dbId : (cardForAnswer.answer?.dbId || null),
+      currentContentDbId: isQuestionTurn ? cardForQuestion.question?.dbId : cardForAnswer.answer?.dbId,
+      currentContentAuthorId: isQuestionTurn ? cardForQuestion.question?.authorId : cardForAnswer.answer?.authorId,
+      currentContentType: isQuestionTurn ? 'question' : 'answer',
       round: game.currentReaderIndex + 1,
       total: totalTurns,
       isQuestionTurn: isQuestionTurn
@@ -1090,10 +1099,47 @@ io.on('connection', (socket) => {
   });
 
   // Reaction handler (emoji reactions during performance)
-  socket.on('reaction', ({ emoji, x, y }) => {
+  socket.on('reaction', ({ emoji, x, y, contentDbId }) => {
     const roomCode = socket.roomCode;
     if (!roomCode || !games[roomCode]) return;
-    socket.to(roomCode).emit('reaction', { emoji, x, y });
+    const game = games[roomCode];
+    if (!game || game.phase !== 'performing') return;
+
+    // Find which content is currently being read to validate
+    const turn = game.turnLog[game.turnLog.length - 1];
+    if (!turn) return;
+    const currentDbId = turn.isQuestionTurn ? turn.questionAuthorId : turn.pairedAnswerAuthorId;
+    // Actually we need the content ID, not author. Let's find it from the event data.
+    const targetId = contentDbId;
+    if (!targetId) return;
+
+    // Prevent self-reaction: check if this player wrote the content being read
+    const isQuestionTurn = turn.isQuestionTurn;
+    const contentAuthorId = isQuestionTurn ? turn.questionAuthorId : turn.pairedAnswerAuthorId;
+    if (contentAuthorId === socket.id) {
+      socket.emit('error', 'You cannot react to your own content');
+      return;
+    }
+
+    // One reaction per player per content
+    if (!game.playerReactions[targetId]) game.playerReactions[targetId] = new Set();
+    if (game.playerReactions[targetId].has(socket.id)) {
+      socket.emit('error', 'You already reacted to this');
+      return;
+    }
+
+    // Record reaction
+    game.playerReactions[targetId].add(socket.id);
+    if (!game.reactions[targetId]) game.reactions[targetId] = {};
+    game.reactions[targetId][emoji] = (game.reactions[targetId][emoji] || 0) + 1;
+
+    // Broadcast visual reaction + updated counts
+    io.to(roomCode).emit('reaction', { emoji, x, y });
+    io.to(roomCode).emit('reaction-counts', {
+      contentDbId: targetId,
+      counts: game.reactions[targetId],
+      total: game.playerReactions[targetId].size
+    });
   });
 
   // Player submits a vote (non-blocking during performance phase)
@@ -1726,6 +1772,10 @@ io.on('connection', (socket) => {
       let pairedAnswer = null;
       let actualAnswer = null;
 
+      let questionDbId = null;
+      let answerDbId = null;
+      let questionAuthorId = null;
+      let answerAuthorId = null;
       if (game.cardAssignments) {
         for (const cardKey of Object.keys(game.cardAssignments)) {
           const card = game.cardAssignments[cardKey];
@@ -1733,6 +1783,16 @@ io.on('connection', (socket) => {
             question = card.question?.text;
             pairedAnswer = card.answer?.text;
             actualAnswer = card.actualAnswer?.text;
+            questionDbId = card.question?.dbId || null;
+            questionAuthorId = card.question?.authorId || null;
+            break;
+          }
+        }
+        for (const cardKey of Object.keys(game.cardAssignments)) {
+          const card = game.cardAssignments[cardKey];
+          if (card.playerId === answerReaderId) {
+            answerDbId = card.answer?.dbId || null;
+            answerAuthorId = card.answer?.authorId || null;
             break;
           }
         }
@@ -1745,6 +1805,9 @@ io.on('connection', (socket) => {
         question,
         pairedAnswer,
         actualAnswer,
+        currentContentDbId: isQuestionTurn ? questionDbId : answerDbId,
+        currentContentAuthorId: isQuestionTurn ? questionAuthorId : answerAuthorId,
+        currentContentType: isQuestionTurn ? 'question' : 'answer',
         round: game.currentRound || 1,
         total: game.totalRounds || 1
       };
