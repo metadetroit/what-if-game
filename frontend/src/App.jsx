@@ -197,6 +197,7 @@ function App() {
   const [summaryVotes, setSummaryVotes] = useState({}) // Track votes on summary page: { questionId: count, answerId: count, pairId: count }
   const [summaryPairVoteId, setSummaryPairVoteId] = useState(null)
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
+  const [mostAdoredWriter, setMostAdoredWriter] = useState(null) // { name, total, tied } from backend
   const [roundHistory, setRoundHistory] = useState([]) // Past round summaries
   const [showRoundHistory, setShowRoundHistory] = useState(false)
   const [soundMuted, setSoundMuted] = useState(() => { try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false } })
@@ -673,6 +674,7 @@ function App() {
         setRoundHistory(prev => [...prev, { summary: data.summary, anonymousMode, timestamp: Date.now() }])
       }
       if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
+      if (data.mostAdoredWriter) setMostAdoredWriter(data.mostAdoredWriter)
       if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
         setGameAwards({
           firstQuestionSubmitter: data.firstQuestionSubmitter,
@@ -705,6 +707,7 @@ function App() {
       setUserVotes({})
       setSummaryVotes({})
       setSummaryPairVoteId(null)
+      setMostAdoredWriter(null)
 
       // Carry over lastQuestionSubmitter from prior round (if provided) so the "you were last" nudge shows on the writing screen after replay
       const carried = data && data.lastQuestionSubmitter ? data.lastQuestionSubmitter : null
@@ -738,6 +741,7 @@ function App() {
       setUserVotes({})
       setSummaryVotes({})
       setSummaryPairVoteId(null)
+      setMostAdoredWriter(null)
     })
 
     newSocket.on("anonymous-toggled", (data) => {
@@ -835,6 +839,7 @@ function App() {
       setUserVotes({})
       setSummaryVotes({})
       setSummaryPairVoteId(null)
+      setMostAdoredWriter(null)
     })
 
     newSocket.on("reconnected", (data) => {
@@ -893,6 +898,7 @@ function App() {
           if (data.progress.playerStatuses) setPlayerStatuses(data.progress.playerStatuses)
         }
         if (data.summary) { applySummaryData(data.summary, typeof data.anonymousMode === "boolean" ? data.anonymousMode : anonymousMode) }
+        if (data.mostAdoredWriter) setMostAdoredWriter(data.mostAdoredWriter)
         if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
         if (data.currentTurn) {
           setCurrentTurn(data.currentTurn)
@@ -1074,6 +1080,7 @@ function App() {
     setUserVotes({})
     setSummaryVotes({})
     setSummaryPairVoteId(null)
+    setMostAdoredWriter(null)
     setRoundHistory([])
     setShowRoundHistory(false)
     setCurrentContent(null)
@@ -1111,6 +1118,7 @@ function App() {
     setUserVotes({})
     setSummaryVotes({})
     setSummaryPairVoteId(null)
+    setMostAdoredWriter(null)
     setRoundHistory([])
     setShowRoundHistory(false)
     setCurrentContent(null)
@@ -1150,6 +1158,7 @@ function App() {
     setUserVotes({})
     setSummaryVotes({})
     setSummaryPairVoteId(null)
+    setMostAdoredWriter(null)
     setRoundHistory([])
     setShowRoundHistory(false)
     setCurrentContent(null)
@@ -2083,15 +2092,15 @@ function App() {
               </div>
             )}
 
-            {roundLeader && !roundLeader.tied && (
+            {mostAdoredWriter && !mostAdoredWriter.tied && (
               <div className="summary-mvp card">
-                <div className="summary-mvp__icon">🌟</div>
+                <div className="summary-mvp__icon">💖</div>
                 <div>
-                  <p className="text-sm text-yellow-200">Round MVP</p>
-                  <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (roundLeader.questionAuthorName || 'Unknown')}</p>
-                  <p className="text-xs text-yellow-100/70">Their question earned the most votes!</p>
+                  <p className="text-sm text-yellow-200">Round's most-adored writer</p>
+                  <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (mostAdoredWriter.name || 'Unknown')}</p>
+                  <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
                 </div>
-                <div className="summary-mvp__badge">MVP!</div>
+                <div className="summary-mvp__badge">Adored!</div>
               </div>
             )}
 

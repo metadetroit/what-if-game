@@ -845,8 +845,49 @@ io.on('connection', (socket) => {
       pairedAnswer: null,
       pairedAnswerAuthorName: null,
       pairDbId: pair.dbId || null,
-      anonymousMode: isAnonymous
+      voteCount: 0,
+      anonymousMode: isAnonymous,
+      questionReactions: pair.question?.dbId ? (game.reactions[pair.question.dbId] || {}) : {},
+      answerReactions: pair.answer?.dbId ? (game.reactions[pair.answer.dbId] || {}) : {}
     }));
+  }
+
+  // Compute the player whose written content received the most heart + laugh reactions.
+  function computeMostAdoredWriter(roomCode) {
+    const game = games[roomCode];
+    if (!game) return null;
+
+    // Build reverse map: contentDbId -> { authorId, authorName }
+    const authorMap = {};
+    for (const entry of Object.values(game.questions || {})) {
+      if (entry.dbId) authorMap[entry.dbId] = { authorId: entry.authorId, authorName: entry.authorName };
+    }
+    for (const entry of Object.values(game.answers || {})) {
+      if (entry.dbId) authorMap[entry.dbId] = { authorId: entry.authorId, authorName: entry.authorName };
+    }
+
+    const adoredEmojis = ['❤️', '😂'];
+    const scores = {}; // authorId -> { name, total }
+
+    for (const [contentDbId, emojiCounts] of Object.entries(game.reactions || {})) {
+      const author = authorMap[contentDbId];
+      if (!author) continue;
+      let count = 0;
+      for (const [emoji, c] of Object.entries(emojiCounts)) {
+        if (adoredEmojis.includes(emoji)) count += c;
+      }
+      if (count > 0) {
+        if (!scores[author.authorId]) scores[author.authorId] = { name: author.authorName, total: 0 };
+        scores[author.authorId].total += count;
+      }
+    }
+
+    const entries = Object.values(scores);
+    if (entries.length === 0) return null;
+    entries.sort((a, b) => b.total - a.total);
+    const top = entries[0];
+    const tied = entries.filter(e => e.total === top.total).length > 1;
+    return { name: top.name, total: top.total, tied };
   }
 
   // Prepare the performance/reading phase
@@ -974,7 +1015,8 @@ io.on('connection', (socket) => {
         firstQuestionSubmitter: game.firstQuestionSubmitter,
         firstAnswerSubmitter: game.firstAnswerSubmitter,
         lastQuestionSubmitter: game.lastQuestionSubmitter,
-        lastAnswerSubmitter: game.lastAnswerSubmitter
+        lastAnswerSubmitter: game.lastAnswerSubmitter,
+        mostAdoredWriter: computeMostAdoredWriter(roomCode)
       });
       game.phase = 'ended';
       return;
@@ -1761,6 +1803,7 @@ io.on('connection', (socket) => {
     // If reconnecting during ended phase, include the game summary and current vote state
     if (game.phase === 'ended') {
       reconnectData.summary = buildGameSummary(roomCode);
+      reconnectData.mostAdoredWriter = computeMostAdoredWriter(roomCode);
       const db = getDb();
       const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
       reconnectData.votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
