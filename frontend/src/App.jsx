@@ -67,11 +67,10 @@ function clearDraft(roomCode, phase) {
 }
 
 // Human-readable label naming the player(s) currently disconnected.
-function waitingForLabel(names, msLeft = null) {
+function waitingForLabel(names) {
   if (!names || names.length === 0) return ""
-  const suffix = msLeft != null && msLeft > 0 ? ` (${formatTimeLeft(msLeft)})` : ""
-  if (names.length === 1) return `${names[0]} disconnected — waiting for them to reconnect…${suffix}`
-  return `${names.join(", ")} disconnected — waiting for them to reconnect…${suffix}`
+  if (names.length === 1) return `${names[0]} disconnected — waiting for them to reconnect…`
+  return `${names.join(", ")} disconnected — waiting for them to reconnect…`
 }
 
 function formatTimeLeft(ms) {
@@ -189,11 +188,11 @@ function App() {
   const [userVotes, setUserVotes] = useState({}) // Track user's votes: { questionId: true, answerId: true, pairId: true }
   const [summaryVotes, setSummaryVotes] = useState({}) // Track votes on summary page: { questionId: count, answerId: count, pairId: count }
   const [summaryPairVoteId, setSummaryPairVoteId] = useState(null)
-  const [votedCardId, setVotedCardId] = useState(null) // DOM id of the card the user voted for
   const [summaryAnonymousMode, setSummaryAnonymousMode] = useState(false) // Locks the anonymity of the completed round
   const [roundHistory, setRoundHistory] = useState([]) // Past round summaries
   const [showRoundHistory, setShowRoundHistory] = useState(false)
   const [soundMuted, setSoundMuted] = useState(() => { try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false } })
+  const [tick, setTick] = useState(0) // Forces re-render every second for live countdowns
   const [reactions, setReactions] = useState([]) // { id, emoji, x, y, createdAt }
   const [bestOfData, setBestOfData] = useState(null) // Data for best of page
   const [votersCount, setVotersCount] = useState(0)
@@ -243,18 +242,9 @@ function App() {
     return () => clearTimeout(t)
   }, [notice])
 
-  // Live countdown for disconnected players — tick every second while a deadline exists.
+  // Live countdown tick — increments every second so the notice banner can render a live timer.
   useEffect(() => {
-    const id = setInterval(() => {
-      if (disconnectedPlayersRef.current.length === 0 || !disconnectDeadlineRef.current) return
-      const msLeft = disconnectDeadlineRef.current - Date.now()
-      if (msLeft <= 0) {
-        // Grace period expired — drop the time suffix, keep the static label
-        setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
-        return
-      }
-      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current, msLeft), "warn", null))
-    }, 1000)
+    const id = setInterval(() => setTick(t => t + 1), 1000)
     return () => clearInterval(id)
   }, [])
 
@@ -543,12 +533,12 @@ function App() {
         setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
       }
     })
-    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
+    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
     newSocket.on("progress-update", (data) => {
       console.log("Progress-update received:", data)
       setProgress(data)
       if (data.playerStatuses) { setPlayerStatuses(data.playerStatuses) }
-      if (data.submitted > 0 && data.total > 0 && data.submitted === data.total) { playSound("chime") }
+      // Sounds only at phase transitions, not on all-submitted
       if (data.firstSubmitter) { setFirstSubmitter(data.firstSubmitter) }
       if (data.lastQuestionSubmitter) {
         console.log("Setting lastQuestionSubmitter to:", data.lastQuestionSubmitter)
@@ -594,7 +584,7 @@ function App() {
       setCurrentTurn(data)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
-      if (data.questionReader?.id === newSocket.id || data.answerReader?.id === newSocket.id) { playSound("ding") }
+      // No sounds between individual readings to avoid interrupting the flow
       // Reset performance votes for new turn
       setPerformanceVotes({})
     })
@@ -623,11 +613,6 @@ function App() {
         }))
         if (pendingVote?.type === 'qa_pair') {
           setSummaryPairVoteId(isVoted ? data.targetId : null)
-          setVotedCardId(isVoted ? `pair-${data.targetId}` : null)
-          const el = document.getElementById(`pair-${data.targetId}`)
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          }
         }
         setNotice(noticeFor(isVoted ? 'Vote saved' : 'Vote removed', 'success', 1200))
       } else {
@@ -724,8 +709,7 @@ function App() {
       if (typeof data.gracePeriod === "number" && !disconnectDeadlineRef.current) {
         disconnectDeadlineRef.current = Date.now() + data.gracePeriod * 1000
       }
-      const msLeft = disconnectDeadlineRef.current ? disconnectDeadlineRef.current - Date.now() : null
-      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current, msLeft), "warn", null))
+      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
     })
 
     newSocket.on("player-rejoined", (data) => {
@@ -2041,17 +2025,6 @@ function App() {
                 </button>
               </div>
             )}
-            {votedCardId && (
-              <button
-                onClick={() => {
-                  const el = document.getElementById(votedCardId)
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }}
-                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg shadow-indigo-900/50 hover:bg-indigo-500 transition-colors"
-              >
-                ⬆ Jump to your vote
-              </button>
-            )}
           </div>
         )
 
@@ -2420,6 +2393,9 @@ function App() {
           aria-live="polite"
         >
           <span>{notice.message}</span>
+          {notice.tone === "warn" && disconnectedPlayersRef.current.length > 0 && disconnectDeadlineRef.current && (
+            <span className="ml-1">({formatTimeLeft(Math.max(0, disconnectDeadlineRef.current - Date.now()))})</span>
+          )}
         </div>
       )}
       {showCountdown && ["writing", "answering", "performing"].includes(gameState) && (
