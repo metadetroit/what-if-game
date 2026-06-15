@@ -224,6 +224,7 @@ function App() {
   // Names of OTHER players currently disconnected (within their reconnect grace window).
   const disconnectedPlayersRef = useRef([])
   const disconnectDeadlineRef = useRef(null)
+  const disconnectNoticeTimerRef = useRef(null)
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
@@ -233,6 +234,10 @@ function App() {
     if (gameState === "welcome" || gameState === "lobby") {
       disconnectedPlayersRef.current = []
       disconnectDeadlineRef.current = null
+      if (disconnectNoticeTimerRef.current) {
+        clearTimeout(disconnectNoticeTimerRef.current)
+        disconnectNoticeTimerRef.current = null
+      }
     }
   }, [gameState])
 
@@ -533,10 +538,14 @@ function App() {
       if (disconnectedPlayersRef.current.length > 0) {
         disconnectedPlayersRef.current = []
         disconnectDeadlineRef.current = null
+        if (disconnectNoticeTimerRef.current) {
+          clearTimeout(disconnectNoticeTimerRef.current)
+          disconnectNoticeTimerRef.current = null
+        }
         setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
       }
     })
-    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
+    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); setProgress({ submitted: 0, total: players.length }); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
     newSocket.on("progress-update", (data) => {
       console.log("Progress-update received:", data)
       setProgress(data)
@@ -729,7 +738,14 @@ function App() {
       if (typeof data.gracePeriod === "number" && !disconnectDeadlineRef.current) {
         disconnectDeadlineRef.current = Date.now() + data.gracePeriod * 1000
       }
-      setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
+      if (gameStateRef.current !== "welcome" && gameStateRef.current !== "lobby") {
+        if (disconnectNoticeTimerRef.current) clearTimeout(disconnectNoticeTimerRef.current)
+        disconnectNoticeTimerRef.current = setTimeout(() => {
+          setNotice((prev) => (prev && prev.expiresAt == null && prev.tone === "warn" ? null : prev))
+          disconnectNoticeTimerRef.current = null
+        }, 150000)
+        setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
+      }
     })
 
     newSocket.on("player-rejoined", (data) => {
@@ -745,6 +761,10 @@ function App() {
       const remaining = disconnectedPlayersRef.current
       if (remaining.length === 0) {
         disconnectDeadlineRef.current = null
+        if (disconnectNoticeTimerRef.current) {
+          clearTimeout(disconnectNoticeTimerRef.current)
+          disconnectNoticeTimerRef.current = null
+        }
         setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2500))
       } else {
         // Someone reconnected but others are still gone — keep naming who we're waiting on.
@@ -1691,21 +1711,45 @@ function App() {
                     </div>
                   )}
                   {currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                    <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                      <span className="text-2xl font-black text-white tracking-wider">GET READY</span>
-                      <p className="text-purple-100 text-sm mt-1">You're reading the answer next</p>
+                    <div>
+                      <div className="text-center mb-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30">
+                          <span className="text-base">🎤</span>
+                          <span className="font-medium">{currentTurn.questionReader.name}</span> is reading the question to you
+                        </span>
+                      </div>
+                      <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
+                        <span className="text-2xl font-black text-white tracking-wider">GET READY</span>
+                        <p className="text-purple-100 text-sm mt-1">You're reading the answer next</p>
+                      </div>
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                    <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                      <span className="text-2xl font-black text-white tracking-wider">READ ANSWER</span>
-                      <p className="text-purple-100 text-sm mt-1">Read aloud, then tap Done</p>
+                    <div>
+                      <div className="text-center mb-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30">
+                          <span className="text-base">🎤</span>
+                          <span className="font-medium">{currentTurn.questionReader.name}</span> read the question to you
+                        </span>
+                      </div>
+                      <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
+                        <span className="text-2xl font-black text-white tracking-wider">READ ANSWER</span>
+                        <p className="text-purple-100 text-sm mt-1">Read aloud, then tap Done</p>
+                      </div>
                     </div>
                   )}
                   {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                    <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                      <span className="text-lg font-bold text-gray-400">LISTEN</span>
-                      <p className="text-gray-500 text-sm mt-1">{currentTurn.questionReader.name} &rarr; {currentTurn.answerReader.name}</p>
+                    <div>
+                      <div className="text-center mb-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 bg-gray-800/60 px-3 py-1.5 rounded-full border border-gray-700/40">
+                          <span className="text-base">🎧</span>
+                          Listening to <span className="font-medium text-gray-300">{currentTurn.questionReader.name}</span> & <span className="font-medium text-gray-300">{currentTurn.answerReader.name}</span>
+                        </span>
+                      </div>
+                      <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
+                        <span className="text-lg font-bold text-gray-400">LISTEN</span>
+                        <p className="text-gray-500 text-sm mt-1">{currentTurn.questionReader.name} &rarr; {currentTurn.answerReader.name}</p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1764,7 +1808,7 @@ function App() {
                         {alreadyReacted && !isSelfContent && (
                           <span className="text-[10px] text-gray-500 self-center mr-1">You reacted ✓</span>
                         )}
-                        {['🔥', '😂', '👏', '❤️', '🤯'].map(emoji => {
+                        {['❤️', '😂', '❓'].map(emoji => {
                           const count = currentCounts?.[emoji] || 0
                           return (
                             <button
@@ -1847,11 +1891,6 @@ function App() {
                   <p className="summary-pill">Voting Status</p>
                   <p className={"summary-meta-value " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ Everyone voted" : `${votersCount}/${players.length} voted`}</p>
                   <p className="summary-meta-note">{votersCount >= players.length ? "Ready to start next round" : "Waiting for votes"}</p>
-                </div>
-                <div>
-                  <p className="summary-pill">Next Round Setting</p>
-                  <p className={"summary-meta-value " + (anonymousMode ? "text-amber-300" : "text-emerald-300")}>{anonymousMode ? "Anonymous" : "Names shown"}</p>
-                  <p className="summary-meta-note">{isHost ? "You control this setting" : "Host controls this setting"}</p>
                 </div>
               </div>
             </div>
@@ -2042,15 +2081,6 @@ function App() {
             {isHost ? (
               <div className="summary-actions">
                 <div className="summary-actions__toggles">
-                  <div className="summary-toggle card">
-                    <div>
-                      <p className="text-xs text-white font-semibold">Anonymous Results (next round)</p>
-                      <p className="text-[11px] text-gray-400">Toggling only affects future summaries + Best Of.</p>
-                    </div>
-                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
-                      <span />
-                    </button>
-                  </div>
                   <div className="summary-toggle card">
                     <div>
                       <p className="text-xs text-white font-semibold">No Self-Reading</p>
