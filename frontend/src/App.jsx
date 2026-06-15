@@ -1486,28 +1486,28 @@ function App() {
               </div>
             </div>
             {isHost && (
-              <div className="card mb-2 py-2 px-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
-                    <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="card py-2 px-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
+                      <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
+                    </div>
+                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 ml-2 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
+                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
+                    </button>
                   </div>
-                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
-                    <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
-                  </button>
                 </div>
-              </div>
-            )}
-            {isHost && (
-              <div className="card mb-2 py-2 px-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-white font-medium leading-tight">No Self-Reading</p>
-                    <p className="text-[9px] text-gray-500 leading-tight">Players won't read their own content</p>
+                <div className="card py-2 px-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-white font-medium leading-tight">No Self-Reading</p>
+                      <p className="text-[9px] text-gray-500 leading-tight">Players won't read their own content</p>
+                    </div>
+                    <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 ml-2 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
+                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
+                    </button>
                   </div>
-                  <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"relative w-10 h-5 rounded-full transition-colors duration-200 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
-                    <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
-                  </button>
                 </div>
               </div>
             )}
