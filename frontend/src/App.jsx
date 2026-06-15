@@ -1187,13 +1187,6 @@ function App() {
       <div className="waiting-panel__bar">
         <div style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} />
       </div>
-      {progress.submitted < progress.total && progress.total > 0 && (
-        <p className="text-xs text-center text-indigo-300 mt-2" role="status" aria-live="polite">
-          {progress.total - progress.submitted === 1
-            ? "Almost there — just waiting on one more player…"
-            : `Almost there — just waiting on ${progress.total - progress.submitted} more players…`}
-        </p>
-      )}
     </div>
   )
 
