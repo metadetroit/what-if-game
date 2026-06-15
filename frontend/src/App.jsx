@@ -1449,6 +1449,9 @@ function App() {
                 <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="text-[10px] text-yellow-400 hover:text-yellow-300 underline">
                   View Best Of
                 </button>
+                <button onClick={() => setGameState("support")} className="text-[10px] text-pink-400 hover:text-pink-300 underline">
+                  Support
+                </button>
               </div>
             </div>
             <div className="card space-y-3 py-3">
@@ -2227,10 +2230,10 @@ function App() {
                     <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                       <span className="text-xl">🎮</span>
                     </div>
-                    <h3 className="text-base font-bold text-white">Quick Overview</h3>
+                    <h3 className="text-base font-bold text-white">How Fluke Works</h3>
                   </div>
                   <p className="text-sm text-gray-300 leading-relaxed">
-                    Fluke! The Game is a party game where you write absurd questions, give each other ridiculous answers, then perform the results. It's like Cards Against Humanity meets improv comedy, but with more chaos and less reading from cards.
+                    Fluke is a fast party game about writing weird “What if…” questions, answering someone else’s prompt, then reading mixed-up question/answer pairings out loud. React, vote, laugh, and see the round summary at the end.
                   </p>
                   
                   <div className="border-t border-gray-700 pt-4">
@@ -2238,55 +2241,56 @@ function App() {
                     <ol className="space-y-2 text-sm text-gray-300">
                       <li className="flex gap-2">
                         <span className="text-indigo-400 font-bold">1.</span>
-                        <span><strong>Join or Create a Room</strong> - Enter a 4-digit room code to join a friend's game, or create your own room and share the code</span>
+                        <span><strong>Join or create a room</strong> - Use a 4-digit room code. The host can share the code with everyone else.</span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-indigo-400 font-bold">2.</span>
-                        <span><strong>Wait for Players</strong> - You need at least 3 players to start (max 15)</span>
+                        <span><strong>Gather players</strong> - You need 3-15 players.</span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-indigo-400 font-bold">3.</span>
-                        <span><strong>Host Starts the Game</strong> - Only the host can click "Start Game"</span>
+                        <span><strong>Start the round</strong> - The host starts when everyone is ready.</span>
                       </li>
                     </ol>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 1: Question Writing 📝</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">1. Write Questions 📝</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• Everyone writes a "What if..." question</li>
-                      <li>• Be creative! The weirder, the better</li>
-                      <li>• Example: "What if cats could talk but only about taxes?"</li>
-                      <li>• You have a time limit, so don't overthink it!</li>
+                      <li>• Everyone writes one question that starts with “What if”.</li>
+                      <li>• Keep it short, clear, and open-ended.</li>
+                      <li>• Example: “What if cats could talk, but only about taxes?”</li>
+                      <li>• The optional pre-fill setting starts your box with “What if ”.</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 2: Answer Writing 🤔</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">2. Write Answers 🤔</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• Each person gets someone else's question to answer</li>
-                      <li>• You won't see who wrote the question (unless anonymous mode is off)</li>
-                      <li>• Give the most ridiculous answer you can think of</li>
-                      <li>• Example: "They'd form a union and demand deductions for naps"</li>
+                      <li>• Each player receives someone else’s question.</li>
+                      <li>• Write an answer that will be fun to hear out loud.</li>
+                      <li>• Your answer may later be performed with a different question.</li>
+                      <li>• Example: “They’d form a union and demand nap deductions.”</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Phase 3: Performance Time 🎭</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">3. Perform & React 🎭</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• One person at a time reads the question and their assigned answer</li>
-                      <li>• Perform it! Add flair, voices, dramatic pauses</li>
-                      <li>• The host can skip turns if someone is taking too long</li>
-                      <li>• Everyone votes on their favorite performance (coming soon!)</li>
+                      <li>• Players take turns reading the question/answer pairings.</li>
+                      <li>• Read with energy: voices, timing, and commitment help.</li>
+                      <li>• Everyone can react with ❤️, 😂, or ❓ during the reading.</li>
+                      <li>• ❤️ and 😂 count toward the most-adored writer award.</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Game Over 🎉</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">4. Vote & Review 🎉</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• See the full summary of all questions and answers</li>
-                      <li>• Find out who wrote what (unless anonymous mode is on)</li>
-                      <li>• Play again with the same group or start fresh!</li>
+                      <li>• Vote for your favorite question/answer pairing.</li>
+                      <li>• The summary shows pairings, votes, reactions, and round awards.</li>
+                      <li>• Anonymous rounds hide names in the summary.</li>
+                      <li>• The host can replay with the same group or start fresh.</li>
                     </ul>
                   </div>
 
@@ -2294,10 +2298,10 @@ function App() {
                     <h4 className="text-sm font-bold text-indigo-400 mb-2">Host Controls</h4>
                     <p className="text-xs text-gray-500 mb-2">(Only the host sees these)</p>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Anonymous Results</strong> - Hide names in the end-game summary for extra mystery</li>
-                      <li>• <strong>No Self-Reading</strong> - Ensure players never perform their own content</li>
-                      <li>• <strong>Force Advance</strong> - Skip waiting for stragglers (they get removed, so use carefully!)</li>
-                      <li>• <strong>Kick Player</strong> - Remove someone who's being a party pooper</li>
+                      <li>• <strong>Anonymous Results</strong> - Hide writer names for the completed round’s summary.</li>
+                      <li>• <strong>No Self-Reading</strong> - Try to prevent players from reading their own content.</li>
+                      <li>• <strong>Force Advance</strong> - Move forward when submitted players are ready; non-submitters may be removed.</li>
+                      <li>• <strong>Kick Player</strong> - Remove a player from the lobby before the game starts.</li>
                     </ul>
                   </div>
                 </div>
@@ -2320,59 +2324,59 @@ function App() {
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">How long does a game take?</h4>
-                      <p className="text-sm text-gray-300">Usually 20-40 minutes depending on how many players and how dramatic everyone gets during the performance phase.</p>
+                      <p className="text-sm text-gray-300">Usually 10-25 minutes, depending on player count and how theatrical the readings get.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I play with friends who aren't in the same room?</h4>
-                      <p className="text-sm text-gray-300">Absolutely! Just share your 4-digit room code with them. They can join from anywhere.</p>
+                      <p className="text-sm text-gray-300">Yes. Share the 4-digit room code. Everyone can join from their own phone, tablet, or computer.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">What if someone disconnects?</h4>
-                      <p className="text-sm text-gray-300">Don't panic! They have 90 seconds to reconnect. If they don't make it back in time, they'll be removed from the game (but their questions/answers stay in the game).</p>
+                      <p className="text-sm text-gray-300">They have a short reconnect window. If they return in time, they can resume. If not, they may be removed so the room can keep playing.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">Can we play again with the same group?</h4>
-                      <p className="text-sm text-gray-300">Yes! After the game ends, the host can click "New game with same players" to keep the party going.</p>
+                      <p className="text-sm text-gray-300">Yes. After the summary, the host can replay with the same players or start a fresh room setup.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What are those toggle things only the host sees?</h4>
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What do the host toggles do?</h4>
                       <p className="text-sm text-gray-300">
-                        <strong>Anonymous Results</strong> - Hides everyone's names in the final summary, so you won't know who wrote what until after you vote (or never, if you want to keep it mysterious)
+                        <strong>Anonymous Results</strong> - Hides writer names in the round summary and awards.
                         <br /><br />
-                        <strong>No Self-Reading</strong> - Makes sure nobody ever has to perform their own question or answer during the performance phase. Great for avoiding awkward moments.
+                        <strong>No Self-Reading</strong> - Tries to avoid assigning players a pairing that includes their own writing.
                       </p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Is this game free?</h4>
-                      <p className="text-sm text-gray-300">Yes! 100% free. No ads, no microtransactions, no hidden fees. Just pure, unadulterated chaos.</p>
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">How do reactions work?</h4>
+                      <p className="text-sm text-gray-300">During readings, players can react with ❤️, 😂, or ❓. Hearts and laughs count toward “Round’s most-adored writer”; question marks are just for fun/confusion.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I play on my phone?</h4>
-                      <p className="text-sm text-gray-300">Yep! The game works on any device with a web browser. Mobile, tablet, desktop - whatever you've got.</p>
+                      <p className="text-sm text-gray-300">Yes. The game is designed for mobile and desktop browsers.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What if someone is taking forever to write their question/answer?</h4>
-                      <p className="text-sm text-gray-300">The host has a "Force Advance" button that skips the waiting period. Anyone who hasn't submitted gets removed from the game (their content stays, though). Use this power responsibly!</p>
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What if someone is taking too long?</h4>
+                      <p className="text-sm text-gray-300">The host can force advance once enough players have submitted. Players who did not submit may be removed from that round.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I kick a player?</h4>
-                      <p className="text-sm text-gray-300">Only the host can kick players. Click the "X" next to their name in the lobby. They won't be able to rejoin that game.</p>
+                      <p className="text-sm text-gray-300">Only the host can kick players, and only from the lobby player list.</p>
                     </div>
 
                     <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What's the difference between "New game with same players" and "New game (change players)"?</h4>
+                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What do the summary awards mean?</h4>
                       <p className="text-sm text-gray-300">
-                        <strong>New game with same players</strong> - Everyone stays in the room, ready for round 2
+                        <strong>Current top pairing</strong> - The question/answer pairing with the most summary votes.
                         <br /><br />
-                        <strong>New game (change players)</strong> - Clears the room so you can start fresh with new people
+                        <strong>Round’s most-adored writer</strong> - The writer whose questions and answers received the most ❤️ and 😂 reactions.
                       </p>
                     </div>
                   </div>
@@ -2389,57 +2393,52 @@ function App() {
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Question Writers 🖊️</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Writing Good Questions 🖊️</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Think absurd, not realistic</strong> - "What if gravity reversed for 5 seconds?" is better than "What if it rained tomorrow?"</li>
-                      <li>• <strong>Keep it open-ended</strong> - Questions that can go in wild directions are more fun</li>
-                      <li>• <strong>Draw from your life</strong> - The funniest prompts often come from weird thoughts you've actually had</li>
-                      <li>• <strong>Don't be afraid to be silly</strong> - This is a party game, not a philosophy exam</li>
-                      <li>• <strong>Avoid inside jokes</strong> - Unless everyone in the group will get it, keep it universally weird</li>
+                      <li>• <strong>Start with a clear “What if”</strong> - The game requires it.</li>
+                      <li>• <strong>Leave room for answers</strong> - Broad prompts create better surprises.</li>
+                      <li>• <strong>Use one funny idea</strong> - Too many twists can make it hard to answer.</li>
+                      <li>• <strong>Avoid tiny inside jokes</strong> - Unless the whole room will understand them.</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Answer Writers 💡</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Writing Good Answers 💡</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Commit to the bit</strong> - If the question is absurd, give an equally absurd answer</li>
-                      <li>• <strong>Be specific</strong> - "They'd hire a tax lawyer" is okay, but "They'd form a feline tax union and demand nap deductions" is better</li>
-                      <li>• <strong>Surprise yourself</strong> - Try to come up with something you wouldn't normally think of</li>
-                      <li>• <strong>Read it out loud</strong> - If it's not funny when you say it, it won't be funny when someone performs it</li>
-                      <li>• <strong>Embrace the chaos</strong> - The weirder the answer, the better the performance will be</li>
+                      <li>• <strong>Make it readable</strong> - Someone else may have to perform it.</li>
+                      <li>• <strong>Be specific</strong> - Details usually beat vague punchlines.</li>
+                      <li>• <strong>Think like a performer</strong> - Give them something fun to say.</li>
+                      <li>• <strong>Keep it punchy</strong> - Shorter answers often land better.</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Performers 🎭</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Performing 🎭</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Commit 100%</strong> - Even if the answer is ridiculous, sell it like it's the most profound thing ever said</li>
-                      <li>• <strong>Use voices</strong> - Accents, character voices, dramatic readings - anything to make it memorable</li>
-                      <li>• <strong>Add physical comedy</strong> - Hand gestures, facial expressions, dramatic pauses</li>
-                      <li>• <strong>Don't rush</strong> - Build tension, make people wait for the punchline</li>
-                      <li>• <strong>Have fun with it</strong> - The more you enjoy performing, the more everyone else will enjoy watching</li>
+                      <li>• <strong>Read both parts clearly</strong> - The room needs to hear the setup and payoff.</li>
+                      <li>• <strong>Commit to the bit</strong> - Even nonsense is funnier when performed seriously.</li>
+                      <li>• <strong>Pause before the answer</strong> - Timing helps the reveal.</li>
+                      <li>• <strong>React to others</strong> - Use ❤️, 😂, and ❓ while they read.</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">For Hosts 🎮</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Hosting 🎮</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Use Anonymous mode for mystery</strong> - It adds an extra layer of fun when nobody knows who wrote what</li>
-                      <li>• <strong>Enable No Self-Reading</strong> - It's almost always better to avoid people performing their own content</li>
-                      <li>• <strong>Be patient with Force Advance</strong> - Only use it if someone is clearly AFK or taking way too long</li>
-                      <li>• <strong>Keep the energy up</strong> - If things are dragging, encourage people to be more dramatic</li>
-                      <li>• <strong>Kick only when necessary</strong> - Nobody likes being kicked, so save it for actual problem players</li>
+                      <li>• <strong>Set expectations early</strong> - Tell players to write answers that are easy to read aloud.</li>
+                      <li>• <strong>Use anonymity intentionally</strong> - It hides names in the summary and awards.</li>
+                      <li>• <strong>Force advance carefully</strong> - It can remove players who did not submit.</li>
+                      <li>• <strong>Replay quickly</strong> - “Same players” keeps the room together for another round.</li>
                     </ul>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">General Advice 🌟</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Winning the Room 🌟</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>The funnier, the better</strong> - This game rewards creativity and humor</li>
-                      <li>• <strong>Don't take it seriously</strong> - The moment someone gets competitive or upset, the fun dies</li>
-                      <li>• <strong>Laugh at everything</strong> - Even bad answers can become great with the right performance</li>
-                      <li>• <strong>Play with the right people</strong> - This game is best with friends who can laugh at themselves</li>
-                      <li>• <strong>Embrace the awkward</strong> - The most memorable moments often come from the most ridiculous combinations</li>
+                      <li>• Vote for the pairing you most want preserved in the summary.</li>
+                      <li>• Send ❤️ and 😂 to reward writing you genuinely liked.</li>
+                      <li>• Use ❓ when something is confusing, cursed, or beautifully unhinged.</li>
+                      <li>• The best rounds are playful, quick, and not too overthought.</li>
                     </ul>
                   </div>
                 </div>
@@ -2451,80 +2450,68 @@ function App() {
                     <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
                       <span className="text-xl">📖</span>
                     </div>
-                    <h3 className="text-base font-bold text-white">About / The Story</h3>
+                    <h3 className="text-base font-bold text-white">About Fluke</h3>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">The Origin Story</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">What It Is</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Fluke! The 'What If...?' Game didn't start as an app - it started as a stack of napkins and a pen at a house party.
+                      Fluke is a browser-based party game built around one simple prompt: “What if…?”
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      One night, hanging out with friends, someone asked a completely ridiculous question: "What if dogs could only communicate through interpretive dance?" We spent the next hour answering it, then coming up with more absurd questions and even more ridiculous answers. We were laughing so hard our faces hurt.
+                      Everyone writes a question, answers someone else’s question, then the game shuffles those ideas into read-aloud pairings. The fun comes from the mismatch: a strange setup, an unexpected answer, and the person brave enough to perform it.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      That night became a tradition. Every time we hung out, someone would inevitably ask "What if..." and we'd spend hours exploring the weirdest hypothetical scenarios we could think of. It became our go-to icebreaker at parties, our way to break the tension after a long week, our secret weapon for making new friends feel welcome.
+                      It works best when players write quickly, commit to the bit, and react generously.
                     </p>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Why I Built It</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">What Makes This Version Different</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      After playing this game for years with pen, paper, and way too many napkins, I realized something: this shouldn't just be for us. The whole world deserves to laugh as hard as we have.
+                      The app handles the room code, player flow, shuffled assignments, live reactions, summary votes, reconnects, and host controls.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      So I decided to replicate the experience digitally as Fluke! The 'What If...?' Game. No more passing around a single notebook. No more trying to read someone else's handwriting. No more losing the best questions because someone spilled their drink.
+                      At the end, the summary highlights the current top pairing and the round’s most-adored writer, based on ❤️ and 😂 reactions to the questions and answers each player wrote.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      Fluke! The 'What If...?' Game is my gift to the internet. It's the icebreaker that never gets old, the party game that works with any group, the excuse to be absurd that everyone needs.
+                      Anonymous mode can hide names, so groups can choose mystery over credit.
                     </p>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">The Philosophy</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">The Spirit</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Life is serious enough. Work is stressful enough. The news is heavy enough.
+                      Fluke is not about perfect jokes. It is about giving the room something to play with.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Sometimes, you just need to ask: What if?
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      What if aliens invaded but they were just really confused tourists?
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      What if your pet could talk but only about their dreams?
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      What if time travel was real but you could only travel to really awkward moments in history?
+                      A good question invites chaos. A good answer gives someone else a moment. A good performance turns whatever happened into a shared laugh.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      The answers don't matter. The point is the laughter, the creativity, the connection with other human beings who are all just trying to make sense of this weird world together.
+                      Keep it kind, keep it moving, and let the weirdness do the work.
                     </p>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Credits</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Best With</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      Built with love, laughter, and way too much coffee.
+                      Friends, family, coworkers, remote groups, or any room that can handle a little absurdity.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      Inspired by countless nights with friends who are way funnier than I am.
+                      Use phones for easy writing and reacting. Use a shared screen if you want the summary to feel like a scoreboard.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      Made possible by everyone who ever asked "What if..." and meant it.
+                      Three players is enough; bigger groups create more surprising pairings.
                     </p>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Thank You</h4>
+                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Thanks</h4>
                     <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      To everyone who played the pen-and-paper version and didn't tell me I was crazy.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      To everyone who's played the digital version and kept the chaos alive.
+                      Thanks for playing, testing, reacting, voting, and making the questions stranger than expected.
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      To you, for reading this and (hopefully) about to play the game.
+                      Now go ask something ridiculous.
                     </p>
                   </div>
 
@@ -2533,6 +2520,77 @@ function App() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <button onClick={() => setGameState("welcome")} className="btn-secondary py-3 text-sm w-full mt-3">
+              Back to Main Screen
+            </button>
+          </div>
+        )
+
+      case "support":
+        return (
+          <div className="game-container py-2">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-white">Support the Project</h2>
+              <button onClick={() => setGameState("welcome")} className="text-gray-400 hover:text-white text-sm">
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="card flex-1 min-h-0 overflow-y-auto py-3 px-4 space-y-4">
+              <div className="text-center mb-4">
+                <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">🎁</span>
+                </div>
+                <h3 className="text-base font-bold text-white">Value for Value</h3>
+              </div>
+
+              <p className="text-sm text-gray-300 leading-relaxed">
+                If Fluke gave you a good laugh, a memorable night, or a reason to reconnect with friends, consider returning some of that value back. This game is free to play, but it is not free to build, host, and improve.
+              </p>
+
+              <div className="border-t border-gray-700 pt-4">
+                <h4 className="text-sm font-bold text-pink-400 mb-2">Send a Tip</h4>
+                <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                  A small donation helps cover server costs and keeps the game online. No amount is too small.
+                </p>
+                <a
+                  href="https://ko-fi.com/playfluke"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <span>☕</span> Buy us a coffee
+                </a>
+              </div>
+
+              <div className="border-t border-gray-700 pt-4">
+                <h4 className="text-sm font-bold text-pink-400 mb-2">Beta Test & Feedback</h4>
+                <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                  Spotted a bug? Have an idea? Want to test new features before they go live? Your feedback shapes what Fluke becomes next.
+                </p>
+                <a
+                  href="mailto:hello@playfluke.com"
+                  className="text-sm text-indigo-300 hover:text-indigo-200 underline"
+                >
+                  hello@playfluke.com
+                </a>
+              </div>
+
+              <div className="border-t border-gray-700 pt-4">
+                <h4 className="text-sm font-bold text-pink-400 mb-2">Share the Game</h4>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  The easiest way to support Fluke is to bring more people into the room. Share the link, teach a friend, or bring it to your next group hangout.
+                </p>
+              </div>
+
+              <div className="border-t border-gray-700 pt-4">
+                <h4 className="text-sm font-bold text-pink-400 mb-2">Thank You</h4>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  However you choose to give back — whether it is a donation, a bug report, or simply playing another round — it matters. Thanks for being part of this.
+                </p>
+              </div>
             </div>
 
             <button onClick={() => setGameState("welcome")} className="btn-secondary py-3 text-sm w-full mt-3">
