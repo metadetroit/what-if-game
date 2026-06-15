@@ -98,6 +98,14 @@ function writeSoundMuted(muted) {
   try { localStorage.setItem("fluke-muted", muted ? "1" : "0") } catch (e) { /* ignore */ }
 }
 
+function getPrefillWhatIf() {
+  try { return localStorage.getItem("fluke-prefill") === "1" } catch (e) { return false }
+}
+
+function setPrefillWhatIfStorage(enabled) {
+  try { localStorage.setItem("fluke-prefill", enabled ? "1" : "0") } catch (e) { /* ignore */ }
+}
+
 function playSound(type) {
   if (isSoundMuted()) return
   const ctx = ensureAudioContext()
@@ -192,6 +200,7 @@ function App() {
   const [roundHistory, setRoundHistory] = useState([]) // Past round summaries
   const [showRoundHistory, setShowRoundHistory] = useState(false)
   const [soundMuted, setSoundMuted] = useState(() => { try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false } })
+  const [prefillWhatIf, setPrefillWhatIf] = useState(() => getPrefillWhatIf())
   const [tick, setTick] = useState(0) // Forces re-render every second for live countdowns
   const [reactions, setReactions] = useState([]) // { id, emoji, x, y, createdAt }
   const [reactionCounts, setReactionCounts] = useState({}) // { contentDbId: { emoji: count } }
@@ -225,8 +234,10 @@ function App() {
   const disconnectedPlayersRef = useRef([])
   const disconnectDeadlineRef = useRef(null)
   const disconnectNoticeTimerRef = useRef(null)
+  const prefillWhatIfRef = useRef(getPrefillWhatIf())
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
+  useEffect(() => { prefillWhatIfRef.current = prefillWhatIf }, [prefillWhatIf])
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
   useEffect(() => { playerNameRef.current = playerName }, [playerName])
   // Outside an active game there is no one to "wait for" — clear the disconnected list.
@@ -545,7 +556,7 @@ function App() {
         setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
       }
     })
-    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); setProgress({ submitted: 0, total: data.totalPlayers || players.length }); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
+    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); setProgress({ submitted: 0, total: data.totalPlayers || players.length }); const prefill = prefillWhatIfRef.current; setQuestion(prefill ? "What if" : ""); if (prefill) saveDraft(roomCodeRef.current, "writing", "What if"); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
     newSocket.on("progress-update", (data) => {
       console.log("Progress-update received:", data)
       setProgress(data)
@@ -670,7 +681,8 @@ function App() {
     newSocket.on("game-restarted", (data) => {
       setGameState("writing")
       setSubmitted(false)
-      setQuestion("")
+      const prefill = prefillWhatIfRef.current
+      setQuestion(prefill ? "What if" : "")
       setAnswer("")
       setAssignedQuestion("")
       setCurrentTurn(null)
@@ -1428,6 +1440,12 @@ function App() {
               <div className="space-y-2">
                 <label className="text-sm text-indigo-400 font-semibold uppercase tracking-wider">Room Code</label>
                 <input type="text" inputMode="numeric" enterKeyHint="done" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="1234" className="input-field py-3 text-2xl font-bold text-center tracking-[0.2em]" maxLength={4} />
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs text-gray-400">Pre-fill "What if..."</span>
+                <button onClick={() => { const next = !prefillWhatIf; setPrefillWhatIf(next); setPrefillWhatIfStorage(next) }} aria-pressed={prefillWhatIf} aria-label="Toggle pre-fill What if" className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}>
+                  <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0.5")} />
+                </button>
               </div>
               <div className="flex gap-3">
                 <button onClick={joinRoom} className="btn-primary py-3 px-5 text-lg whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join Game" : "..."}</button>
