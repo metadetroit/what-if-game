@@ -689,7 +689,7 @@ function App() {
       setGameState("writing")
       setSubmitted(false)
       const prefill = prefillWhatIfRef.current
-      setQuestion(prefill ? "What if" : "")
+      setQuestion(prefill ? "What if " : "")
       setAnswer("")
       setAssignedQuestion("")
       setCurrentTurn(null)
@@ -2092,15 +2092,33 @@ function App() {
               </div>
             )}
 
-            {mostAdoredWriter && !mostAdoredWriter.tied && (
+            {mostAdoredWriter ? (
               <div className="summary-mvp card">
                 <div className="summary-mvp__icon">💖</div>
                 <div>
                   <p className="text-sm text-yellow-200">Round's most-adored writer</p>
-                  <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (mostAdoredWriter.name || 'Unknown')}</p>
-                  <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
+                  {mostAdoredWriter.tied ? (
+                    <>
+                      <p className="text-xl font-extrabold text-white">It's a tie!</p>
+                      <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'} each</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (mostAdoredWriter.name || 'Unknown')}</p>
+                      <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
+                    </>
+                  )}
                 </div>
-                <div className="summary-mvp__badge">Adored!</div>
+                <div className="summary-mvp__badge">{mostAdoredWriter.tied ? 'Tied!' : 'Adored!'}</div>
+              </div>
+            ) : (
+              <div className="summary-mvp card" style={{ opacity: 0.6 }}>
+                <div className="summary-mvp__icon">💭</div>
+                <div>
+                  <p className="text-sm text-yellow-200">Round's most-adored writer</p>
+                  <p className="text-xl font-extrabold text-white">No reactions yet</p>
+                  <p className="text-xs text-yellow-100/70">Send ❤️ and 😂 during the next round!</p>
+                </div>
               </div>
             )}
 

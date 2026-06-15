@@ -883,10 +883,14 @@ io.on('connection', (socket) => {
     }
 
     const entries = Object.values(scores);
-    if (entries.length === 0) return null;
+    if (entries.length === 0) {
+      console.log(`[computeMostAdoredWriter] No adored reactions found for room ${roomCode}`);
+      return null;
+    }
     entries.sort((a, b) => b.total - a.total);
     const top = entries[0];
     const tied = entries.filter(e => e.total === top.total).length > 1;
+    console.log(`[computeMostAdoredWriter] Winner: ${top.name} with ${top.total} reactions (tied=${tied})`);
     return { name: top.name, total: top.total, tied };
   }
 
