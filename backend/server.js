@@ -812,22 +812,20 @@ io.on('connection', (socket) => {
             }
           }
 
-          const qDbId = questionData?.dbId || null;
-          const aDbId = answerData?.dbId || null;
           pairs.push({
             question: turn.question || 'Unknown question',
             questionAuthorName: qAuthor,
-            questionDbId: qDbId,
+            questionDbId: turn.questionDbId || null,
             actualAnswer: turn.actualAnswer || 'Unknown answer',
             actualAnswerAuthorName: aAuthor,
-            actualAnswerDbId: aDbId,
+            actualAnswerDbId: turn.actualAnswerDbId || null,
             pairedAnswer: answerTurn ? answerTurn.pairedAnswer : null,
             pairedAnswerAuthorName: answerTurn ? pAuthor : null,
             pairDbId: pairDbId,
             voteCount: voteCount || 0,
             anonymousMode: isAnonymous,
-            questionReactions: qDbId ? (game.reactions[qDbId] || {}) : {},
-            answerReactions: aDbId ? (game.reactions[aDbId] || {}) : {}
+            questionReactions: turn.questionDbId ? (game.reactions[turn.questionDbId] || {}) : {},
+            answerReactions: answerTurn?.pairedAnswerDbId ? (game.reactions[answerTurn.pairedAnswerDbId] || {}) : {}
           });
         }
       }
@@ -1033,12 +1031,15 @@ io.on('connection', (socket) => {
       question: isQuestionTurn ? (cardForQuestion.question?.text || null) : null,
       questionAuthor: isQuestionTurn ? (cardForQuestion.question?.authorName || null) : null,
       questionAuthorId: isQuestionTurn ? (cardForQuestion.question?.authorId || null) : null,
+      questionDbId: isQuestionTurn ? (cardForQuestion.question?.dbId || null) : null,
       actualAnswer: isQuestionTurn ? (cardForQuestion.answer?.text || null) : null,
       actualAnswerAuthor: isQuestionTurn ? (cardForQuestion.answer?.authorName || null) : null,
       actualAnswerAuthorId: isQuestionTurn ? (cardForQuestion.answer?.authorId || null) : null,
+      actualAnswerDbId: isQuestionTurn ? (cardForQuestion.answer?.dbId || null) : null,
       pairedAnswer: isQuestionTurn ? null : (cardForAnswer.answer?.text || null),
       pairedAnswerAuthor: isQuestionTurn ? null : (cardForAnswer.answer?.authorName || null),
-      pairedAnswerAuthorId: isQuestionTurn ? null : (cardForAnswer.answer?.authorId || null)
+      pairedAnswerAuthorId: isQuestionTurn ? null : (cardForAnswer.answer?.authorId || null),
+      pairedAnswerDbId: isQuestionTurn ? null : (cardForAnswer.answer?.dbId || null)
     };
     game.turnLog.push(turnEntry);
     if (isQuestionTurn) {
@@ -1108,14 +1109,19 @@ io.on('connection', (socket) => {
     // Find which content is currently being read to validate
     const turn = game.turnLog[game.turnLog.length - 1];
     if (!turn) return;
-    const currentDbId = turn.isQuestionTurn ? turn.questionAuthorId : turn.pairedAnswerAuthorId;
-    // Actually we need the content ID, not author. Let's find it from the event data.
     const targetId = contentDbId;
     if (!targetId) return;
 
-    // Prevent self-reaction: check if this player wrote the content being read
-    const isQuestionTurn = turn.isQuestionTurn;
-    const contentAuthorId = isQuestionTurn ? turn.questionAuthorId : turn.pairedAnswerAuthorId;
+    // Prevent self-reaction: look up current owner of the content from game state
+    // (handles reconnects where socket.id changes)
+    let contentAuthorId = null;
+    if (turn.isQuestionTurn) {
+      const qEntry = Object.entries(game.questions).find(([_, q]) => q.dbId === targetId);
+      contentAuthorId = qEntry ? qEntry[0] : turn.questionAuthorId;
+    } else {
+      const aEntry = Object.entries(game.answers).find(([_, a]) => a.dbId === targetId);
+      contentAuthorId = aEntry ? aEntry[0] : turn.pairedAnswerAuthorId;
+    }
     if (contentAuthorId === socket.id) {
       socket.emit('error', 'You cannot react to your own content');
       return;

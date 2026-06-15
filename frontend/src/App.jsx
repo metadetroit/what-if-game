@@ -1928,23 +1928,23 @@ function App() {
                           )}
                         </div>
                         {(pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0) ? (
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-800/50">
+                          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] text-gray-400 mt-3 pt-3 pb-1 px-2 border-t border-gray-800/50">
                             {pair.questionReactions && Object.keys(pair.questionReactions).length > 0 && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-gray-500">Q:</span>
+                              <div className="flex items-center gap-1.5" title="Reactions to this question during the reading round">
+                                <span className="text-gray-500 font-medium">Question:</span>
                                 {Object.entries(pair.questionReactions).map(([emoji, count]) => (
-                                  <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
-                                    {emoji} {count}
+                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1">
+                                    {emoji} <span className="font-semibold text-gray-300">{count}</span>
                                   </span>
                                 ))}
                               </div>
                             )}
                             {pair.answerReactions && Object.keys(pair.answerReactions).length > 0 && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-gray-500">A:</span>
+                              <div className="flex items-center gap-1.5" title="Reactions to the game answer (as read aloud) during the reading round">
+                                <span className="text-gray-500 font-medium">Game Answer:</span>
                                 {Object.entries(pair.answerReactions).map(([emoji, count]) => (
-                                  <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
-                                    {emoji} {count}
+                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1">
+                                    {emoji} <span className="font-semibold text-gray-300">{count}</span>
                                   </span>
                                 ))}
                               </div>
