@@ -2560,8 +2560,8 @@ function App() {
                 <div className="hidden md:flex md:items-center md:gap-4">
                   <div className="flex-1 flex flex-col items-center gap-2">
                     <img
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://square.link/u/YPi6d86H"
-                      alt="QR code for Square payment link"
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://cash.app/$playfluke"
+                      alt="Cash App QR code for $playfluke"
                       className="w-40 h-40 rounded-xl border-2 border-gray-700"
                     />
                     <p className="text-[10px] text-gray-400 text-center max-w-[10rem]">
