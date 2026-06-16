@@ -2571,25 +2571,20 @@ function App() {
                   </div>
                 </div>
 
-                {/* Mobile: dual buttons */}
+                {/* Mobile: single universal link button */}
                 <div className="md:hidden flex flex-col gap-2">
                   <a
-                    href="cashapp://cash.me/$playfluke"
+                    href="https://cash.app/$playfluke"
                     className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
                     </svg>
-                    Open Cash App
+                    Send a Tip with Cash App
                   </a>
-                  <p className="text-[10px] text-gray-500 text-center">Requires the Cash App installed</p>
-                  <a
-                    href="https://cash.app/$playfluke"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-xl border border-gray-700 transition-colors"
-                  >
-                    Pay with Credit / Debit Card
-                  </a>
-                  <p className="text-[10px] text-gray-500 text-center">No app needed — pay in your browser</p>
+                  <p className="text-[10px] text-gray-500 text-center">
+                    Opens the Cash App if installed, or a secure web checkout otherwise.
+                  </p>
                 </div>
               </div>
 
