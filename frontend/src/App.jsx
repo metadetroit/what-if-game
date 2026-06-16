@@ -1443,42 +1443,32 @@ function App() {
                 </div>
               </div>
             )}
-            <div className="text-center mb-4">
-              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-xl">🤔</span>
+            <div className="text-center mb-2">
+              <div className="w-9 h-9 mx-auto mb-1 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                <span className="text-lg">🤔</span>
               </div>
-              <h1 className="text-xl font-extrabold text-gradient mb-0">Fluke! The Game</h1>
-              <p className="text-gray-500 text-[10px] mt-1">playfluke.com</p>
-              <p className="text-gray-500 text-[10px] mt-0">3-15 players</p>
-              <div className="flex justify-center gap-4 mt-2">
-                <button onClick={() => setGameState("help")} className="text-[10px] text-indigo-400 hover:text-indigo-300 underline">
-                  How to Play
-                </button>
-                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="text-[10px] text-yellow-400 hover:text-yellow-300 underline">
-                  View Best Of
-                </button>
-                <button onClick={() => setGameState("support")} className="text-[10px] text-pink-400 hover:text-pink-300 underline">
-                  Support
-                </button>
+              <h1 className="text-lg font-extrabold text-gradient leading-tight">Fluke! The Game</h1>
+              <p className="text-gray-500 text-[10px] leading-tight">playfluke.com · 3-15 players</p>
+              <div className="flex justify-center gap-3 mt-1">
+                <button onClick={() => setGameState("help")} className="text-[10px] text-indigo-400 hover:text-indigo-300 underline">How to Play</button>
+                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="text-[10px] text-yellow-400 hover:text-yellow-300 underline">Best Of</button>
+                <button onClick={() => setGameState("support")} className="text-[10px] text-pink-400 hover:text-pink-300 underline">Support</button>
               </div>
             </div>
-            <div className="card space-y-3 py-3">
-              <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" aria-label="Your name" className="input-field py-2 text-lg" maxLength={20} />
-              <div className="space-y-2">
-                <label className="text-sm text-indigo-400 font-semibold uppercase tracking-wider">Room Code</label>
-                <input type="text" inputMode="numeric" enterKeyHint="done" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="1234" className="input-field py-3 text-2xl font-bold text-center tracking-[0.2em]" maxLength={4} />
-              </div>
+            <div className="card space-y-2 py-2 px-3">
+              <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="Your name" aria-label="Your name" className="input-field py-2 text-base" maxLength={20} />
+              <input type="text" inputMode="numeric" enterKeyHint="done" value={roomCode} onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }} placeholder="Room Code" className="input-field py-2 text-xl font-bold text-center tracking-[0.2em]" maxLength={4} />
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs text-gray-400">Pre-fill "What if..."</span>
-                <button onClick={() => { const next = !prefillWhatIf; setPrefillWhatIf(next); setPrefillWhatIfStorage(next) }} aria-pressed={prefillWhatIf} aria-label="Toggle pre-fill What if" className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}>
-                  <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0.5")} />
+                <span className="text-[11px] text-gray-400">Pre-fill "What if..."</span>
+                <button onClick={() => { const next = !prefillWhatIf; setPrefillWhatIf(next); setPrefillWhatIfStorage(next) }} aria-pressed={prefillWhatIf} aria-label="Toggle pre-fill What if" className={"relative w-9 h-4.5 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}>
+                  <div className={"absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0.5")} />
                 </button>
               </div>
-              <div className="flex gap-3">
-                <button onClick={joinRoom} className="btn-primary py-3 px-5 text-lg whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join Game" : "..."}</button>
-                <button onClick={createRoom} className="btn-secondary py-4 px-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Create" : "..."}</button>
+              <div className="flex gap-2">
+                <button onClick={joinRoom} className="btn-primary py-2.5 px-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join" : "..."}</button>
+                <button onClick={createRoom} className="btn-secondary py-2.5 px-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Create" : "..."}</button>
               </div>
-              {error && (<div className="p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-sm text-center">{error}</div>)}
+              {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center">{error}</div>)}
             </div>
           </div>
         )
