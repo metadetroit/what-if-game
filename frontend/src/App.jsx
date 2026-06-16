@@ -200,6 +200,7 @@ function App() {
   const [mostAdoredWriter, setMostAdoredWriter] = useState(null) // { name, total, tied } from backend
   const [roundHistory, setRoundHistory] = useState([]) // Past round summaries
   const [showRoundHistory, setShowRoundHistory] = useState(false)
+  const [expandedHistoryRounds, setExpandedHistoryRounds] = useState(new Set())
   const [soundMuted, setSoundMuted] = useState(() => { try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false } })
   const [prefillWhatIf, setPrefillWhatIf] = useState(() => getPrefillWhatIf())
   const [tick, setTick] = useState(0) // Forces re-render every second for live countdowns
@@ -1321,7 +1322,14 @@ function App() {
       case "best-of":
         return (
           <div ref={bestOfScrollRef} className="game-container game-container--scroll py-4">
-            <div className="text-center mb-4">
+            <div className="text-center mb-4 relative">
+              <button
+                onClick={() => setGameState("welcome")}
+                className="absolute top-0 right-0 text-gray-400 hover:text-white text-sm px-2 py-1"
+                aria-label="Close Best Of and return to main screen"
+              >
+                ✕ Close
+              </button>
               <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-xl">🏆</span>
               </div>
@@ -1768,17 +1776,13 @@ function App() {
                     </div>
                   )}
                   {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                    <div>
-                      <div className="text-center mb-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 bg-gray-800/60 px-3 py-1.5 rounded-full border border-gray-700/40">
-                          <span className="text-base">🎧</span>
-                          Listening to <span className="font-medium text-gray-300">{currentTurn.questionReader.name}</span> & <span className="font-medium text-gray-300">{currentTurn.answerReader.name}</span>
-                        </span>
-                      </div>
-                      <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                        <span className="text-lg font-bold text-gray-400">LISTEN</span>
-                        <p className="text-gray-500 text-sm mt-1">{currentTurn.questionReader.name} &rarr; {currentTurn.answerReader.name}</p>
-                      </div>
+                    <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
+                      <p className="text-gray-300 text-lg">
+                        <span className="text-green-400 font-bold text-xl">{currentTurn.questionReader.name}</span>
+                        <span className="text-gray-500 mx-3">→</span>
+                        <span className="text-purple-400 font-bold text-xl">{currentTurn.answerReader.name}</span>
+                      </p>
+                      <p className="text-gray-500 text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
                     </div>
                   )}
                 </div>
@@ -1799,16 +1803,6 @@ function App() {
                 )}
                 {!hasRead && !currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
                   <button onClick={completeReading} className="btn-primary mb-2 bg-purple-600 hover:bg-purple-700 text-lg py-3">Done Reading →</button>
-                )}
-                {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                  <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
-                    <p className="text-gray-300 text-lg">
-                      <span className="text-green-400 font-bold text-xl">{currentTurn.questionReader.name}</span>
-                      <span className="text-gray-500 mx-3">→</span>
-                      <span className="text-purple-400 font-bold text-xl">{currentTurn.answerReader.name}</span>
-                    </p>
-                    <p className="text-gray-500 text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
-                  </div>
                 )}
                 </div>
                 <div className="shrink-0 pt-2 border-t border-gray-800">
@@ -1944,81 +1938,58 @@ function App() {
                     return (
                       <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card " + (userVotedForPair ? "summary-card--active " : "") + (isWinner ? "summary-card--winner" : "")}>
                         <div className="summary-card__body">
-                          <div className="summary-pill summary-pill--accent">
-                            <span className="text-xs font-semibold tracking-widest">Game Pairing</span>
-                            {isWinner && <span className="ml-auto text-sm" title="Top voted!">👑</span>}
-                          </div>
+                          {isWinner && <div className="text-right"><span className="text-sm" title="Top voted!">👑</span></div>}
                           <p className="summary-question">{pair.question}</p>
                           <div className="summary-paired">
-                            <p className="summary-paired__label">Performed with</p>
                             <p className="summary-paired__answer">{pair.pairedAnswer || 'No pairing was performed'}</p>
                           </div>
+                          <p className="text-[11px] text-gray-400">
+                            Q by {questionAuthor}{pair.pairedAnswer && <> · Paired by {pairedAuthor}</>}
+                            {pair.actualAnswer && <> · <span className="text-emerald-300/80">Actual: {pair.actualAnswer}</span>{pair.actualAnswerAuthorName && <> — {actualAuthor}</>}</>}
+                          </p>
                           {maskNames && (
                             <div className="inline-flex items-center gap-1 text-[10px] text-purple-300 bg-purple-900/30 border border-purple-700/50 rounded-full px-2 py-0.5 w-fit">
                               <span>🙈</span>
                               <span>Anonymous</span>
                             </div>
                           )}
-                          <div className="summary-authors">
-                            <span>Q by {questionAuthor}</span>
-                            {pair.pairedAnswer && <span>↗ Paired by {pairedAuthor}</span>}
-                          </div>
                         </div>
 
                         <div className="summary-card__footer">
                           <div className="summary-vote-meta">
-                            <span className="text-gray-400 text-xs uppercase tracking-widest">Live Votes</span>
+                            <span className="text-gray-400 text-xs uppercase tracking-widest">Votes</span>
                             <p className="text-2xl font-black text-amber-300">{voteCount}</p>
                             {userVotedForPair && (<span className="you-badge">You</span>)}
                           </div>
-                          {hasPairId ? (
-                            <button
-                              onClick={() => handleVote('qa_pair', pair.pairDbId)}
-                              className={`summary-vote-btn ${
-                                userVotedForPair ? 'summary-vote-btn--active' : ''
-                              } ${voteDisabled ? 'summary-vote-btn--disabled' : ''}`}
-                              title="Vote for best game pairing"
-                              disabled={voteDisabled}
-                              aria-busy={inFlight ? 'true' : 'false'}
-                            >
-                              {inFlight ? 'Voting…' : userVotedForPair ? 'Voted (click to undo)' : userLockedToDifferentPair ? 'Already voted' : 'Vote for this pairing'}
-                            </button>
-                          ) : (
-                            <button disabled className="summary-vote-btn summary-vote-btn--disabled">Voting unavailable</button>
-                          )}
-                        </div>
-
-                        <div className="summary-actual">
-                          <p className="summary-actual__label">Actual Answer</p>
-                          <p className="summary-actual__text">{pair.actualAnswer}</p>
-                          {pair.actualAnswerAuthorName && (
-                            <p className="summary-actual__author">— {actualAuthor}</p>
-                          )}
-                        </div>
-                        {(pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0) ? (
-                          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] text-gray-400 mt-3 pt-3 pb-1 px-2 border-t border-gray-800/50">
-                            {pair.questionReactions && Object.keys(pair.questionReactions).length > 0 && (
-                              <div className="flex items-center gap-1.5" title="Reactions to this question during the reading round">
-                                <span className="text-gray-500 font-medium">Question:</span>
-                                {Object.entries(pair.questionReactions).map(([emoji, count]) => (
-                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1">
-                                    {emoji} <span className="font-semibold text-gray-300">{count}</span>
-                                  </span>
+                          <div className="flex items-center gap-2 flex-1">
+                            {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
+                              <div className="flex flex-wrap gap-1 text-[10px]">
+                                {pair.questionReactions && Object.entries(pair.questionReactions).map(([emoji, count]) => (
+                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
+                                ))}
+                                {pair.answerReactions && Object.entries(pair.answerReactions).map(([emoji, count]) => (
+                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
                                 ))}
                               </div>
                             )}
-                            {pair.answerReactions && Object.keys(pair.answerReactions).length > 0 && (
-                              <div className="flex items-center gap-1.5" title="Reactions to the game answer (as read aloud) during the reading round">
-                                <span className="text-gray-500 font-medium">Game Answer:</span>
-                                {Object.entries(pair.answerReactions).map(([emoji, count]) => (
-                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1">
-                                    {emoji} <span className="font-semibold text-gray-300">{count}</span>
-                                  </span>
-                                ))}
-                              </div>
+                            {hasPairId ? (
+                              <button
+                                onClick={() => handleVote('qa_pair', pair.pairDbId)}
+                                className={`summary-vote-btn ${
+                                  userVotedForPair ? 'summary-vote-btn--active' : ''
+                                } ${voteDisabled ? 'summary-vote-btn--disabled' : ''}`}
+                                title="Vote for best game pairing"
+                                disabled={voteDisabled}
+                                aria-busy={inFlight ? 'true' : 'false'}
+                              >
+                                {inFlight ? '…' : userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Locked' : 'Vote'}
+                              </button>
+                            ) : (
+                              <button disabled className="summary-vote-btn summary-vote-btn--disabled">Unavailable</button>
                             )}
                           </div>
-                        ) : null}
+                        </div>
+
                       </article>
                     )
                   })}
@@ -2038,22 +2009,36 @@ function App() {
                     <button onClick={() => setShowRoundHistory(false)} className="text-gray-400 hover:text-white text-sm">✕ Close</button>
                   </div>
                   <div className="overflow-y-auto flex-1 p-4 space-y-4">
-                    {roundHistory.map((round, idx) => (
-                      <div key={idx} className="card p-3">
-                        <p className="text-xs text-gray-400 mb-2">Round {idx + 1} — {new Date(round.timestamp).toLocaleTimeString()}</p>
-                        <div className="space-y-2">
-                          {round.summary.slice(0, 3).map((pair, pIdx) => (
-                            <div key={pIdx} className="text-sm">
-                              <p className="text-white font-medium">{pair.question}</p>
-                              <p className="text-gray-400 text-xs">↗ {pair.pairedAnswer || 'No pairing'}</p>
-                            </div>
-                          ))}
-                          {round.summary.length > 3 && (
-                            <p className="text-xs text-gray-500">+{round.summary.length - 3} more pairings</p>
-                          )}
+                    {roundHistory.map((round, idx) => {
+                      const isExpanded = expandedHistoryRounds.has(idx)
+                      const visiblePairs = isExpanded ? round.summary : round.summary.slice(0, 3)
+                      return (
+                        <div key={idx} className="card p-3">
+                          <p className="text-xs text-gray-400 mb-2">Round {idx + 1} — {new Date(round.timestamp).toLocaleTimeString()}</p>
+                          <div className="space-y-2">
+                            {visiblePairs.map((pair, pIdx) => (
+                              <div key={pIdx} className="text-sm">
+                                <p className="text-white font-medium">{pair.question}</p>
+                                <p className="text-gray-400 text-xs">↗ {pair.pairedAnswer || 'No pairing'}</p>
+                              </div>
+                            ))}
+                            {round.summary.length > 3 && (
+                              <button
+                                onClick={() => setExpandedHistoryRounds(prev => {
+                                  const next = new Set(prev)
+                                  if (next.has(idx)) next.delete(idx)
+                                  else next.add(idx)
+                                  return next
+                                })}
+                                className="text-xs text-indigo-300 hover:text-indigo-200 underline"
+                              >
+                                {isExpanded ? 'Show less' : `+${round.summary.length - 3} more pairings`}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>
