@@ -2560,8 +2560,8 @@ function App() {
                 <div className="hidden md:flex md:items-center md:gap-4">
                   <div className="flex-1 flex flex-col items-center gap-2">
                     <img
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://cash.app/$playfluke"
-                      alt="Cash App QR code for $playfluke"
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://square.link/u/YPi6d86H"
+                      alt="QR code for Square payment link"
                       className="w-40 h-40 rounded-xl border-2 border-gray-700"
                     />
                     <p className="text-[10px] text-gray-400 text-center max-w-[10rem]">
@@ -2570,7 +2570,7 @@ function App() {
                   </div>
                   <div className="flex-1 flex flex-col items-center gap-2">
                     <a
-                      href="https://cash.app/$playfluke"
+                      href="https://square.link/u/YPi6d86H"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors shadow-lg"
@@ -2578,7 +2578,7 @@ function App() {
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
                       </svg>
-                      Pay Online with Card or Cash App
+                      pay with any credit card (no account needed) or Cash App
                     </a>
                     <p className="text-[10px] text-gray-400 text-center">
                       Opens in a new tab — works without the app.
@@ -2589,13 +2589,13 @@ function App() {
                 {/* Mobile: single universal link button */}
                 <div className="md:hidden flex flex-col gap-2">
                   <a
-                    href="https://cash.app/$playfluke"
+                    href="https://square.link/u/YPi6d86H"
                     className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
                     </svg>
-                    Send a Tip with Cash App
+                    pay with any credit card (no account needed) or Cash App
                   </a>
                   <p className="text-[10px] text-gray-500 text-center">
                     Opens the Cash App if installed, or a secure web checkout otherwise.
