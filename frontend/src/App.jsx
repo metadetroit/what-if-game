@@ -2560,9 +2560,9 @@ function App() {
                 <div className="hidden md:flex md:items-center md:gap-4">
                   <div className="flex-1 flex flex-col items-center gap-2">
                     <img
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://cash.app/$playfluke"
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://cash.app/$playfluke"
                       alt="Cash App QR code for $playfluke"
-                      className="w-40 h-40 rounded-xl border-2 border-gray-700"
+                      className="w-52 h-52 rounded-lg bg-white p-2"
                     />
                     <p className="text-[10px] text-gray-400 text-center max-w-[10rem]">
                       Playing on PC? Scan with your phone camera to open Cash App instantly.
