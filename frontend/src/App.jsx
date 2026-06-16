@@ -1395,7 +1395,7 @@ function App() {
 
       case "welcome":
         return (
-          <div className="game-container justify-center py-1 relative">
+          <div className="game-container justify-evenly py-8 relative md:max-w-lg">
             <button
               onClick={() => { const next = !soundMuted; writeSoundMuted(next); setSoundMuted(next) }}
               className="absolute top-2 right-2 z-10 bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center text-lg hover:bg-gray-700 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
@@ -1443,53 +1443,55 @@ function App() {
                 </div>
               </div>
             )}
-            <div className="text-center mb-3">
-              <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <span className="text-xl">🤔</span>
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg">
+                <span className="text-3xl">🤔</span>
               </div>
-              <h1 className="text-2xl font-extrabold text-gradient leading-tight">Fluke! The Game</h1>
-              <p className="text-gray-400 text-xs tracking-wide">playfluke.com · 3-15 players</p>
-              <div className="flex flex-wrap justify-center gap-2 mt-2 text-[12px] font-semibold uppercase tracking-widest">
-                <button onClick={() => setGameState("help")} className="px-3 py-1 rounded-full border border-indigo-500/60 text-indigo-300 hover:bg-indigo-500/10 transition">How to Play</button>
-                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="px-3 py-1 rounded-full border border-amber-400/60 text-amber-300 hover:bg-amber-500/10 transition">Best Of</button>
-                <button onClick={() => setGameState("support")} className="px-3 py-1 rounded-full border border-pink-500/60 text-pink-300 hover:bg-pink-500/10 transition">Support This Project</button>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gradient leading-tight">Fluke! The Game</h1>
+              <p className="text-gray-400 text-sm tracking-wide mt-1">playfluke.com · 3-15 players</p>
+              <div className="flex flex-wrap justify-center gap-2.5 mt-4 text-sm font-semibold uppercase tracking-wider">
+                <button onClick={() => setGameState("help")} className="px-4 py-2 rounded-full border border-indigo-500/60 text-indigo-300 hover:bg-indigo-500/10 transition">How to Play</button>
+                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="px-4 py-2 rounded-full border border-amber-400/60 text-amber-300 hover:bg-amber-500/10 transition">Best Of</button>
+                <button onClick={() => setGameState("support")} className="px-4 py-2 rounded-full border border-pink-500/60 text-pink-300 hover:bg-pink-500/10 transition">Support This Project</button>
               </div>
             </div>
-            <div className="card gap-3 py-4 px-4">
+            <div className="card gap-5 py-6 px-5">
               <input
                 type="text"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Your name"
                 aria-label="Your name"
-                className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
+                className="input-field py-4 text-base font-semibold placeholder:text-gray-500 text-white"
                 maxLength={20}
               />
-              <input
-                type="text"
-                inputMode="numeric"
-                enterKeyHint="done"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
-                placeholder="Room code"
-                className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white tracking-[0.2em]"
-                maxLength={4}
-              />
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] text-gray-400">Pre-fill "What if..."</span>
+              <div className="flex items-stretch gap-3">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  enterKeyHint="done"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
+                  placeholder="Room code"
+                  className="input-field py-4 text-base font-semibold placeholder:text-gray-500 text-white tracking-[0.2em] text-center w-32 flex-none"
+                  maxLength={4}
+                />
                 <button
                   onClick={() => { const next = !prefillWhatIf; setPrefillWhatIf(next); setPrefillWhatIfStorage(next) }}
                   aria-pressed={prefillWhatIf}
                   aria-label="Toggle pre-fill What if"
-                  className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
+                  className="flex-1 flex items-center justify-between gap-2 px-4 rounded-xl border border-gray-700 bg-gray-900 hover:border-indigo-500/60 transition"
                 >
-                  <div className={"absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
+                  <span className="text-sm text-gray-300 text-left leading-tight">Pre-fill <span className="text-gray-400">"What if..."</span></span>
+                  <span className={"relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}>
+                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
+                  </span>
                 </button>
               </div>
               <div className="flex gap-3">
-                <button onClick={joinRoom} className="btn-primary py-3 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join" : "..."}</button>
-                <button onClick={createRoom} className="btn-secondary py-3 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Create" : "..."}</button>
+                <button onClick={joinRoom} className="btn-primary py-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join" : "..."}</button>
+                <button onClick={createRoom} className="btn-secondary py-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Create" : "..."}</button>
               </div>
               {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center">{error}</div>)}
             </div>
