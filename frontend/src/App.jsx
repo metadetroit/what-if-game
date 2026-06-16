@@ -1455,7 +1455,7 @@ function App() {
                 <button onClick={() => setGameState("support")} className="px-4 py-2 rounded-full border border-pink-500/60 text-pink-300 hover:bg-pink-500/10 transition">Support This Project</button>
               </div>
             </div>
-            <div className="card gap-5 py-6 px-5">
+            <div className="card gap-6 py-7 px-6">
               <input
                 type="text"
                 value={playerName}
@@ -1465,7 +1465,7 @@ function App() {
                 className="input-field py-4 text-base font-semibold placeholder:text-gray-500 text-white"
                 maxLength={20}
               />
-              <div className="flex items-stretch gap-3">
+              <div className="flex items-stretch gap-5">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -1474,7 +1474,7 @@ function App() {
                   onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
                   placeholder="Room code"
-                  className="input-field py-4 text-base font-semibold placeholder:text-gray-500 text-white tracking-[0.2em] text-center w-32 flex-none"
+                  className="input-field py-4 text-base font-semibold placeholder:text-gray-500 text-white tracking-[0.2em] text-center flex-1"
                   maxLength={4}
                 />
                 <button
@@ -1489,7 +1489,7 @@ function App() {
                   </span>
                 </button>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-5">
                 <button onClick={joinRoom} className="btn-primary py-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join" : "..."}</button>
                 <button onClick={createRoom} className="btn-secondary py-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Create" : "..."}</button>
               </div>
