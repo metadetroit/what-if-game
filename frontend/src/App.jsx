@@ -2540,14 +2540,57 @@ function App() {
                 <p className="text-sm text-gray-300 leading-relaxed mb-3">
                   A small donation helps cover server costs and keeps the game online. No amount is too small.
                 </p>
-                <a
-                  href="https://ko-fi.com/playfluke"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  <span>☕</span> Buy us a coffee
-                </a>
+
+                {/* Desktop: QR + Web button */}
+                <div className="hidden md:flex md:items-center md:gap-4">
+                  <div className="flex-1 flex flex-col items-center gap-2">
+                    <img
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://cash.app/$playfluke"
+                      alt="Cash App QR code for $playfluke"
+                      className="w-40 h-40 rounded-xl border-2 border-gray-700"
+                    />
+                    <p className="text-[10px] text-gray-400 text-center max-w-[10rem]">
+                      Playing on PC? Scan with your phone camera to open Cash App instantly.
+                    </p>
+                  </div>
+                  <div className="flex-1 flex flex-col items-center gap-2">
+                    <a
+                      href="https://cash.app/$playfluke"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors shadow-lg"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                      </svg>
+                      Pay Online with Card or Cash App
+                    </a>
+                    <p className="text-[10px] text-gray-400 text-center">
+                      Opens in a new tab — works without the app.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mobile: dual buttons */}
+                <div className="md:hidden flex flex-col gap-2">
+                  <a
+                    href="cashapp://cash.me/$playfluke"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                    </svg>
+                    Open Cash App
+                  </a>
+                  <p className="text-[10px] text-gray-500 text-center">Requires the Cash App installed</p>
+                  <a
+                    href="https://cash.app/$playfluke"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-xl border border-gray-700 transition-colors"
+                  >
+                    Pay with Credit / Debit Card
+                  </a>
+                  <p className="text-[10px] text-gray-500 text-center">No app needed — pay in your browser</p>
+                </div>
               </div>
 
               <div className="border-t border-gray-700 pt-4">
