@@ -2564,7 +2564,7 @@ function App() {
                       alt="Cash App QR code for $playfluke"
                       className="w-52 h-52 rounded-lg bg-white p-2"
                     />
-                    <p className="text-[10px] text-gray-400 text-center max-w-[10rem]">
+                    <p className="text-xs font-semibold text-gray-300 text-center max-w-[10rem] leading-relaxed">
                       Playing on PC? Scan with your phone camera to open Cash App instantly.
                     </p>
                   </div>
@@ -2580,7 +2580,7 @@ function App() {
                       </svg>
                       pay with any credit card (no account needed) or Cash App
                     </a>
-                    <p className="text-[10px] text-gray-400 text-center">
+                    <p className="text-xs font-semibold text-gray-300 text-center leading-relaxed">
                       Opens in a new tab — works without the app.
                     </p>
                   </div>
