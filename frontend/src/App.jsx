@@ -1444,15 +1444,16 @@ function App() {
               </div>
             )}
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg">
-                <span className="text-3xl">🤔</span>
+              <div className="w-20 h-20 mx-auto mb-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl ring-4 ring-indigo-500/20">
+                <span className="text-4xl">🤔</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gradient leading-tight">Fluke! The Game</h1>
-              <p className="text-gray-400 text-sm tracking-wide mt-1">playfluke.com · 3-15 players</p>
-              <div className="flex flex-wrap justify-center gap-2.5 mt-4 text-sm font-semibold uppercase tracking-wider">
-                <button onClick={() => setGameState("help")} className="px-4 py-2 rounded-full border border-indigo-500/60 text-indigo-300 hover:bg-indigo-500/10 transition">How to Play</button>
-                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="px-4 py-2 rounded-full border border-amber-400/60 text-amber-300 hover:bg-amber-500/10 transition">Best Of</button>
-                <button onClick={() => setGameState("support")} className="px-4 py-2 rounded-full border border-pink-500/60 text-pink-300 hover:bg-pink-500/10 transition">Support This Project</button>
+              <h1 className="text-4xl md:text-5xl font-black text-gradient leading-tight">Fluke! The Game</h1>
+              <p className="text-gray-400 text-base font-medium tracking-wide mt-1">playfluke.com · 3-15 players</p>
+              <p className="text-gray-500 text-sm mt-1">A chaotic party game for 3-15 players</p>
+              <div className="flex flex-wrap justify-center gap-3 mt-4 text-sm font-bold uppercase tracking-wider">
+                <button onClick={() => setGameState("help")} className="px-5 py-2.5 rounded-full border-2 border-indigo-500/60 text-indigo-300 hover:bg-indigo-500 hover:text-white hover:border-indigo-400 transition">❓ How to Play</button>
+                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="px-5 py-2.5 rounded-full border-2 border-amber-400/60 text-amber-300 hover:bg-amber-500 hover:text-white hover:border-amber-400 transition">🏆 Best Of</button>
+                <button onClick={() => setGameState("support")} className="px-5 py-2.5 rounded-full border-2 border-pink-500/60 text-pink-300 hover:bg-pink-500 hover:text-white hover:border-pink-400 transition">💖 Support</button>
               </div>
             </div>
             <div className="card gap-6 py-7 px-6">
@@ -1483,7 +1484,7 @@ function App() {
                   aria-label="Toggle pre-fill What if"
                   className="flex-1 flex items-center justify-between gap-2 px-4 rounded-xl border border-gray-700 bg-gray-900 hover:border-indigo-500/60 transition"
                 >
-                  <span className="text-sm text-gray-300 text-left leading-tight">Pre-fill <span className="text-gray-400">"What if..."</span></span>
+                  <span className="text-base text-gray-300 text-left leading-tight">Pre-fill <span className="text-gray-400">"What if..."</span></span>
                   <span className={"relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}>
                     <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
                   </span>
