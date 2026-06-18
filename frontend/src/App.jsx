@@ -2586,8 +2586,18 @@ function App() {
                   </div>
                 </div>
 
-                {/* Mobile: single universal link button */}
-                <div className="md:hidden flex flex-col gap-2">
+                {/* Mobile: QR + button */}
+                <div className="md:hidden flex flex-col gap-3">
+                  <div className="flex flex-col items-center gap-2">
+                    <img
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://cash.app/$playfluke"
+                      alt="Cash App QR code for $playfluke"
+                      className="w-44 h-44 rounded-lg bg-white p-2"
+                    />
+                    <p className="text-xs font-semibold text-gray-300 text-center max-w-[12rem] leading-relaxed">
+                      Scan with your phone camera to open Cash App instantly.
+                    </p>
+                  </div>
                   <a
                     href="https://square.link/u/YPi6d86H"
                     className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors"
