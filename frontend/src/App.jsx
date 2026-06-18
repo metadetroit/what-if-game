@@ -244,8 +244,9 @@ function App() {
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
   useEffect(() => { playerNameRef.current = playerName }, [playerName])
   // Outside an active game there is no one to "wait for" — clear the disconnected list.
+  const activeGameplayStates = ["lobby", "writing", "answering", "performing"]
   useEffect(() => {
-    if (gameState === "welcome" || gameState === "lobby") {
+    if (!activeGameplayStates.includes(gameState)) {
       disconnectedPlayersRef.current = []
       disconnectDeadlineRef.current = null
       if (disconnectNoticeTimerRef.current) {
@@ -451,8 +452,9 @@ function App() {
 
     newSocket.on("connect", () => {
       console.log("Connected to server")
+      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
       // Clear the persistent "Connection lost" notice now that we're back online.
-      if (gameStateRef.current !== "welcome" && gameStateRef.current !== "reconnect-failed") {
+      if (activeGameplay) {
         setNotice(noticeFor("Back online", "success", 1500))
       } else {
         setNotice((prev) => (prev && prev.tone === "warn" ? null : prev))
@@ -484,9 +486,10 @@ function App() {
       console.log("Socket disconnected")
       // CRITICAL: reset so the next 'connect' event can re-emit reconnect-player
       reconnectAttemptedRef.current = false
-      // Only show notice if user is mid-game; pre-game disconnect is silent.
+      // Only show notice during active gameplay; welcome/summary screens stay silent.
       // Persistent (no auto-expiry) so it stays visible until we actually reconnect.
-      if (gameStateRef.current !== "welcome" && gameStateRef.current !== "reconnect-failed") {
+      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
+      if (activeGameplay) {
         setNotice(noticeFor("You disconnected. If you don't automatically reconnect, try refreshing your screen.", "warn", null))
       }
       touchSession()
@@ -760,7 +763,8 @@ function App() {
       if (typeof data.gracePeriod === "number" && !disconnectDeadlineRef.current) {
         disconnectDeadlineRef.current = Date.now() + data.gracePeriod * 1000
       }
-      if (gameStateRef.current !== "welcome" && gameStateRef.current !== "lobby") {
+      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
+      if (activeGameplay) {
         if (disconnectNoticeTimerRef.current) clearTimeout(disconnectNoticeTimerRef.current)
         disconnectNoticeTimerRef.current = setTimeout(() => {
           setNotice((prev) => (prev && prev.expiresAt == null && prev.tone === "warn" ? null : prev))
@@ -780,6 +784,7 @@ function App() {
       disconnectedPlayersRef.current = disconnectedPlayersRef.current.filter((n) => n !== data.playerName)
       // Don't announce our own reconnection here — the "reconnected" handler covers that.
       if (data.playerName === playerNameRef.current) return
+      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
       const remaining = disconnectedPlayersRef.current
       if (remaining.length === 0) {
         disconnectDeadlineRef.current = null
@@ -787,10 +792,14 @@ function App() {
           clearTimeout(disconnectNoticeTimerRef.current)
           disconnectNoticeTimerRef.current = null
         }
-        setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2500))
+        if (activeGameplay) {
+          setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2500))
+        }
       } else {
         // Someone reconnected but others are still gone — keep naming who we're waiting on.
-        setNotice(noticeFor(`${data.playerName} reconnected — still waiting for ${remaining.join(", ")}…`, "info", null))
+        if (activeGameplay) {
+          setNotice(noticeFor(`${data.playerName} reconnected — still waiting for ${remaining.join(", ")}…`, "info", null))
+        }
       }
     })
 
@@ -911,7 +920,10 @@ function App() {
             })
           }
         }
-        setNotice(noticeFor("Reconnected", "success", 2000))
+        const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(data.phase)
+        if (activeGameplay) {
+          setNotice(noticeFor("Reconnected", "success", 2000))
+        }
       } else {
         console.log("Reconnection failed:", data)
       }
