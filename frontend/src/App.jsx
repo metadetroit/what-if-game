@@ -2672,10 +2672,20 @@ function App() {
           role="status"
           aria-live="polite"
         >
-          <span>{notice.message}</span>
-          {notice.tone === "warn" && disconnectedPlayersRef.current.length > 0 && disconnectDeadlineRef.current && (
-            <span className="ml-1">({formatTimeLeft(Math.max(0, disconnectDeadlineRef.current - Date.now()))})</span>
-          )}
+          <span className="flex-1 text-center leading-tight">
+            {notice.message}
+            {notice.tone === "warn" && disconnectedPlayersRef.current.length > 0 && disconnectDeadlineRef.current && (
+              <span className="ml-1">({formatTimeLeft(Math.max(0, disconnectDeadlineRef.current - Date.now()))})</span>
+            )}
+          </span>
+          <button
+            onClick={() => setNotice(null)}
+            className="notice-banner__close"
+            aria-label="Dismiss notice"
+            title="Dismiss"
+          >
+            ✕
+          </button>
         </div>
       )}
       {showCountdown && ["writing", "answering", "performing"].includes(gameState) && (
