@@ -57,9 +57,17 @@ export default function LandingPage({
         </button>
       </div>
 
-      <section className="relative px-4 pt-6 pb-6 md:pt-8">
-        <div className="mx-auto max-w-5xl text-center">
-          <h1 className="font-bubble glow-title mt-0 text-center text-[18vw] leading-[0.82] md:text-[150px] md:leading-[0.88]">
+      <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 py-10 text-center">
+        <img
+          src={bannerSrc}
+          onError={() => setBannerSrc("/hero-chaos.jpg")}
+          alt="A laughing crowd of friends celebrating under vivid purple stage light"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
+
+        <div className="relative z-10 mx-auto max-w-3xl">
+          <h1 className="font-bubble glow-title text-[16vw] leading-[0.82] md:text-[120px] md:leading-[0.88]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
@@ -68,11 +76,11 @@ export default function LandingPage({
             <span style={{ color: "#facc15" }}>!</span>
           </h1>
 
-          <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-white/75 md:text-base">
+          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-white/85 md:text-lg">
             What if there was a creative party game that got, weird, wild, and witty?
           </p>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 md:gap-4">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 md:gap-4">
             <button
               onClick={() => {
                 const el = document.getElementById("play")
@@ -89,25 +97,21 @@ export default function LandingPage({
               View Best Of
             </button>
           </div>
-          <p className="mt-3 text-center text-[11px] tracking-[0.3em] text-white/50">
+          <p className="mt-4 text-center text-[11px] tracking-[0.3em] text-white/60">
             NO SIGNUP · NO DOWNLOAD · NO IDEA WHAT HAPPENS NEXT
           </p>
         </div>
-      </section>
 
-      <section className="relative px-4 pb-6 md:pb-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="relative mx-auto overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40">
-            <img
-              src={bannerSrc}
-              onError={() => setBannerSrc("/hero-chaos.jpg")}
-              alt="A laughing crowd of friends celebrating under vivid purple lights"
-              width={1920}
-              height={1080}
-              className="h-[24vh] w-full object-cover md:h-[36vh]"
-            />
-          </div>
-        </div>
+        <button
+          onClick={() => {
+            const el = document.getElementById("play")
+            if (el) el.scrollIntoView({ behavior: "smooth" })
+          }}
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 hover:text-white/80 text-[10px] tracking-[0.3em] animate-pulse transition-colors"
+          aria-label="Scroll to play"
+        >
+          SCROLL ↓
+        </button>
       </section>
 
       <section className="relative px-4 py-10 md:py-12">
