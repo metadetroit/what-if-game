@@ -50,9 +50,7 @@ export default function LandingPage({
   const current = combinedDeck[idx % combinedDeck.length]
   const fluke = () => setIdx(i => (i + 1) % combinedDeck.length)
 
-  const exampleCards = dbPairs.length > 0
-    ? [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3)
-    : null
+  const exampleCards = [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3)
 
   return (
     <div className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0">
@@ -146,17 +144,17 @@ export default function LandingPage({
       <section className="relative px-4 py-10 md:py-12">
         <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-2">
           <div className="space-y-4">
-            <PromptCard text={exampleCards[0]?.prompt || DECK[0].prompt} rotate={-4} />
-            <AnswerCard text={exampleCards[0]?.answer || DECK[0].answer} rotate={3} />
-            <PromptCard text={exampleCards[2]?.prompt || DECK[2].prompt} rotate={2} />
-            <AnswerCard text={exampleCards[2]?.answer || DECK[2].answer} rotate={-3} />
+            <PromptCard text={exampleCards?.[0]?.prompt || DECK[0].prompt} rotate={-4} />
+            <AnswerCard text={exampleCards?.[0]?.answer || DECK[0].answer} rotate={3} />
+            <PromptCard text={exampleCards?.[2]?.prompt || DECK[2].prompt} rotate={2} />
+            <AnswerCard text={exampleCards?.[2]?.answer || DECK[2].answer} rotate={-3} />
           </div>
           <div className="space-y-4">
-            <PromptCard text={exampleCards[1]?.prompt || DECK[1].prompt} rotate={3} />
+            <PromptCard text={exampleCards?.[1]?.prompt || DECK[1].prompt} rotate={3} />
             <div className="py-1 text-center text-[10px] tracking-[0.4em] text-white/40">
               ─── COLLIDES WITH ───
             </div>
-            <AnswerCard text={exampleCards[1]?.answer || DECK[1].answer} rotate={-2} />
+            <AnswerCard text={exampleCards?.[1]?.answer || DECK[1].answer} rotate={-2} />
           </div>
         </div>
       </section>
