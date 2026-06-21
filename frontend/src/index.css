@@ -419,4 +419,60 @@
   @media (min-width: 768px) {
     .back-to-top { @apply bottom-6 right-6 w-11 h-11; }
   }
+
+  /* Lovable landing page integration styles */
+  .font-bubble {
+    font-family: "Fredoka", system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  .font-hand {
+    font-family: "Caveat", cursive;
+  }
+  .bg-fluke {
+    background:
+      radial-gradient(ellipse at top, rgba(168, 85, 247, 0.25), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(244, 63, 94, 0.18), transparent 55%),
+      #0c0617;
+  }
+  .text-gradient-chaos {
+    background: linear-gradient(90deg, #f5ecff 0%, #f9a8d4 35%, #fbbf24 70%, #f5ecff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .btn-chaos {
+    background: linear-gradient(90deg, #a855f7 0%, #ec4899 50%, #fbbf24 100%);
+    color: #1a0b2e;
+    box-shadow: 0 0 40px rgba(236, 72, 153, 0.45), 0 0 80px rgba(168, 85, 247, 0.25);
+    transition: filter 0.2s ease;
+  }
+  .btn-chaos:hover {
+    filter: brightness(1.1);
+  }
+  .btn-chaos:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
+  }
+  .card-prompt {
+    background: linear-gradient(180deg, rgba(40, 20, 70, 0.85), rgba(20, 10, 40, 0.85));
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.15);
+  }
+  .card-answer {
+    background: #f6efe0;
+    color: #2a1a0f;
+    border: 1px solid #e8dcc0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  .glow-title {
+    text-shadow:
+      0 0 30px rgba(251, 191, 36, 0.4),
+      0 0 60px rgba(236, 72, 153, 0.3);
+  }
+  .tag-pill {
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    background: transparent;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.5);
+  }
 }

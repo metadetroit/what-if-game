@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { io } from "socket.io-client"
+import LandingPage from "./LandingPage"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
@@ -1411,15 +1412,7 @@ function App() {
 
       case "welcome":
         return (
-          <div className="game-container justify-evenly py-8 relative md:max-w-lg">
-            <button
-              onClick={() => { const next = !soundMuted; writeSoundMuted(next); setSoundMuted(next) }}
-              className="absolute top-2 right-2 z-10 bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center text-lg hover:bg-gray-700 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
-              aria-label={soundMuted ? "Unmute sounds" : "Mute sounds"}
-              title={soundMuted ? "Sounds muted — click to unmute" : "Sounds on — click to mute"}
-            >
-              {soundMuted ? "🔇" : "🔊"}
-            </button>
+          <div className="relative">
             {reconnectPrompt && (
               <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl">
@@ -1459,58 +1452,23 @@ function App() {
                 </div>
               </div>
             )}
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg">
-                <span className="text-3xl">🤔</span>
-              </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gradient leading-tight">Fluke! The Game</h1>
-              <p className="text-gray-400 text-sm tracking-wide mt-1">playfluke.com · 3-15 players</p>
-              <div className="flex flex-wrap justify-center gap-2.5 mt-4 text-sm font-semibold uppercase tracking-wider">
-                <button onClick={() => setGameState("help")} className="px-4 py-2 rounded-full border border-indigo-500/60 text-indigo-300 hover:bg-indigo-500/10 transition">How to Play</button>
-                <button onClick={() => { setGameState("best-of"); fetchBestOfData() }} className="px-4 py-2 rounded-full border border-amber-400/60 text-amber-300 hover:bg-amber-500/10 transition">Best Of</button>
-                <button onClick={() => setGameState("support")} className="px-4 py-2 rounded-full border border-pink-500/60 text-pink-300 hover:bg-pink-500/10 transition">Support This Project</button>
-              </div>
-            </div>
-            <div className="card gap-6 py-7 px-6">
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Your name"
-                aria-label="Your name"
-                className="input-field py-4 text-base font-semibold placeholder:text-gray-500 text-white"
-                maxLength={20}
-              />
-              <div className="flex items-stretch gap-5">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  enterKeyHint="done"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
-                  placeholder="Room code"
-                  className="input-field py-4 text-base font-semibold placeholder:text-gray-500 text-white tracking-[0.2em] text-center flex-1"
-                  maxLength={4}
-                />
-                <button
-                  onClick={() => { const next = !prefillWhatIf; setPrefillWhatIf(next); setPrefillWhatIfStorage(next) }}
-                  aria-pressed={prefillWhatIf}
-                  aria-label="Toggle pre-fill What if"
-                  className="flex-1 flex items-center justify-between gap-2 px-4 rounded-xl border border-gray-700 bg-gray-900 hover:border-indigo-500/60 transition"
-                >
-                  <span className="text-sm text-gray-300 text-left leading-tight">Pre-fill <span className="text-gray-400">"What if..."</span></span>
-                  <span className={"relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}>
-                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
-                  </span>
-                </button>
-              </div>
-              <div className="flex gap-5">
-                <button onClick={joinRoom} className="btn-primary py-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Join" : "..."}</button>
-                <button onClick={createRoom} className="btn-secondary py-4 text-base whitespace-nowrap flex-1" disabled={!socket}>{socket ? "Create" : "..."}</button>
-              </div>
-              {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center">{error}</div>)}
-            </div>
+            <LandingPage
+              playerName={playerName}
+              setPlayerName={setPlayerName}
+              roomCode={roomCode}
+              setRoomCode={setRoomCode}
+              createRoom={createRoom}
+              joinRoom={joinRoom}
+              setGameState={setGameState}
+              soundMuted={soundMuted}
+              setSoundMuted={setSoundMuted}
+              writeSoundMuted={writeSoundMuted}
+              prefillWhatIf={prefillWhatIf}
+              setPrefillWhatIf={setPrefillWhatIf}
+              setPrefillWhatIfStorage={setPrefillWhatIfStorage}
+              socket={socket}
+              error={error}
+            />
           </div>
         )
 
