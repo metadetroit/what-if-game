@@ -201,7 +201,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="play" className="relative px-4 py-12 md:py-16">
+      <section id="play" className="relative px-4 pt-4 pb-12 md:pt-6 md:pb-16">
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-white">Ready when </span>
