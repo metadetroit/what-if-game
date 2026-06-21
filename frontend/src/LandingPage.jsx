@@ -301,6 +301,9 @@ export default function LandingPage({
           <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200">
             Support this project →
           </button>
+          <span className="text-purple-300 hover:text-purple-200">
+            Copywrite Fluke Games
+          </span>
         </div>
       </footer>
     </div>
