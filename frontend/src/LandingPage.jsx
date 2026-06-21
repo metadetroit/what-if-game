@@ -27,24 +27,35 @@ export default function LandingPage({
   error,
 }) {
   const [idx, setIdx] = useState(0)
-  const [bannerSrc, setBannerSrc] = useState("/banner-hero.jpg")
+  const [bannerSrc, setBannerSrc] = useState("/hero-chaos.jpg")
   const current = DECK[idx]
   const fluke = () => setIdx((i) => (i + 1) % DECK.length)
 
   return (
     <div className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0">
-      <button
-        onClick={() => {
-          const next = !soundMuted
-          writeSoundMuted(next)
-          setSoundMuted(next)
-        }}
-        className="absolute top-3 right-3 z-20 bg-black/30 border border-white/20 rounded-full w-10 h-10 flex items-center justify-center text-lg hover:bg-white/10 transition-colors"
-        aria-label={soundMuted ? "Unmute sounds" : "Mute sounds"}
-        title={soundMuted ? "Sounds muted — click to unmute" : "Sounds on — click to mute"}
-      >
-        {soundMuted ? "🔇" : "🔊"}
-      </button>
+      <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+        <button
+          onClick={() => setGameState("support")}
+          className="bg-black/30 border border-white/20 rounded-full px-3 h-10 flex items-center gap-1.5 text-sm font-bold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+          aria-label="Support this project"
+          title="Support this project"
+        >
+          <span className="text-base leading-none">💜</span>
+          <span className="hidden sm:inline">Support</span>
+        </button>
+        <button
+          onClick={() => {
+            const next = !soundMuted
+            writeSoundMuted(next)
+            setSoundMuted(next)
+          }}
+          className="bg-black/30 border border-white/20 rounded-full w-10 h-10 flex items-center justify-center text-lg hover:bg-white/10 transition-colors"
+          aria-label={soundMuted ? "Unmute sounds" : "Mute sounds"}
+          title={soundMuted ? "Sounds muted — click to unmute" : "Sounds on — click to mute"}
+        >
+          {soundMuted ? "🔇" : "🔊"}
+        </button>
+      </div>
 
       <section className="relative px-4 pt-6 pb-6 md:pt-8">
         <div className="mx-auto max-w-5xl text-center">
