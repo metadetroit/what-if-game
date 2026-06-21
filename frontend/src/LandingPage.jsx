@@ -98,7 +98,7 @@ export default function LandingPage({
           </h1>
 
           <p className="mx-auto mt-3 max-w-xl text-base font-bold italic leading-relaxed text-white/85 md:text-lg">
-            What if...The possibilities were endless?
+            What if...the possibilities were endless?
           </p>
 
           <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3 w-full">
