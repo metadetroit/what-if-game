@@ -131,4 +131,5 @@ For separate frontend/backend deployment (see `DEPLOY.md` for full instructions)
 
 ## License
 
-MIT
+Copyright (c) 2026 FLuke Games. All rights reserved. >
+No one is permitted to copy, distribute, or modify this software for any purpose without explicit written permission from the author.
