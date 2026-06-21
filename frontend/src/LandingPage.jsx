@@ -101,25 +101,25 @@ export default function LandingPage({
             What if...The possibilities were endless?
           </p>
 
-          <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3">
+          <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3 w-full">
             <button
               onClick={() => {
                 const el = document.getElementById("play")
                 if (el) el.scrollIntoView({ behavior: "smooth" })
               }}
-              className="btn-chaos rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap inline-block md:px-6 md:py-3 md:text-sm"
+              className="btn-chaos flex-[1.4] rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-6 md:py-3 md:text-sm"
             >
               ▶ PLAY
             </button>
             <button
               onClick={() => setGameState("best-of")}
-              className="btn-secondary rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap inline-block md:px-6 md:py-3 md:text-sm"
+              className="btn-secondary flex-1 rounded-full px-2 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-4 md:py-3 md:text-sm"
             >
               View Best Of
             </button>
             <button
               onClick={() => setGameState("help")}
-              className="btn-secondary rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap inline-block md:px-6 md:py-3 md:text-sm"
+              className="btn-secondary flex-1 rounded-full px-2 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-4 md:py-3 md:text-sm"
             >
               How to Play
             </button>
