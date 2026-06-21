@@ -302,7 +302,7 @@ export default function LandingPage({
             Support this project →
           </button>
           <span className="text-purple-300 hover:text-purple-200">
-            Copywrite Fluke Games
+            Copyright Fluke Games
           </span>
         </div>
       </footer>
