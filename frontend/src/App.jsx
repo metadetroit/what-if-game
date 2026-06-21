@@ -409,6 +409,26 @@ function App() {
     }
   }
 
+  const handleDeleteBestOf = async (type, id, index) => {
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/delete-best-of`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id })
+      })
+      const result = await response.json()
+      if (result.success) {
+        setBestOfData(prev => prev.filter((_, i) => i !== index))
+        setNotice(noticeFor('Item deleted from Best Of', 'success', 2000))
+      } else {
+        setNotice(noticeFor('Failed to delete item', 'warn', 3000))
+      }
+    } catch (error) {
+      console.error('Failed to delete best-of item:', error)
+      setNotice(noticeFor('Failed to delete item', 'warn', 3000))
+    }
+  }
+
   const applySummaryData = useCallback((summary, fallbackAnon = false) => {
     setGameSummary(summary)
     if (Array.isArray(summary) && summary.length > 0) {
@@ -1395,6 +1415,11 @@ function App() {
                                 className="text-[10px] text-indigo-300 hover:text-indigo-200 underline"
                                 title="Copy shareable link"
                               >🔗 Copy link</button>
+                              <button
+                                onClick={() => handleDeleteBestOf(item.type, item.id, i)}
+                                className="text-[10px] text-red-400 hover:text-red-300 underline"
+                                title="Delete this item"
+                              >🗑 Delete</button>
                               <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
                             </div>
                           </div>

@@ -1,4 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
 const DECK = [
   { prompt: "What if all the genealogy was found out to be wrong?", answer: "Then here there'd be dragons 🐉!" },
@@ -28,8 +30,29 @@ export default function LandingPage({
 }) {
   const [idx, setIdx] = useState(0)
   const [bannerSrc, setBannerSrc] = useState("/hero-chaos.jpg")
-  const current = DECK[idx]
-  const fluke = () => setIdx((i) => (i + 1) % DECK.length)
+  const [dbPairs, setDbPairs] = useState([])
+  const fetchedRef = useRef(false)
+
+  useEffect(() => {
+    if (fetchedRef.current) return
+    fetchedRef.current = true
+    fetch(`${SOCKET_URL}/api/random-pairs?count=8`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDbPairs(data.map(p => ({ prompt: p.question, answer: p.answer })))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const combinedDeck = [...DECK, ...dbPairs]
+  const current = combinedDeck[idx % combinedDeck.length]
+  const fluke = () => setIdx(i => (i + 1) % combinedDeck.length)
+
+  const exampleCards = dbPairs.length > 0
+    ? [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3)
+    : null
 
   return (
     <div className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0">
@@ -76,7 +99,7 @@ export default function LandingPage({
             <span style={{ color: "#facc15" }}>!</span>
           </h1>
 
-          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-white/85 md:text-lg">
+          <p className="mx-auto mt-3 max-w-xl text-base font-bold italic leading-relaxed text-white/85 md:text-lg">
             What if there was a creative party game that got, weird, wild, and witty?
           </p>
 
@@ -95,6 +118,12 @@ export default function LandingPage({
               className="btn-secondary rounded-full px-7 py-3 text-sm font-bold tracking-wide inline-block"
             >
               View Best Of
+            </button>
+            <button
+              onClick={() => setGameState("help")}
+              className="btn-secondary rounded-full px-7 py-3 text-sm font-bold tracking-wide inline-block"
+            >
+              How to Play
             </button>
           </div>
           <p className="mt-4 text-center text-[11px] tracking-[0.3em] text-white/60">
@@ -117,17 +146,17 @@ export default function LandingPage({
       <section className="relative px-4 py-10 md:py-12">
         <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-2">
           <div className="space-y-4">
-            <PromptCard text="What if all the genealogy was found out to be wrong?" rotate={-4} />
-            <AnswerCard text="Then here there'd be dragons 🐉!" rotate={3} />
-            <PromptCard text="What if you poured your heart out to people on the internet that were only voices in your ear?" rotate={2} />
-            <AnswerCard text="I would be friends with them" rotate={-3} />
+            <PromptCard text={exampleCards[0]?.prompt || DECK[0].prompt} rotate={-4} />
+            <AnswerCard text={exampleCards[0]?.answer || DECK[0].answer} rotate={3} />
+            <PromptCard text={exampleCards[2]?.prompt || DECK[2].prompt} rotate={2} />
+            <AnswerCard text={exampleCards[2]?.answer || DECK[2].answer} rotate={-3} />
           </div>
           <div className="space-y-4">
-            <PromptCard text="What if everyday were like a dothraki wedding (you know, from game of thrones)?" rotate={3} />
+            <PromptCard text={exampleCards[1]?.prompt || DECK[1].prompt} rotate={3} />
             <div className="py-1 text-center text-[10px] tracking-[0.4em] text-white/40">
               ─── COLLIDES WITH ───
             </div>
-            <AnswerCard text="It would be like Where's Waldo? (but Waldo is a fugitive from the law)" rotate={-2} />
+            <AnswerCard text={exampleCards[1]?.answer || DECK[1].answer} rotate={-2} />
           </div>
         </div>
       </section>
@@ -176,13 +205,12 @@ export default function LandingPage({
 
       <section id="play" className="relative px-4 py-12 md:py-16">
         <div className="mx-auto max-w-6xl text-center">
-          <p className="mb-3 text-[10px] tracking-[0.4em] text-purple-300">— PICK YOUR CHAOS</p>
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-white">Ready when </span>
             <span className="text-gradient-chaos">you are.</span>
           </h2>
 
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
+          <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto">
             <PanelCard title="Start a game" description="Spin up a fresh room. Get a 4-digit code. Invite your group.">
               <div className="w-full space-y-3">
                 <input
@@ -252,15 +280,6 @@ export default function LandingPage({
                 <p className="mt-2 text-[10px] tracking-[0.3em] text-white/40">ENTER THE 4-DIGIT CODE</p>
               </div>
             </PanelCard>
-
-            <PanelCard title="How to play" description="Rules, host controls, and the whole chaotic flow.">
-              <button
-                onClick={() => setGameState("help")}
-                className="text-sm font-semibold text-purple-300 hover:text-purple-200"
-              >
-                Read the rules →
-              </button>
-            </PanelCard>
           </div>
 
           {error && (
@@ -280,6 +299,9 @@ export default function LandingPage({
           </button>
           <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200">
             Best Of →
+          </button>
+          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200">
+            Support this project →
           </button>
         </div>
       </footer>

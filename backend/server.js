@@ -18,7 +18,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API: Get best of content
-app.get('/api/best-of', (req, res) => {
+app.get('/api/best-of', async (req, res) => {
   const db = getDb();
   const limit = parseInt(req.query.limit) || 20;
   const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
@@ -29,18 +29,17 @@ app.get('/api/best-of', (req, res) => {
 
   if (!type || type === 'questions') {
     const orderByQuestions = sort === 'newest' ? 'g.created_at DESC' : 'q.vote_count DESC';
-    const questions = db.exec(`
+    const questions = await db.exec(`
       SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
       FROM questions q
       JOIN games g ON q.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND q.vote_count > 0
+      WHERE g.hidden_from_best_of = 0 AND q.vote_count > 0 AND (q.hidden IS NULL OR q.hidden = 0)
       ORDER BY ${orderByQuestions}
       LIMIT ? OFFSET ?
     `, [limit, offset]);
     
     if (questions.length > 0) {
       questions[0].values.forEach(row => {
-        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous
         const isAnon = row[5] === 1 || row[5] === true;
         results.push({
           type: 'question',
@@ -56,18 +55,17 @@ app.get('/api/best-of', (req, res) => {
 
   if (!type || type === 'answers') {
     const orderByAnswers = sort === 'newest' ? 'g.created_at DESC' : 'a.vote_count DESC';
-    const answers = db.exec(`
+    const answers = await db.exec(`
       SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
       FROM answers a
       JOIN games g ON a.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND a.vote_count > 0
+      WHERE g.hidden_from_best_of = 0 AND a.vote_count > 0 AND (a.hidden IS NULL OR a.hidden = 0)
       ORDER BY ${orderByAnswers}
       LIMIT ? OFFSET ?
     `, [limit, offset]);
     
     if (answers.length > 0) {
       answers[0].values.forEach(row => {
-        // columns: 0 id, 1 text, 2 author_name, 3 vote_count, 4 created_at, 5 anonymous
         const isAnon = row[5] === 1 || row[5] === true;
         results.push({
           type: 'answer',
@@ -83,7 +81,7 @@ app.get('/api/best-of', (req, res) => {
 
   if (!type || type === 'qa_pairs') {
     const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
-    const pairs = db.exec(`
+    const pairs = await db.exec(`
       SELECT qp.id, q.text as question_text, a.text as answer_text, 
              q.author_name as question_author, a.author_name as answer_author,
              qp.vote_count, g.created_at, qp.anonymous
@@ -91,14 +89,13 @@ app.get('/api/best-of', (req, res) => {
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0 AND (qp.hidden IS NULL OR qp.hidden = 0)
       ORDER BY ${orderByPairs}
       LIMIT ? OFFSET ?
     `, [limit, offset]);
     
     if (pairs.length > 0) {
       pairs[0].values.forEach(row => {
-        // columns: 0 id, 1 q_text, 2 a_text, 3 q_author, 4 a_author, 5 vote, 6 created, 7 anonymous
         const isAnon = row[7] === 1 || row[7] === true;
         results.push({
           type: 'qa_pair',
@@ -124,7 +121,7 @@ app.get('/api/best-of', (req, res) => {
 });
 
 // API: Hide game from best of page
-app.post('/api/hide-game', (req, res) => {
+app.post('/api/hide-game', async (req, res) => {
   const { roomCode } = req.body;
   
   if (!roomCode) {
@@ -132,11 +129,75 @@ app.post('/api/hide-game', (req, res) => {
   }
 
   const db = getDb();
-  const result = db.exec("UPDATE games SET hidden_from_best_of = 1 WHERE room_code = ?", [roomCode]);
-  
-  saveDatabase();
+  await db.run("UPDATE games SET hidden_from_best_of = 1 WHERE room_code = ?", [roomCode]);
   
   res.json({ success: true });
+});
+
+// API: Delete/hide a best-of item (moderation)
+app.post('/api/delete-best-of', async (req, res) => {
+  const { type, id } = req.body;
+  
+  if (!type || !id) {
+    return res.status(400).json({ success: false, error: 'type and id required' });
+  }
+
+  const db = getDb();
+  let tableName = null;
+  if (type === 'question') tableName = 'questions';
+  else if (type === 'answer') tableName = 'answers';
+  else if (type === 'qa_pair') tableName = 'qa_pairs';
+  else {
+    return res.status(400).json({ success: false, error: 'Invalid type' });
+  }
+
+  try {
+    await db.run(`UPDATE ${tableName} SET hidden = 1 WHERE id = ?`, [id]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[delete-best-of] Error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// API: Get random best-of pairs for front page examples and Fluke It button
+app.get('/api/random-pairs', async (req, res) => {
+  const db = getDb();
+  const count = parseInt(req.query.count) || 6;
+  try {
+    const pairs = await db.exec(`
+      SELECT qp.id, q.text as question_text, a.text as answer_text,
+             q.author_name as question_author, a.author_name as answer_author,
+             qp.vote_count, qp.anonymous
+      FROM qa_pairs qp
+      JOIN questions q ON qp.question_id = q.id
+      JOIN answers a ON qp.answer_id = a.id
+      JOIN games g ON qp.game_id = g.id
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0 AND (qp.hidden IS NULL OR qp.hidden = 0)
+      ORDER BY RANDOM()
+      LIMIT ?
+    `, [count]);
+    
+    const results = [];
+    if (pairs.length > 0 && pairs[0].values.length > 0) {
+      pairs[0].values.forEach(row => {
+        const isAnon = row[6] === 1 || row[6] === true;
+        results.push({
+          type: 'qa_pair',
+          id: row[0],
+          question: row[1],
+          answer: row[2],
+          question_author: isAnon ? '???' : (row[3] || 'Unknown'),
+          answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
+          vote_count: row[5]
+        });
+      });
+    }
+    res.json(results);
+  } catch (e) {
+    console.error('[random-pairs] Error:', e.message);
+    res.json([]);
+  }
 });
 
 // Serve frontend static files
@@ -319,7 +380,7 @@ io.on('connection', (socket) => {
   // which checks if the 'active' socket is actually dead before rejecting the reconnect.
 
   // Create new game room
-  socket.on('create-room', (playerName, callback) => {
+  socket.on('create-room', async (playerName, callback) => {
     if (typeof playerName !== 'string' || !playerName.trim()) {
       callback({ success: false, error: 'Name cannot be empty' });
       return;
@@ -347,10 +408,10 @@ io.on('connection', (socket) => {
     
     // Save game to database
     const db = getDb();
-    db.run("INSERT INTO games (room_code, anonymous_mode, hidden_from_best_of) VALUES (?, ?, ?)", [roomCode, 0, 0]);
-    const gameId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    await db.run("INSERT INTO games (room_code, anonymous_mode, hidden_from_best_of) VALUES (?, ?, ?)", [roomCode, 0, 0]);
+    const gameIdResult = await db.exec("SELECT last_insert_rowid() as id");
+    const gameId = gameIdResult[0].values[0][0];
     game.dbGameId = gameId;
-    saveDatabase();
     
     callback({ success: true, roomCode });
     console.log(`Room ${roomCode} created by ${cleanName}`);
@@ -435,7 +496,7 @@ io.on('connection', (socket) => {
   });
 
   // Host toggles anonymous mode (show/hide names in end-of-game summary)
-  socket.on('toggle-anonymous', () => {
+  socket.on('toggle-anonymous', async () => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
 
@@ -445,8 +506,7 @@ io.on('connection', (socket) => {
 
     // Save to database
     const db = getDb();
-    db.run("UPDATE games SET anonymous_mode = ? WHERE id = ?", [game.anonymousMode ? 1 : 0, game.dbGameId]);
-    saveDatabase();
+    await db.run("UPDATE games SET anonymous_mode = ? WHERE id = ?", [game.anonymousMode ? 1 : 0, game.dbGameId]);
 
     // Broadcast to all players in the room
     io.to(roomCode).emit('anonymous-toggled', { anonymousMode: game.anonymousMode });
@@ -454,7 +514,7 @@ io.on('connection', (socket) => {
   });
 
   // Player submits question
-  socket.on('submit-question', (question) => {
+  socket.on('submit-question', async (question) => {
     let roomCode = socket.roomCode;
     // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
     if (!roomCode && socket.rooms) {
@@ -499,11 +559,11 @@ io.on('connection', (socket) => {
 
     // Save question to database
     const db = getDb();
-    db.run("INSERT INTO questions (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
+    await db.run("INSERT INTO questions (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
       [game.dbGameId, question, socket.id, player?.name || 'Unknown', 0, game.currentRoundAnonymousMode ? 1 : 0]);
-    const questionId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    const questionIdResult = await db.exec("SELECT last_insert_rowid() as id");
+    const questionId = questionIdResult[0].values[0][0];
     game.questions[socket.id].dbId = questionId;
-    saveDatabase();
 
     // Track first submitter
     if (!game.firstQuestionSubmitter) {
@@ -671,7 +731,7 @@ io.on('connection', (socket) => {
   }
 
   // Player submits answer
-  socket.on('submit-answer', (answer) => {
+  socket.on('submit-answer', async (answer) => {
     let roomCode = socket.roomCode;
     // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
     if (!roomCode && socket.rooms) {
@@ -732,11 +792,11 @@ io.on('connection', (socket) => {
 
     // Save answer to database
     const db = getDb();
-    db.run("INSERT INTO answers (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
+    await db.run("INSERT INTO answers (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
       [game.dbGameId, answer, socket.id, player.name || 'Unknown', 0, game.currentRoundAnonymousMode ? 1 : 0]);
-    const answerId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    const answerIdResult = await db.exec("SELECT last_insert_rowid() as id");
+    const answerId = answerIdResult[0].values[0][0];
     game.answers[socket.id].dbId = answerId;
-    saveDatabase();
 
     // Track first submitter
     if (!game.firstAnswerSubmitter) {
@@ -773,7 +833,7 @@ io.on('connection', (socket) => {
   });
 
   // Build end-of-game summary with Q&A pairs
-  function buildGameSummary(roomCode) {
+  async function buildGameSummary(roomCode) {
     const game = games[roomCode];
     if (!game) return [];
 
@@ -813,7 +873,7 @@ io.on('connection', (socket) => {
             if (pairedAId) {
               try {
                 // Reuse existing row for this (game, q, a) combo if present (e.g. from prior round or original)
-                let existing = db.exec(
+                let existing = await db.exec(
                   "SELECT id, vote_count FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1",
                   [game.dbGameId, questionData.dbId, pairedAId]
                 );
@@ -821,12 +881,12 @@ io.on('connection', (socket) => {
                   pairDbId = existing[0].values[0][0];
                   voteCount = existing[0].values[0][1] || 0;
                 } else {
-                  db.run(
+                  await db.run(
                     "INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count, anonymous) VALUES (?, ?, ?, ?, ?)",
                     [game.dbGameId, questionData.dbId, pairedAId, 0, isAnonymous ? 1 : 0]
                   );
-                  pairDbId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
-                  saveDatabase();
+                  const pairDbIdResult = await db.exec("SELECT last_insert_rowid() as id");
+                  pairDbId = pairDbIdResult[0].values[0][0];
                 }
               } catch (e) {
                 console.log('[buildGameSummary] ensure performed qa_pair failed:', e.message);
@@ -838,12 +898,12 @@ io.on('connection', (socket) => {
             if (pairData?.dbId) pairDbId = pairData.dbId;
             else if (game.dbGameId && turn.question && turn.actualAnswer) {
               try {
-                const qRes = db.exec("SELECT id FROM questions WHERE game_id = ? AND text = ? LIMIT 1", [game.dbGameId, turn.question]);
-                const aRes = db.exec("SELECT id FROM answers WHERE game_id = ? AND text = ? LIMIT 1", [game.dbGameId, turn.actualAnswer]);
+                const qRes = await db.exec("SELECT id FROM questions WHERE game_id = ? AND text = ? LIMIT 1", [game.dbGameId, turn.question]);
+                const aRes = await db.exec("SELECT id FROM answers WHERE game_id = ? AND text = ? LIMIT 1", [game.dbGameId, turn.actualAnswer]);
                 if (qRes.length > 0 && qRes[0].values.length > 0 && aRes.length > 0 && aRes[0].values.length > 0) {
                   const qid = qRes[0].values[0][0];
                   const aid = aRes[0].values[0][0];
-                  const pRes = db.exec("SELECT id, vote_count FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1", [game.dbGameId, qid, aid]);
+                  const pRes = await db.exec("SELECT id, vote_count FROM qa_pairs WHERE game_id = ? AND question_id = ? AND answer_id = ? LIMIT 1", [game.dbGameId, qid, aid]);
                   if (pRes.length > 0 && pRes[0].values.length > 0) {
                     pairDbId = pRes[0].values[0][0];
                     voteCount = pRes[0].values[0][1] || 0;
@@ -940,7 +1000,7 @@ io.on('connection', (socket) => {
   }
 
   // Prepare the performance/reading phase
-  function preparePerformancePhase(roomCode) {
+  async function preparePerformancePhase(roomCode) {
     const game = games[roomCode];
     
     // CRITICAL FIX: Only use active players for performance phase
@@ -974,13 +1034,12 @@ io.on('connection', (socket) => {
     const db = getDb();
     for (const pair of game.cardPairs) {
       if (pair.question.dbId && pair.answer.dbId) {
-        db.run("INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count, anonymous) VALUES (?, ?, ?, ?, ?)",
+        await db.run("INSERT INTO qa_pairs (game_id, question_id, answer_id, vote_count, anonymous) VALUES (?, ?, ?, ?, ?)",
           [game.dbGameId, pair.question.dbId, pair.answer.dbId, 0, game.currentRoundAnonymousMode ? 1 : 0]);
-        const pairId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
-        pair.dbId = pairId;
+        const pairIdResult = await db.exec("SELECT last_insert_rowid() as id");
+        pair.dbId = pairIdResult[0].values[0][0];
       }
     }
-    saveDatabase();
     
     // Shuffle the cards for final distribution — totally random, anyone can get any card
     game.shuffledCards = shuffleArray([...game.cardPairs]);
@@ -1046,16 +1105,16 @@ io.on('connection', (socket) => {
   }
 
   // Handle the reading chain - CORRECT LOOP: P1 reads Q → P2 reads A → P2 reads Q → P3 reads A...
-  function startNextReading(roomCode) {
+  async function startNextReading(roomCode) {
     const game = games[roomCode];
     // CRITICAL FIX: Use stable playerOrder set at start of performing phase, not current player list
     const playerIds = game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id);
     const totalTurns = playerIds.length * 2;
     
     if (game.currentReaderIndex >= totalTurns) {
-      const summary = buildGameSummary(roomCode);
+      const summary = await buildGameSummary(roomCode);
       const db = getDb();
-      const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+      const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
       const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
       io.to(roomCode).emit('game-ended', {
         message: 'Thanks for playing!',
@@ -1154,7 +1213,7 @@ io.on('connection', (socket) => {
   }
 
   // Player confirms they finished reading
-  socket.on('reading-complete', () => {
+  socket.on('reading-complete', async () => {
     let roomCode = socket.roomCode;
     // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
     if (!roomCode && socket.rooms) {
@@ -1240,7 +1299,7 @@ io.on('connection', (socket) => {
   });
 
   // Player submits a vote (non-blocking during performance phase)
-  socket.on('submit-vote', ({ type, targetId }) => {
+  socket.on('submit-vote', async ({ type, targetId }) => {
     let roomCode = socket.roomCode;
     // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
     if (!roomCode && socket.rooms) {
@@ -1280,18 +1339,17 @@ io.on('connection', (socket) => {
     }
 
     // Toggle behavior: if already voted on this exact item, unvote it
-    const existingVote = db.exec(
+    const existingVote = await db.exec(
       "SELECT id FROM votes WHERE game_id = ? AND player_id = ? AND vote_type = ? AND target_id = ?",
       [game.dbGameId, socket.id, type, targetId]
     );
     if (existingVote.length > 0 && existingVote[0].values.length > 0) {
       const voteId = existingVote[0].values[0][0];
-      db.run("DELETE FROM votes WHERE id = ?", [voteId]);
-      db.run(`UPDATE ${tableName} SET vote_count = CASE WHEN vote_count > 0 THEN vote_count - 1 ELSE 0 END WHERE id = ?`, [targetId]);
-      saveDatabase();
-      const result = db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
+      await db.run("DELETE FROM votes WHERE id = ?", [voteId]);
+      await db.run(`UPDATE ${tableName} SET vote_count = CASE WHEN vote_count > 0 THEN vote_count - 1 ELSE 0 END WHERE id = ?`, [targetId]);
+      const result = await db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
       const voteCount = result.length > 0 ? result[0].values[0][0] : 0;
-      const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+      const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
       const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
       socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: false });
       io.to(roomCode).emit('vote-update', { type, targetId, voteCount, votersCount });
@@ -1300,7 +1358,7 @@ io.on('connection', (socket) => {
 
     // Enforce single active vote per player for qa_pair across different targets
     if (type === 'qa_pair') {
-      const otherVote = db.exec(
+      const otherVote = await db.exec(
         "SELECT id FROM votes WHERE game_id = ? AND player_id = ? AND vote_type = ? LIMIT 1",
         [game.dbGameId, socket.id, type]
       );
@@ -1311,13 +1369,12 @@ io.on('connection', (socket) => {
     }
 
     // Insert new vote and increment count
-    db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)", [game.dbGameId, socket.id, type, targetId]);
-    db.run(`UPDATE ${tableName} SET vote_count = vote_count + 1 WHERE id = ?`, [targetId]);
-    saveDatabase();
+    await db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)", [game.dbGameId, socket.id, type, targetId]);
+    await db.run(`UPDATE ${tableName} SET vote_count = vote_count + 1 WHERE id = ?`, [targetId]);
 
-    const result = db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
+    const result = await db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
     const voteCount = result.length > 0 ? result[0].values[0][0] : 0;
-    const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+    const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
     const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
     socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: true });
     io.to(roomCode).emit('vote-update', { type, targetId, voteCount, votersCount });
@@ -1325,7 +1382,7 @@ io.on('connection', (socket) => {
   });
 
   // Host replays game with same players
-  socket.on('replay-game', (payload = {}) => {
+  socket.on('replay-game', async (payload = {}) => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
     
@@ -1388,8 +1445,7 @@ io.on('connection', (socket) => {
     // Best Of page still reflects all previously cast votes.
     try {
       const db = getDb();
-      db.run("DELETE FROM votes WHERE game_id = ?", [game.dbGameId]);
-      saveDatabase();
+      await db.run("DELETE FROM votes WHERE game_id = ?", [game.dbGameId]);
       console.log(`[REPLAY] Cleared previous votes for game ${game.dbGameId} in room ${roomCode}`);
     } catch (e) {
       console.error('[REPLAY] Failed to clear previous votes:', e.message);
@@ -1402,7 +1458,7 @@ io.on('connection', (socket) => {
   });
 
   // Host force-advances the game (skipping players who haven't submitted)
-  socket.on('force-progress', () => {
+  socket.on('force-progress', async () => {
     let roomCode = socket.roomCode;
     // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
     if (!roomCode && socket.rooms) {
@@ -1662,7 +1718,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle player reconnection within grace period
-  socket.on('reconnect-player', ({ roomCode, playerName }) => {
+  socket.on('reconnect-player', async ({ roomCode, playerName }) => {
     console.log(`[RECONNECT] Attempt: ${playerName} to room ${roomCode} (new socket: ${socket.id})`);
     
     const game = games[roomCode];
@@ -1876,10 +1932,10 @@ io.on('connection', (socket) => {
 
     // If reconnecting during ended phase, include the game summary and current vote state
     if (game.phase === 'ended') {
-      reconnectData.summary = buildGameSummary(roomCode);
+      reconnectData.summary = await buildGameSummary(roomCode);
       reconnectData.mostAdoredWriter = computeMostAdoredWriter(roomCode);
       const db = getDb();
-      const voterResult = db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
+      const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
       reconnectData.votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
     }
 

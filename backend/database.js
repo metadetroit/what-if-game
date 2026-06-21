@@ -1,31 +1,53 @@
-const initSqlJs = require('sql.js');
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require('@libsql/client');
 
-const dbPath = path.join(__dirname, 'what-if-game.db');
-let db = null;
+let client = null;
+let lastInsertRowid = 0;
+
+// Wrapper that mimics sql.js API ({ columns, values } shape) so server.js
+// doesn't need to change its result-parsing patterns.
+class DbWrapper {
+  async run(sql, params = []) {
+    const result = await client.execute({ sql, args: params });
+    if (result.lastInsertRowid !== undefined && result.lastInsertRowid !== null) {
+      lastInsertRowid = Number(result.lastInsertRowid);
+    }
+  }
+
+  async exec(sql, params = []) {
+    const result = await client.execute({ sql, args: params });
+    if (result.lastInsertRowid !== undefined && result.lastInsertRowid !== null) {
+      lastInsertRowid = Number(result.lastInsertRowid);
+    }
+    // Handle "SELECT last_insert_rowid() as id" without hitting the DB
+    if (sql.includes('last_insert_rowid()')) {
+      return [{ columns: ['id'], values: [[lastInsertRowid]] }];
+    }
+    // Convert Turso rows (array of objects) to sql.js shape [{ columns, values }]
+    const columns = result.columns || [];
+    const rows = result.rows || [];
+    const values = rows.map(row => columns.map(col => {
+      const v = row[col];
+      // Handle BigInt → Number for SQLite INTEGER columns
+      if (typeof v === 'bigint') return Number(v);
+      return v;
+    }));
+    return [{ columns, values }];
+  }
+}
 
 // Initialize database
 async function initDatabase() {
-  // Recover from partial write if main DB is missing
-  recoverDatabase();
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
 
-  const SQL = await initSqlJs();
-  
-  // Load existing database or create new one
-  let dbBuffer;
-  if (fs.existsSync(dbPath)) {
-    dbBuffer = fs.readFileSync(dbPath);
-    db = new SQL.Database(dbBuffer);
-  } else {
-    db = new SQL.Database();
+  if (!url) {
+    throw new Error('TURSO_DATABASE_URL env var is required');
   }
 
-  // Enable foreign keys
-  db.run("PRAGMA foreign_keys = ON");
+  client = createClient({ url, authToken });
 
   // Create tables
-  db.run(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS games (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       room_code TEXT UNIQUE,
@@ -35,7 +57,7 @@ async function initDatabase() {
     )
   `);
 
-  db.run(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS questions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
@@ -43,11 +65,12 @@ async function initDatabase() {
       author_id TEXT,
       author_name TEXT,
       vote_count INTEGER DEFAULT 0,
+      anonymous BOOLEAN DEFAULT 0,
       FOREIGN KEY (game_id) REFERENCES games(id)
     )
   `);
 
-  db.run(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS answers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
@@ -55,24 +78,26 @@ async function initDatabase() {
       author_id TEXT,
       author_name TEXT,
       vote_count INTEGER DEFAULT 0,
+      anonymous BOOLEAN DEFAULT 0,
       FOREIGN KEY (game_id) REFERENCES games(id)
     )
   `);
 
-  db.run(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS qa_pairs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
       question_id INTEGER,
       answer_id INTEGER,
       vote_count INTEGER DEFAULT 0,
+      anonymous BOOLEAN DEFAULT 0,
       FOREIGN KEY (game_id) REFERENCES games(id),
       FOREIGN KEY (question_id) REFERENCES questions(id),
       FOREIGN KEY (answer_id) REFERENCES answers(id)
     )
   `);
 
-  db.run(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS votes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
@@ -84,48 +109,28 @@ async function initDatabase() {
     )
   `);
 
-  // Add anonymous column to ensure per-round/per-item anonymity persists correctly
+  // Add hidden column to qa_pairs for moderation
   try {
-    db.run("ALTER TABLE questions ADD COLUMN anonymous BOOLEAN DEFAULT 0");
-  } catch (e) {
-    // Already exists or table not initialized
-  }
+    await client.execute("ALTER TABLE qa_pairs ADD COLUMN hidden BOOLEAN DEFAULT 0");
+  } catch (e) { /* already exists */ }
   try {
-    db.run("ALTER TABLE answers ADD COLUMN anonymous BOOLEAN DEFAULT 0");
-  } catch (e) {
-    // Already exists or table not initialized
-  }
+    await client.execute("ALTER TABLE questions ADD COLUMN hidden BOOLEAN DEFAULT 0");
+  } catch (e) { /* already exists */ }
   try {
-    db.run("ALTER TABLE qa_pairs ADD COLUMN anonymous BOOLEAN DEFAULT 0");
-  } catch (e) {
-    // Already exists or table not initialized
-  }
+    await client.execute("ALTER TABLE answers ADD COLUMN hidden BOOLEAN DEFAULT 0");
+  } catch (e) { /* already exists */ }
 
-  // Save database
-  saveDatabase();
-  
+  const db = new DbWrapper();
   return db;
 }
 
-// Save database to file atomically (temp file + rename)
-function saveDatabase() {
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  const tmpPath = dbPath + '.tmp';
-  fs.writeFileSync(tmpPath, buffer);
-  fs.renameSync(tmpPath, dbPath);
-}
-
-// Recover from temp file if main DB is missing (e.g. crash during write)
-function recoverDatabase() {
-  if (!fs.existsSync(dbPath) && fs.existsSync(dbPath + '.tmp')) {
-    fs.renameSync(dbPath + '.tmp', dbPath);
-  }
-}
+// No-op — Turso persists automatically
+function saveDatabase() {}
 
 // Get database instance
 function getDb() {
-  return db;
+  if (!client) throw new Error('Database not initialized. Call initDatabase() first.');
+  return new DbWrapper();
 }
 
 module.exports = { initDatabase, getDb, saveDatabase };
