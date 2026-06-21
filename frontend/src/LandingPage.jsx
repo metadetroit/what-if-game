@@ -97,8 +97,9 @@ export default function LandingPage({
             <span style={{ color: "#facc15" }}>!</span>
           </h1>
 
-          <p className="mx-auto mt-3 max-w-xl text-base font-bold italic leading-relaxed text-white/85 md:text-lg">
-            What if...the possibilities were endless?
+          <p className="mx-auto mt-3 max-w-xl text-base font-bold leading-relaxed text-white/85 md:text-lg">
+            <span>What if </span>
+            <span className="italic">...the possibilities were endless?</span>
           </p>
 
           <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3 w-full">
