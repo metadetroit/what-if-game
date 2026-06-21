@@ -1260,8 +1260,12 @@ function App() {
     return ''
   }
 
-  const renderWaitingPanel = (phase) => (
-    <div className="waiting-panel">
+  const renderWaitingPanel = (phase) => {
+    const visiblePlayers = playerStatuses.slice(0, 6)
+    const remainingPlayers = playerStatuses.length - visiblePlayers.length
+
+    return (
+    <div className="waiting-panel waiting-panel--compact">
       <div className="waiting-panel__top">
         <div>
           <p className="summary-pill">Waiting Room</p>
@@ -1272,8 +1276,8 @@ function App() {
       {getWaitingTip() && (<p className="waiting-panel__tip">{getWaitingTip()}</p>)}
       {playerStatuses.length > 0 && (
         <div className="waiting-panel__players">
-          {playerStatuses.map((p, i) => (
-            <div key={i} className={"waiting-player " + (p.submitted ? "waiting-player--done" : "")}>
+          {visiblePlayers.map((p, i) => (
+            <div key={i} className={"waiting-player waiting-player--compact " + (p.submitted ? "waiting-player--done" : "")}>
               <div className="flex items-center gap-2 min-w-0">
                 {firstSubmitter && p.name === firstSubmitter && (
                   <span className="text-lg" title="First to submit!"><span className="sr-only">First to submit</span>🏆</span>
@@ -1286,13 +1290,17 @@ function App() {
               <span className={p.submitted ? "text-green-400" : "text-gray-400"}>{p.submitted ? "✓ Done" : phase === 'writing' ? "writing..." : "answering..."}</span>
             </div>
           ))}
+          {remainingPlayers > 0 && (
+            <div className="waiting-panel__more">+{remainingPlayers} more player{remainingPlayers === 1 ? "" : "s"}</div>
+          )}
         </div>
       )}
       <div className="waiting-panel__bar">
         <div style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} />
       </div>
     </div>
-  )
+    )
+  }
 
   const renderContent = () => {
     switch (gameState) {
@@ -1474,7 +1482,7 @@ function App() {
 
       case "lobby":
         return (
-          <div className="game-container py-2">
+          <div className="game-container game-container--active py-2">
             {kickConfirm && (
               <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
@@ -1577,7 +1585,7 @@ function App() {
 
       case "writing":
         return (
-          <div className="game-container py-2">
+          <div className="game-container game-container--active py-2">
             {forceConfirm && (
               <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
@@ -1607,7 +1615,7 @@ function App() {
                   <p className="text-[10px] text-indigo-400 leading-tight">Must begin with "What if..."</p>
                 </div>
                 <label htmlFor="question-input" className="sr-only">Your question</label>
-                <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoCapitalize="sentences" aria-label="Your question" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={300} />
+                <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoCapitalize="sentences" aria-label="Your question" className="input-field h-24 resize-none mb-2 text-[15px] leading-snug md:h-28" maxLength={300} />
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500">{question.length}/300</span>
                   {question && !question.toLowerCase().startsWith("what if") && (<span className="text-xs text-red-500 font-semibold">Must start with "What if"</span>)}
@@ -1625,8 +1633,8 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center text-center gap-4 min-h-0 overflow-hidden">
-                <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto min-h-0 w-full">
+              <div className="flex-1 flex flex-col items-center text-center gap-3 min-h-0 overflow-hidden">
+                <div className="flex-1 flex flex-col items-center text-center gap-3 overflow-hidden min-h-0 w-full">
                   <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
                   <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
                   {renderWaitingPanel('writing')}
@@ -1648,7 +1656,7 @@ function App() {
 
       case "answering":
         return (
-          <div className="game-container py-2">
+          <div className="game-container game-container--active py-2">
             {forceConfirm && (
               <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
@@ -1671,7 +1679,7 @@ function App() {
                   <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
                 </div>
                 <label htmlFor="answer-input" className="sr-only">Your answer</label>
-                <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoCapitalize="sentences" aria-label="Your answer" className="input-field h-28 resize-none mb-2 text-base leading-snug" maxLength={400} />
+                <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoCapitalize="sentences" aria-label="Your answer" className="input-field h-24 resize-none mb-2 text-[15px] leading-snug md:h-28" maxLength={400} />
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs text-gray-500">{answer.length}/400 characters</span>
                 </div>
@@ -1689,7 +1697,7 @@ function App() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center text-center gap-4 min-h-0 overflow-hidden">
-                <div className="flex-1 flex flex-col items-center text-center gap-4 overflow-y-auto min-h-0 w-full">
+                <div className="flex-1 flex flex-col items-center text-center gap-3 overflow-hidden min-h-0 w-full">
                   <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
                   <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
                   {renderWaitingPanel('answering')}
@@ -1711,7 +1719,7 @@ function App() {
 
       case "performing":
         return (
-          <div className="game-container py-2">
+          <div className="game-container game-container--active py-2">
             {forceConfirm && (
               <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
@@ -1730,18 +1738,18 @@ function App() {
                   <span>Phase 3</span>
                   <strong>Performance Time</strong>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  <div className="mb-2">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <div className="mb-1">
                     {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
                     <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
-                      <span className="text-2xl font-black text-white tracking-wider">READ QUESTION</span>
-                      <p className="text-green-100 text-sm mt-1">Read aloud, then tap Done</p>
+                      <span className="text-xl md:text-2xl font-black text-white tracking-wider">READ QUESTION</span>
+                      <p className="text-green-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
                     <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                      <span className="text-lg font-bold text-gray-400">WAITING</span>
-                      <p className="text-gray-500 text-sm mt-1">{currentTurn.answerReader.name} is reading the answer</p>
+                      <span className="text-base md:text-lg font-bold text-gray-400">WAITING</span>
+                      <p className="text-gray-500 text-xs md:text-sm mt-1">{currentTurn.answerReader.name} is reading the answer</p>
                     </div>
                   )}
                   {currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
@@ -1753,45 +1761,45 @@ function App() {
                         </span>
                       </div>
                       <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                        <span className="text-2xl font-black text-white tracking-wider">GET READY</span>
-                        <p className="text-purple-100 text-sm mt-1">You're reading the answer next</p>
+                        <span className="text-xl md:text-2xl font-black text-white tracking-wider">GET READY</span>
+                        <p className="text-purple-100 text-xs md:text-sm mt-1">You're reading the answer next</p>
                       </div>
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
                     <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                      <span className="text-2xl font-black text-white tracking-wider">READ ANSWER</span>
-                      <p className="text-purple-100 text-sm mt-1">Read aloud, then tap Done</p>
+                      <span className="text-xl md:text-2xl font-black text-white tracking-wider">READ ANSWER</span>
+                      <p className="text-purple-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
                     </div>
                   )}
                   {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
                     <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
-                      <p className="text-gray-300 text-lg">
-                        <span className="text-green-400 font-bold text-xl">{currentTurn.questionReader.name}</span>
+                      <p className="text-gray-300 text-base md:text-lg">
+                        <span className="text-green-400 font-bold text-lg md:text-xl">{currentTurn.questionReader.name}</span>
                         <span className="text-gray-500 mx-3">→</span>
-                        <span className="text-purple-400 font-bold text-xl">{currentTurn.answerReader.name}</span>
+                        <span className="text-purple-400 font-bold text-lg md:text-xl">{currentTurn.answerReader.name}</span>
                       </p>
-                      <p className="text-gray-500 text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
+                      <p className="text-gray-500 text-sm md:text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
                     </div>
                   )}
                 </div>
                 {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                  <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-4 px-4">
-                    <p className="text-center text-base text-green-100 font-bold uppercase tracking-widest mb-2">📖 Read Aloud</p>
-                    <p className="text-center text-xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
+                  <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-3 px-4">
+                    <p className="text-center text-sm md:text-base text-green-100 font-bold uppercase tracking-widest mb-2">📖 Read Aloud</p>
+                    <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
                   </div>
                 )}
                 {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && currentTurn.answer && (
-                  <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-4 px-4">
-                    <p className="text-center text-base text-purple-100 font-bold uppercase tracking-widest mb-2">💬 Read Aloud</p>
-                    <p className="text-center text-xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
+                  <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-3 px-4">
+                    <p className="text-center text-sm md:text-base text-purple-100 font-bold uppercase tracking-widest mb-2">💬 Read Aloud</p>
+                    <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
                   </div>
                 )}
                 {!hasRead && currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                  <button onClick={completeReading} className="btn-primary mb-2 bg-green-600 hover:bg-green-700 text-lg py-3">Done Reading →</button>
+                  <button onClick={completeReading} className="btn-primary mb-2 bg-green-600 hover:bg-green-700 text-base py-3">Done Reading →</button>
                 )}
                 {!hasRead && !currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                  <button onClick={completeReading} className="btn-primary mb-2 bg-purple-600 hover:bg-purple-700 text-lg py-3">Done Reading →</button>
+                  <button onClick={completeReading} className="btn-primary mb-2 bg-purple-600 hover:bg-purple-700 text-base py-3">Done Reading →</button>
                 )}
                 </div>
                 <div className="shrink-0 pt-2 border-t border-gray-800">
@@ -1800,7 +1808,7 @@ function App() {
                       <div key={i} className={"w-2 h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
                     ))}
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                  <div className="flex items-center justify-between text-xs md:text-sm text-gray-500 mb-2">
                     <span>Turn {gameStats.round}/{gameStats.total}</span>
                     <div className="flex-1 mx-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                       <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: (gameStats.total > 0 ? (gameStats.round / gameStats.total) * 100 : 0) + "%" }} />
@@ -2169,7 +2177,7 @@ function App() {
 
       case "help":
         return (
-          <div className="game-container py-2">
+          <div className="game-container game-container--help py-2">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-white">Help & Info</h2>
               <button onClick={() => setGameState("welcome")} className="text-gray-400 hover:text-white text-sm">
@@ -2197,7 +2205,7 @@ function App() {
               ))}
             </div>
 
-            <div className="card flex-1 min-h-0 overflow-y-auto py-3 px-4">
+            <div className="card flex-1 min-h-0 overflow-y-auto py-3 px-3 md:px-4 space-y-3 text-[13px] md:text-sm leading-relaxed">
               {helpTab === "how-to-play" && (
                 <div className="space-y-4">
                   <div className="text-center mb-4">

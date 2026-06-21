@@ -27,6 +27,7 @@ export default function LandingPage({
   error,
 }) {
   const [idx, setIdx] = useState(0)
+  const [bannerSrc, setBannerSrc] = useState("/banner-hero.jpg")
   const current = DECK[idx]
   const fluke = () => setIdx((i) => (i + 1) % DECK.length)
 
@@ -45,17 +46,18 @@ export default function LandingPage({
         {soundMuted ? "🔇" : "🔊"}
       </button>
 
-      <section className="relative px-4 pt-10 pb-12 md:pt-14">
+      <section className="relative px-4 pt-8 pb-10 md:pt-12">
         <div className="mx-auto max-w-6xl">
-          <div className="relative mx-auto overflow-hidden rounded-3xl">
+          <div className="relative mx-auto overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40">
             <img
-              src="/hero-chaos.jpg"
-              alt="A laughing crowd of friends drenched in purple stage light"
+              src={bannerSrc}
+              onError={() => setBannerSrc("/hero-chaos.jpg")}
+              alt="A laughing crowd of friends celebrating under vivid purple lights"
               width={1920}
               height={1080}
-              className="h-[40vh] w-full object-cover md:h-[55vh]"
+              className="h-[34vh] w-full object-cover md:h-[46vh]"
             />
-            <div className="absolute inset-x-0 top-6 flex justify-center">
+            <div className="absolute inset-x-0 top-4 flex justify-center px-4 md:top-6">
               <span className="tag-pill rounded-full px-5 py-2 text-sm md:text-base font-bold tracking-[0.2em] text-white/95">
                 Tonight, the room gets weird, witty, wild, whimsical...
               </span>
@@ -63,7 +65,7 @@ export default function LandingPage({
             <FloatingEmojis />
           </div>
 
-          <h1 className="font-bubble glow-title relative -mt-10 text-center text-[22vw] leading-[0.85] md:-mt-16 md:text-[180px]">
+          <h1 className="font-bubble glow-title relative -mt-8 text-center text-[22vw] leading-[0.85] md:-mt-14 md:text-[180px]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
@@ -72,7 +74,7 @@ export default function LandingPage({
             <span style={{ color: "#facc15" }}>!</span>
           </h1>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
             <button
               onClick={() => {
                 const el = document.getElementById("play")
@@ -83,13 +85,13 @@ export default function LandingPage({
               ▶ PLAY RIGHT NOW
             </button>
           </div>
-          <p className="mt-4 text-center text-[11px] tracking-[0.3em] text-white/50">
+          <p className="mt-3 text-center text-[11px] tracking-[0.3em] text-white/50">
             NO SIGNUP · NO DOWNLOAD · NO IDEA WHAT HAPPENS NEXT
           </p>
         </div>
       </section>
 
-      <section className="relative px-4 py-12">
+      <section className="relative px-4 py-10 md:py-12">
         <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-2">
           <div className="space-y-4">
             <PromptCard text="What if all the genealogy was found out to be wrong?" rotate={-4} />
@@ -107,7 +109,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="live" className="relative px-4 py-16">
+      <section id="live" className="relative px-4 py-12 md:py-16">
         <div className="mx-auto max-w-4xl text-center">
           <p className="mb-3 text-[10px] tracking-[0.4em] text-purple-300">— LIVE CHAOS</p>
           <h2 className="font-bubble text-4xl md:text-6xl">
@@ -149,7 +151,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="play" className="relative px-4 py-16">
+      <section id="play" className="relative px-4 py-12 md:py-16">
         <div className="mx-auto max-w-6xl text-center">
           <p className="mb-3 text-[10px] tracking-[0.4em] text-purple-300">— PICK YOUR CHAOS</p>
           <h2 className="font-bubble text-4xl md:text-6xl">
