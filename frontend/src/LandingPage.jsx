@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 const DECK = [
   { prompt: "What if all the genealogy was found out to be wrong?", answer: "Then here there'd be dragons 🐉!" },
@@ -46,26 +46,9 @@ export default function LandingPage({
         {soundMuted ? "🔇" : "🔊"}
       </button>
 
-      <section className="relative px-4 pt-8 pb-10 md:pt-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="relative mx-auto overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40">
-            <img
-              src={bannerSrc}
-              onError={() => setBannerSrc("/hero-chaos.jpg")}
-              alt="A laughing crowd of friends celebrating under vivid purple lights"
-              width={1920}
-              height={1080}
-              className="h-[34vh] w-full object-cover md:h-[46vh]"
-            />
-            <div className="absolute inset-x-0 top-4 flex justify-center px-4 md:top-6">
-              <span className="tag-pill rounded-full px-5 py-2 text-sm md:text-base font-bold tracking-[0.2em] text-white/95">
-                Tonight, the room gets weird, witty, wild, whimsical...
-              </span>
-            </div>
-            <FloatingEmojis />
-          </div>
-
-          <h1 className="font-bubble glow-title relative -mt-8 text-center text-[22vw] leading-[0.85] md:-mt-14 md:text-[180px]">
+      <section className="relative px-4 pt-6 pb-6 md:pt-8">
+        <div className="mx-auto max-w-5xl text-center">
+          <h1 className="font-bubble glow-title mt-0 text-center text-[18vw] leading-[0.82] md:text-[150px] md:leading-[0.88]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
@@ -74,7 +57,11 @@ export default function LandingPage({
             <span style={{ color: "#facc15" }}>!</span>
           </h1>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
+          <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-white/75 md:text-base">
+            What if there was a creative party game that got, weird, wild, and witty?
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 md:gap-4">
             <button
               onClick={() => {
                 const el = document.getElementById("play")
@@ -84,10 +71,31 @@ export default function LandingPage({
             >
               ▶ PLAY RIGHT NOW
             </button>
+            <button
+              onClick={() => setGameState("best-of")}
+              className="btn-secondary rounded-full px-7 py-3 text-sm font-bold tracking-wide inline-block"
+            >
+              View Best Of
+            </button>
           </div>
           <p className="mt-3 text-center text-[11px] tracking-[0.3em] text-white/50">
             NO SIGNUP · NO DOWNLOAD · NO IDEA WHAT HAPPENS NEXT
           </p>
+        </div>
+      </section>
+
+      <section className="relative px-4 pb-6 md:pb-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="relative mx-auto overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40">
+            <img
+              src={bannerSrc}
+              onError={() => setBannerSrc("/hero-chaos.jpg")}
+              alt="A laughing crowd of friends celebrating under vivid purple lights"
+              width={1920}
+              height={1080}
+              className="h-[24vh] w-full object-cover md:h-[36vh]"
+            />
+          </div>
         </div>
       </section>
 
@@ -251,9 +259,14 @@ export default function LandingPage({
       <footer className="border-t border-white/5 px-4 py-10 text-center text-sm text-white/50">
         <p className="font-bubble text-lg text-white">fluke</p>
         <p className="mt-1">— chaos that connects.</p>
-        <button onClick={() => setGameState("help")} className="mt-3 inline-block text-purple-300 hover:text-purple-200">
-          How to play →
-        </button>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200">
+            How to play →
+          </button>
+          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200">
+            Best Of →
+          </button>
+        </div>
       </footer>
     </div>
   )
@@ -284,36 +297,5 @@ function PanelCard({ title, description, children }) {
       <p className="mx-auto mt-2 max-w-xs text-sm text-white/60">{description}</p>
       <div className="mt-6 flex flex-col items-center">{children}</div>
     </div>
-  )
-}
-
-function FloatingEmojis() {
-  const emojis = useMemo(
-    () => [
-      { e: "😂", top: "32%", left: "8%" },
-      { e: "❤️", top: "40%", right: "10%" },
-      { e: "❓", bottom: "18%", left: "6%" },
-      { e: "✨", bottom: "12%", right: "8%" },
-    ],
-    []
-  )
-  return (
-    <>
-      {emojis.map((p, i) => (
-        <span
-          key={i}
-          className="pointer-events-none absolute text-3xl md:text-4xl"
-          style={{
-            top: p.top,
-            left: p.left,
-            right: p.right,
-            bottom: p.bottom,
-            filter: "drop-shadow(0 0 12px rgba(250,204,21,0.6))",
-          }}
-        >
-          {p.e}
-        </span>
-      ))}
-    </>
   )
 }
