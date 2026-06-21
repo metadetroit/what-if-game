@@ -889,6 +889,10 @@ function App() {
         }
         if (data.alreadySubmittedQuestion || data.alreadyAnswered) {
           setSubmitted(true)
+          // Restore the text of what they already submitted so they can see it
+          if (data.alreadySubmittedQuestion && data.submittedQuestion?.text) {
+            setQuestion(data.submittedQuestion.text)
+          }
         } else {
           setSubmitted(false)
           // Try to restore in-flight drafts for the current phase

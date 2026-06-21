@@ -1767,8 +1767,32 @@ io.on('connection', (socket) => {
     
     // Build comprehensive reconnection state for frontend
     let assignedQuestion = null;
-    if (game.phase === 'answering' && game.questionAssignments && game.questionAssignments[socket.id]) {
-      assignedQuestion = game.questionAssignments[socket.id];
+    if (game.phase === 'answering' && game.questionAssignments) {
+      if (game.questionAssignments[socket.id]) {
+        // Normal case: player had an assignment, already migrated above
+        assignedQuestion = game.questionAssignments[socket.id];
+      } else {
+        // Bug fix: player was absent when distributeQuestions ran, so they have no assignment.
+        // Find any question that is not assigned to anyone and not authored by this player.
+        const assignedValues = Object.values(game.questionAssignments);
+        const assignedTexts = new Set(assignedValues.map(q => q.text));
+        const fallback = Object.values(game.questions).find(q =>
+          q.authorId !== socket.id && !assignedTexts.has(q.text)
+        );
+        if (fallback) {
+          game.questionAssignments[socket.id] = fallback;
+          assignedQuestion = fallback;
+          console.log(`[RECONNECT] Assigned fallback question to ${playerName}: "${fallback.text.slice(0, 40)}"`);
+        } else {
+          // Last resort: assign any question not authored by this player
+          const anyQ = Object.values(game.questions).find(q => q.authorId !== socket.id);
+          if (anyQ) {
+            game.questionAssignments[socket.id] = anyQ;
+            assignedQuestion = anyQ;
+            console.log(`[RECONNECT] Assigned last-resort question to ${playerName}`);
+          }
+        }
+      }
     }
     
     // Check if player already submitted in current phase
@@ -1802,6 +1826,7 @@ io.on('connection', (socket) => {
       assignedQuestion: assignedQuestion,
       alreadyAnswered: alreadyAnswered,
       alreadySubmittedQuestion: alreadySubmittedQuestion,
+      submittedQuestion: alreadySubmittedQuestion ? game.questions[socket.id] : null,
       progress: progress,
       anonymousMode: !!game.anonymousMode
     };
@@ -1924,6 +1949,16 @@ io.on('connection', (socket) => {
         total: progress.total,
         playerStatuses: playerStatuses
       });
+    }
+
+    // Bug fix: if player reconnects during writing and had already submitted,
+    // check if everyone else has now submitted too and trigger distributeQuestions.
+    if (game.phase === 'writing' && game.questions[socket.id]) {
+      const nowActive = game.players.filter(p => p.isActive);
+      if (nowActive.length >= 3 && nowActive.every(p => game.questions[p.id])) {
+        console.log(`[RECONNECT] ${playerName} rejoined during writing with question already submitted — all active players ready, distributing now`);
+        distributeQuestions(roomCode);
+      }
     }
 
     console.log(`[RECONNECT] ${playerName} reconnected to room ${roomCode} successfully`);
