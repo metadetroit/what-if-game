@@ -320,11 +320,16 @@ io.on('connection', (socket) => {
 
   // Create new game room
   socket.on('create-room', (playerName, callback) => {
+    if (typeof playerName !== 'string' || !playerName.trim()) {
+      callback({ success: false, error: 'Name cannot be empty' });
+      return;
+    }
+    const cleanName = playerName.trim().substring(0, 20);
     const roomCode = generateRoomCode();
     
     const game = {
       host: socket.id,
-      players: [{ id: socket.id, name: playerName, isHost: true, isActive: true }],
+      players: [{ id: socket.id, name: cleanName, isHost: true, isActive: true }],
       phase: 'lobby',
       questions: {},
       answers: {},
@@ -348,7 +353,7 @@ io.on('connection', (socket) => {
     saveDatabase();
     
     callback({ success: true, roomCode });
-    console.log(`Room ${roomCode} created by ${playerName}`);
+    console.log(`Room ${roomCode} created by ${cleanName}`);
     
     // CRITICAL FIX: Emit player-joined to update host's player list
     const activePlayers = game.players.filter(p => p.isActive);
@@ -357,6 +362,11 @@ io.on('connection', (socket) => {
 
   // Join existing room
   socket.on('join-room', (roomCode, playerName, callback) => {
+    if (typeof playerName !== 'string' || !playerName.trim()) {
+      callback({ success: false, error: 'Name cannot be empty' });
+      return;
+    }
+    const cleanName = playerName.trim().substring(0, 20);
     const game = games[roomCode];
     
     if (!game) {
@@ -373,18 +383,24 @@ io.on('connection', (socket) => {
       callback({ success: false, error: 'Game already in progress' });
       return;
     }
+
+    // Prevent duplicate names which break reconnection logic
+    if (game.players.some(p => p.name.toLowerCase() === cleanName.toLowerCase())) {
+      callback({ success: false, error: 'Name already taken in this room' });
+      return;
+    }
     
-    console.log(`JOIN-ROOM: Adding ${playerName} with socket ${socket.id} to room ${roomCode}`);
+    console.log(`JOIN-ROOM: Adding ${cleanName} with socket ${socket.id} to room ${roomCode}`);
     console.log(`JOIN-ROOM: Players before:`, game.players.map(p => ({ name: p.name, id: p.id, isActive: p.isActive })));
     
-    game.players.push({ id: socket.id, name: playerName, isHost: false, isActive: true });
+    game.players.push({ id: socket.id, name: cleanName, isHost: false, isActive: true });
     socket.join(roomCode);
     socket.roomCode = roomCode;
     
     console.log(`JOIN-ROOM: Players after:`, game.players.map(p => ({ name: p.name, id: p.id, isActive: p.isActive })));
     
     callback({ success: true });
-    console.log(`${playerName} joined room ${roomCode}`);
+    console.log(`${cleanName} joined room ${roomCode}`);
     io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
   });
 
@@ -394,6 +410,11 @@ io.on('connection', (socket) => {
     const game = games[roomCode];
     
     if (!game || game.host !== socket.id) return;
+    
+    if (game.phase !== 'lobby') {
+      console.log(`[start-game] Rejected: Game already started (phase: ${game.phase})`);
+      return;
+    }
     
     // CRITICAL FIX: Use active players count for minimum check
     const activePlayers = game.players.filter(p => p.isActive);
@@ -446,6 +467,17 @@ io.on('connection', (socket) => {
       }
     }
     console.log('submit-question received:', { socketId: socket.id, roomCode, question });
+    
+    // Input validation
+    if (typeof question !== 'string' || !question.trim()) {
+      socket.emit('error', 'Question cannot be empty');
+      return;
+    }
+    if (question.length > 500) {
+      socket.emit('error', 'Question is too long (max 500 characters)');
+      return;
+    }
+    
     const game = games[roomCode];
 
     if (!game) {
@@ -650,6 +682,17 @@ io.on('connection', (socket) => {
         console.log('submit-answer: using fallback roomCode from socket.rooms:', roomCode);
       }
     }
+    
+    // Input validation
+    if (typeof answer !== 'string' || !answer.trim()) {
+      socket.emit('error', 'Answer cannot be empty');
+      return;
+    }
+    if (answer.length > 500) {
+      socket.emit('error', 'Answer is too long (max 500 characters)');
+      return;
+    }
+    
     const game = games[roomCode];
 
     if (!game || game.phase !== 'answering') {
@@ -2099,12 +2142,6 @@ io.on('connection', (socket) => {
           console.log(`Active reader ${player.name} disconnected - advancing turn`);
           stillThere.currentReaderIndex++;
           setTimeout(() => startNextReading(roomCode), 300);
-        }
-
-        // Disband if too few active players
-        const activeCount = stillThere.players.filter(p => p.isActive).length;
-        if (activeCount < 2) {
-          disbandIfBelowMinimum(roomCode);
         }
       }
     }, 1000);
