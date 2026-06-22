@@ -213,7 +213,7 @@ export default function LandingPage({
             <span className="text-gradient-chaos">you are.</span>
           </h2>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto items-stretch" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
+          <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto items-stretch">
             <PanelCard title="Start a game (3–15 players)">
               <div className="w-full flex flex-col gap-3 flex-1">
                 <input
@@ -352,7 +352,7 @@ function AnswerCard({ text, rotate = 0 }) {
 
 function PanelCard({ title, children }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/50 p-8 text-center h-full flex flex-col" style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}>
+    <div className="rounded-3xl border border-white/10 bg-black/50 p-8 text-center h-full flex flex-col">
       <h3 className="font-bubble text-2xl text-white">{title}</h3>
       <div className="mt-6 flex flex-col items-center flex-1">{children}</div>
     </div>
