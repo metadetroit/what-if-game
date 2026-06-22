@@ -54,17 +54,16 @@ export default function LandingPage({
   const exampleCards = [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3)
 
   const scrollToPlay = () => {
-    const container = scrollRef.current
     const section = document.getElementById("play")
-    if (!container || !section) return
-    const target = Math.max(section.offsetTop - 12, 0)
+    if (!section) return
     const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-    container.scrollTo({ top: target, behavior: isIOS ? "auto" : "smooth" })
+    section.scrollIntoView({ behavior: isIOS ? "auto" : "smooth", block: "start" })
   }
 
   return (
-    <div ref={scrollRef} className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+    <div ref={scrollRef} className="fixed inset-0 bg-fluke overflow-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
+      <div className="overflow-y-auto overflow-x-hidden h-full">
+        <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <button
           onClick={() => setGameState("support")}
           className="bg-black/30 border border-white/20 rounded-full px-3 h-10 flex items-center gap-1.5 text-sm font-bold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
@@ -327,6 +326,7 @@ export default function LandingPage({
           </span>
         </div>
       </footer>
+      </div>
     </div>
   )
 }
