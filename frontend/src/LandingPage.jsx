@@ -185,7 +185,7 @@ export default function LandingPage({
             <p className="mt-6 text-xs tracking-[0.3em] text-white/40">ready</p>
             <button
               onClick={fluke}
-              className="btn-chaos font-bubble mt-3 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center"
+              className="btn-primary font-bubble mt-3 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center"
             >
               ✦ Fluke It! ✦
             </button>
