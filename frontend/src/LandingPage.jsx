@@ -225,13 +225,6 @@ export default function LandingPage({
                   className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
                   maxLength={20}
                 />
-                <button
-                  onClick={createRoom}
-                  disabled={!socket}
-                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold inline-block"
-                >
-                  {socket ? "▶ START NOW" : "..."}
-                </button>
                 <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-300">
                   <span>Pre-fill "What if..."</span>
                   <button
@@ -247,6 +240,13 @@ export default function LandingPage({
                     <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
                   </button>
                 </div>
+                <button
+                  onClick={createRoom}
+                  disabled={!socket}
+                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold inline-block"
+                >
+                  {socket ? "▶ START NOW" : "..."}
+                </button>
               </div>
             </PanelCard>
 
