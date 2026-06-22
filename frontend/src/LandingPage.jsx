@@ -213,9 +213,9 @@ export default function LandingPage({
             <span className="text-gradient-chaos">you are.</span>
           </h2>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto">
-            <PanelCard title="Start a game" description="Generate the code, and start the game for 3-15 players.">
-              <div className="w-full space-y-3">
+          <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto items-stretch">
+            <PanelCard title="Start a game (3–15 players)">
+              <div className="w-full flex flex-col gap-3 flex-1">
                 <input
                   type="text"
                   value={playerName}
@@ -225,7 +225,9 @@ export default function LandingPage({
                   className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
                   maxLength={20}
                 />
-                <div className="flex flex-wrap items-center justify-start gap-2 text-sm text-gray-300">
+                {/* Spacer matching room-code field height so rows align on desktop */}
+                <div className="hidden md:block" style={{ height: '54px' }} />
+                <div className="flex items-center justify-start gap-2 text-sm text-gray-300">
                   <span>Pre-fill "What if..."</span>
                   <button
                     onClick={() => {
@@ -243,7 +245,7 @@ export default function LandingPage({
                 <button
                   onClick={createRoom}
                   disabled={!socket}
-                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold inline-block"
+                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold"
                 >
                   {socket ? "▶ START NOW" : "..."}
                 </button>
@@ -251,7 +253,7 @@ export default function LandingPage({
             </PanelCard>
 
             <PanelCard title="Join a game">
-              <div className="w-full space-y-3">
+              <div className="w-full flex flex-col gap-3 flex-1">
                 <input
                   type="text"
                   value={playerName}
@@ -291,7 +293,7 @@ export default function LandingPage({
                 <button
                   onClick={joinRoom}
                   disabled={!socket}
-                  className="btn-primary w-full mt-2 inline-block rounded-full px-5 py-3 text-sm font-bold"
+                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold"
                 >
                   {socket ? "▶ JOIN NOW" : "..."}
                 </button>
@@ -347,12 +349,11 @@ function AnswerCard({ text, rotate = 0 }) {
   )
 }
 
-function PanelCard({ title, description, children }) {
+function PanelCard({ title, children }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/30 p-8 text-center backdrop-blur">
+    <div className="rounded-3xl border border-white/10 bg-black/30 p-8 text-center backdrop-blur h-full flex flex-col">
       <h3 className="font-bubble text-2xl text-white">{title}</h3>
-      {description && <p className="mx-auto mt-2 max-w-xs text-sm text-white/60">{description}</p>}
-      <div className="mt-6 flex flex-col items-center">{children}</div>
+      <div className="mt-6 flex flex-col items-center flex-1">{children}</div>
     </div>
   )
 }
