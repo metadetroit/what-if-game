@@ -63,7 +63,7 @@ export default function LandingPage({
   }
 
   return (
-    <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
+    <div ref={scrollRef} className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
       <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <button
           onClick={() => setGameState("support")}
