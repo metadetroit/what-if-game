@@ -25,16 +25,15 @@
     font-size: 16px;
     position: relative;
     width: 100%;
-    min-height: 100dvh;
-    min-height: 100svh;
+    height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: none;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     background:
-      radial-gradient(ellipse at top, rgba(168, 85, 247, 0.20), transparent 55%),
-      radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.14), transparent 50%),
+      radial-gradient(ellipse at top, rgba(168, 85, 247, 0.25), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(244, 63, 94, 0.18), transparent 55%),
       #0c0617;
   }
 
