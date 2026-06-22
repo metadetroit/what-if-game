@@ -8,13 +8,16 @@
   }
 
   html {
+    width: 100%;
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
   }
 
   #root {
+    width: 100%;
     height: 100%;
+    overflow: hidden;
     position: relative;
   }
   
@@ -26,8 +29,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     overscroll-behavior: none;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);

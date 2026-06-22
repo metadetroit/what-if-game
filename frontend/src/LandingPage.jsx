@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
@@ -51,17 +51,19 @@ export default function LandingPage({
   const current = combinedDeck[idx % combinedDeck.length]
   const fluke = () => setIdx(i => (i + 1) % combinedDeck.length)
 
-  const exampleCards = [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3)
+  const exampleCards = useMemo(() => [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3), [combinedDeck.length])
 
   const scrollToPlay = () => {
+    const container = scrollRef.current
     const section = document.getElementById("play")
-    if (!section) return
+    if (!container || !section) return
+    const target = Math.max(section.offsetTop - 12, 0)
     const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-    section.scrollIntoView({ behavior: isIOS ? "auto" : "smooth", block: "start" })
+    container.scrollTo({ top: target, behavior: isIOS ? "auto" : "smooth" })
   }
 
   return (
-    <div ref={scrollRef} className="relative overflow-x-hidden">
+    <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
       <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <button
           onClick={() => setGameState("support")}
@@ -86,7 +88,7 @@ export default function LandingPage({
         </button>
       </div>
 
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center" style={{ height: '100svh', minHeight: '100svh' }}>
         <img
           src={bannerSrc}
           onError={() => setBannerSrc("/hero-chaos.jpg")}
