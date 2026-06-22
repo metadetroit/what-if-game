@@ -1445,7 +1445,7 @@ function App() {
 
       case "welcome":
         return (
-          <div className="relative">
+          <div className="relative h-full">
             {reconnectPrompt && (
               <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                 <div className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl">
