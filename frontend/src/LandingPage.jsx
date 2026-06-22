@@ -108,7 +108,7 @@ export default function LandingPage({
                 const el = document.getElementById("play")
                 if (el) el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
               }}
-              className="btn-chaos flex-[1.4] rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-6 md:py-3 md:text-sm"
+              className="btn-primary flex-[1.4] rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-6 md:py-3 md:text-sm"
             >
               ▶ PLAY
             </button>
@@ -224,7 +224,7 @@ export default function LandingPage({
                 <button
                   onClick={createRoom}
                   disabled={!socket}
-                  className="btn-chaos w-full rounded-full px-5 py-3 text-sm font-bold inline-block"
+                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold inline-block"
                 >
                   {socket ? "▶ START NOW" : "..."}
                 </button>
@@ -272,7 +272,7 @@ export default function LandingPage({
                 <button
                   onClick={joinRoom}
                   disabled={!socket}
-                  className="btn-chaos w-full mt-2 inline-block rounded-full px-5 py-3 text-sm font-bold"
+                  className="btn-primary w-full mt-2 inline-block rounded-full px-5 py-3 text-sm font-bold"
                 >
                   {socket ? "JOIN THE ROOM →" : "..."}
                 </button>

@@ -494,6 +494,38 @@
     background-clip: text;
     color: transparent;
   }
+  /* Solid primary button with gradient edge/glow for high readability */
+  .btn-primary {
+    @apply w-full font-bold py-4 px-6 rounded-2xl shadow-lg shadow-black/20 transform transition-all duration-200 active:scale-95;
+    color: #fdfcff;
+    background: #2a0f45; /* dark-violet solid */
+    position: relative;
+    isolation: isolate; /* ensure pseudo-element glow stays under text */
+  }
+  .btn-primary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1.5px; /* gradient edge thickness */
+    border-radius: inherit;
+    background: linear-gradient(90deg, #a855f7 0%, #ec4899 50%, #f5a524 100%);
+    /* Punch out the center so the solid background shows; leaves a gradient border */
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    z-index: -1;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.20), 0 0 50px rgba(236, 72, 153, 0.18);
+  }
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
+  }
   .btn-chaos {
     background: linear-gradient(90deg, #a855f7 0%, #ec4899 50%, #fbbf24 100%);
     color: #1a0b2e;
