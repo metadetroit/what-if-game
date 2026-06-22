@@ -106,7 +106,11 @@ export default function LandingPage({
             <button
               onClick={() => {
                 const el = document.getElementById("play")
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+                if (el) {
+                  // On iOS, smooth scroll can cause jostling; use instant scroll
+                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+                  el.scrollIntoView({ behavior: isIOS ? "auto" : "smooth", block: "center", inline: "nearest" })
+                }
               }}
               className="btn-primary flex-[1.4] rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-6 md:py-3 md:text-sm"
             >
@@ -133,7 +137,10 @@ export default function LandingPage({
         <button
           onClick={() => {
             const el = document.getElementById("play")
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+            if (el) {
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+              el.scrollIntoView({ behavior: isIOS ? "auto" : "smooth", block: "center", inline: "nearest" })
+            }
           }}
           className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 hover:text-white/80 text-[10px] tracking-[0.3em] animate-pulse transition-colors"
           aria-label="Scroll to play"
@@ -202,7 +209,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="play" className="relative overflow-hidden px-4 pt-4 pb-12 md:pt-6 md:pb-16">
+      <section id="play" className="relative overflow-hidden px-4 pt-2 pb-12 md:pt-4 md:pb-16">
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-white">Ready when </span>
