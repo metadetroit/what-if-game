@@ -53,7 +53,7 @@ export default function LandingPage({
   const exampleCards = [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3)
 
   return (
-    <div className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0">
+    <div className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
       <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <button
           onClick={() => setGameState("support")}
@@ -102,7 +102,7 @@ export default function LandingPage({
             <span className="italic">...the possibilities were endless?</span>
           </p>
 
-          <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3 w-full">
+          <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3 max-w-full">
             <button
               onClick={() => {
                 const el = document.getElementById("play")
@@ -144,13 +144,13 @@ export default function LandingPage({
 
       <section className="relative overflow-hidden px-4 py-10 md:py-12">
         <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-2">
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-hidden">
             <PromptCard text={exampleCards?.[0]?.prompt || DECK[0].prompt} rotate={-4} />
             <AnswerCard text={exampleCards?.[0]?.answer || DECK[0].answer} rotate={3} />
             <PromptCard text={exampleCards?.[2]?.prompt || DECK[2].prompt} rotate={2} />
             <AnswerCard text={exampleCards?.[2]?.answer || DECK[2].answer} rotate={-3} />
           </div>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-hidden">
             <PromptCard text={exampleCards?.[1]?.prompt || DECK[1].prompt} rotate={3} />
             <div className="py-1 text-center text-[10px] tracking-[0.4em] text-white/40">
               ─── COLLIDES WITH ───

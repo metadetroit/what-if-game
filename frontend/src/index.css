@@ -482,6 +482,9 @@
       radial-gradient(ellipse at top, rgba(168, 85, 247, 0.25), transparent 60%),
       radial-gradient(ellipse at bottom right, rgba(244, 63, 94, 0.18), transparent 55%),
       #0c0617;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-x: none;
   }
   .text-gradient-chaos {
     background: linear-gradient(90deg, #f5ecff 0%, #f9a8d4 35%, #fbbf24 70%, #f5ecff 100%);
