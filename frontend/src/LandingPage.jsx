@@ -32,6 +32,7 @@ export default function LandingPage({
   const [bannerSrc, setBannerSrc] = useState("/hero-chaos.jpg")
   const [dbPairs, setDbPairs] = useState([])
   const fetchedRef = useRef(false)
+  const scrollRef = useRef(null)
 
   useEffect(() => {
     if (fetchedRef.current) return
@@ -52,8 +53,17 @@ export default function LandingPage({
 
   const exampleCards = [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3)
 
+  const scrollToPlay = () => {
+    const container = scrollRef.current
+    const section = document.getElementById("play")
+    if (!container || !section) return
+    const target = Math.max(section.offsetTop - 12, 0)
+    const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+    container.scrollTo({ top: target, behavior: isIOS ? "auto" : "smooth" })
+  }
+
   return (
-    <div className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
+    <div ref={scrollRef} className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
       <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <button
           onClick={() => setGameState("support")}
@@ -104,14 +114,7 @@ export default function LandingPage({
 
           <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3 max-w-full">
             <button
-              onClick={() => {
-                const el = document.getElementById("play")
-                if (el) {
-                  // On iOS, smooth scroll can cause jostling; use instant scroll
-                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-                  el.scrollIntoView({ behavior: isIOS ? "auto" : "smooth", block: "center", inline: "nearest" })
-                }
-              }}
+              onClick={scrollToPlay}
               className="btn-primary flex-[1.4] rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-6 md:py-3 md:text-sm"
             >
               ▶ PLAY
@@ -135,13 +138,7 @@ export default function LandingPage({
         </div>
 
         <button
-          onClick={() => {
-            const el = document.getElementById("play")
-            if (el) {
-              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-              el.scrollIntoView({ behavior: isIOS ? "auto" : "smooth", block: "center", inline: "nearest" })
-            }
-          }}
+          onClick={scrollToPlay}
           className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 hover:text-white/80 text-[10px] tracking-[0.3em] animate-pulse transition-colors"
           aria-label="Scroll to play"
         >
@@ -235,10 +232,25 @@ export default function LandingPage({
                 >
                   {socket ? "▶ START NOW" : "..."}
                 </button>
+                <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-300">
+                  <span>Pre-fill "What if..."</span>
+                  <button
+                    onClick={() => {
+                      const next = !prefillWhatIf
+                      setPrefillWhatIf(next)
+                      setPrefillWhatIfStorage(next)
+                    }}
+                    aria-pressed={prefillWhatIf}
+                    aria-label="Toggle pre-fill What if"
+                    className={"relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
+                  >
+                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
+                  </button>
+                </div>
               </div>
             </PanelCard>
 
-            <PanelCard title="Join a game" description="Got a code? Punch it in — no hunting required.">
+            <PanelCard title="Join a game">
               <div className="w-full space-y-3">
                 <input
                   type="text"
@@ -256,9 +268,9 @@ export default function LandingPage({
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
-                  placeholder="Room code"
+                  placeholder="4-digit code"
                   aria-label="Room code"
-                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white tracking-[0.2em] text-center"
+                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
                   maxLength={4}
                 />
                 <div className="flex items-center justify-center gap-2">
@@ -283,7 +295,6 @@ export default function LandingPage({
                 >
                   {socket ? "JOIN THE ROOM →" : "..."}
                 </button>
-                <p className="mt-2 text-[10px] tracking-[0.3em] text-white/40">ENTER THE 4-DIGIT CODE</p>
               </div>
             </PanelCard>
           </div>
@@ -340,7 +351,7 @@ function PanelCard({ title, description, children }) {
   return (
     <div className="rounded-3xl border border-white/10 bg-black/30 p-8 text-center backdrop-blur">
       <h3 className="font-bubble text-2xl text-white">{title}</h3>
-      <p className="mx-auto mt-2 max-w-xs text-sm text-white/60">{description}</p>
+      {description && <p className="mx-auto mt-2 max-w-xs text-sm text-white/60">{description}</p>}
       <div className="mt-6 flex flex-col items-center">{children}</div>
     </div>
   )
