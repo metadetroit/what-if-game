@@ -78,7 +78,7 @@ export default function LandingPage({
         </button>
       </div>
 
-      <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 py-10 text-center">
+      <section className="relative flex h-screen flex-col items-center justify-center overflow-hidden px-4 py-10 text-center">
         <img
           src={bannerSrc}
           onError={() => setBannerSrc("/hero-chaos.jpg")}

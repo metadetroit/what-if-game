@@ -22,7 +22,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 16px;
+    height: 100vh;
     height: 100dvh;
+    height: calc(var(--vh, 1vh) * 100);
     overflow: hidden;
     overscroll-behavior: none;
     padding-top: env(safe-area-inset-top);
