@@ -106,7 +106,7 @@ export default function LandingPage({
             <button
               onClick={() => {
                 const el = document.getElementById("play")
-                if (el) el.scrollIntoView({ behavior: "smooth" })
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
               }}
               className="btn-chaos flex-[1.4] rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-6 md:py-3 md:text-sm"
             >
@@ -133,7 +133,7 @@ export default function LandingPage({
         <button
           onClick={() => {
             const el = document.getElementById("play")
-            if (el) el.scrollIntoView({ behavior: "smooth" })
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
           }}
           className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 hover:text-white/80 text-[10px] tracking-[0.3em] animate-pulse transition-colors"
           aria-label="Scroll to play"
@@ -142,7 +142,7 @@ export default function LandingPage({
         </button>
       </section>
 
-      <section className="relative px-4 py-10 md:py-12">
+      <section className="relative overflow-hidden px-4 py-10 md:py-12">
         <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-2">
           <div className="space-y-4">
             <PromptCard text={exampleCards?.[0]?.prompt || DECK[0].prompt} rotate={-4} />
@@ -160,7 +160,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="live" className="relative px-4 py-12 md:py-16">
+      <section id="live" className="relative overflow-hidden px-4 py-12 md:py-16">
         <div className="mx-auto max-w-4xl text-center">
           <p className="mb-3 text-[10px] tracking-[0.4em] text-purple-300">— LIVE CHAOS</p>
           <h2 className="font-bubble text-4xl md:text-6xl">
@@ -202,7 +202,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="play" className="relative px-4 pt-4 pb-12 md:pt-6 md:pb-16">
+      <section id="play" className="relative overflow-hidden px-4 pt-4 pb-12 md:pt-6 md:pb-16">
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-white">Ready when </span>
@@ -289,7 +289,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <footer className="border-t border-white/5 px-4 py-10 text-center text-sm text-white/50">
+      <footer className="border-t border-white/5 px-4 py-10 text-center text-sm text-white/50 overflow-hidden">
         <p className="font-bubble text-lg text-white">fluke</p>
         <p className="mt-1">— chaos that connects.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
