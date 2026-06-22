@@ -1535,26 +1535,9 @@ function App() {
                   </button>
                 </div>
                 <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
-                {(anonymousMode || noSelfReading) && (
-                  <div className="flex justify-center gap-2 mt-2">
-                    {anonymousMode && (
-                      <span className="text-[10px] bg-purple-900/40 text-purple-300 border border-purple-700/50 rounded-full px-2 py-0.5">🙈 Anonymous</span>
-                    )}
-                    {noSelfReading && (
-                      <span className="text-[10px] bg-indigo-900/40 text-indigo-300 border border-indigo-700/50 rounded-full px-2 py-0.5">🚫 No Self-Read</span>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className={"lobby-ready mt-2 " + (players.length >= 3 ? "lobby-ready--ready" : "")}>
-                <span className="lobby-ready__icon">{players.length >= 3 ? "✅" : "⏳"}</span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-white leading-tight">{players.length >= 3 ? "Ready to start" : "Waiting for players"}</p>
-                  <p className="text-[10px] text-gray-400 leading-tight">{players.length >= 3 ? (isHost ? "You can start whenever everyone is settled." : "The host can start whenever everyone is settled.") : `Need ${3 - players.length} more player${3 - players.length === 1 ? "" : "s"} to begin.`}</p>
-                </div>
               </div>
             </div>
-            <div className="card flex-1 min-h-0 py-2 px-2 mb-2 flex flex-col">
+            <div className="card flex-1 min-h-0 py-2 px-2 flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] text-gray-500 uppercase tracking-wider">Players</span>
                 <span className="text-[10px] text-gray-400">{players.length}/15</span>
@@ -1573,7 +1556,7 @@ function App() {
               </div>
             </div>
             {isHost && (
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="card py-2 px-3">
                   <div className="flex items-center justify-between">
                     <div>
