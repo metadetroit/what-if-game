@@ -225,7 +225,7 @@ export default function LandingPage({
                   className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
                   maxLength={20}
                 />
-                <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-300">
+                <div className="flex flex-wrap items-center justify-start gap-2 text-sm text-gray-300">
                   <span>Pre-fill "What if..."</span>
                   <button
                     onClick={() => {
@@ -273,7 +273,7 @@ export default function LandingPage({
                   className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
                   maxLength={4}
                 />
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-start gap-2">
                   <span className="text-sm text-gray-300">Pre-fill "What if..."</span>
                   <button
                     onClick={() => {
@@ -293,7 +293,7 @@ export default function LandingPage({
                   disabled={!socket}
                   className="btn-primary w-full mt-2 inline-block rounded-full px-5 py-3 text-sm font-bold"
                 >
-                  {socket ? "JOIN THE ROOM →" : "..."}
+                  {socket ? "▶ JOIN NOW" : "..."}
                 </button>
               </div>
             </PanelCard>
