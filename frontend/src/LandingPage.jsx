@@ -63,7 +63,7 @@ export default function LandingPage({
   }
 
   return (
-    <div ref={scrollRef} className="fixed inset-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
+    <div ref={scrollRef} className="fixed top-0 left-0 right-0 bg-fluke overflow-y-auto overflow-x-hidden z-0" style={{ height: 'calc(var(--vh, 1vh) * 100)', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
       <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <button
           onClick={() => setGameState("support")}
@@ -214,7 +214,7 @@ export default function LandingPage({
           </h2>
 
           <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto">
-            <PanelCard title="Start a game" description="Spin up a fresh room. Get a 4-digit code. Invite your group.">
+            <PanelCard title="Start a game" description="Generate the code, and start the game for 3-15 players.">
               <div className="w-full space-y-3">
                 <input
                   type="text"
