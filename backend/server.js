@@ -1859,6 +1859,16 @@ io.on('connection', (socket) => {
       }
     }
     
+    // 7. Migrate this player's reaction records so the new socket id is authoritative.
+    if (game.playerReactions) {
+      for (const reactors of Object.values(game.playerReactions)) {
+        if (reactors.has(oldSocketId)) {
+          reactors.delete(oldSocketId);
+          reactors.add(socket.id);
+        }
+      }
+    }
+    
     socket.join(roomCode);
     // Ensure socket.roomCode is set after joining the room
     socket.roomCode = roomCode;
@@ -1914,6 +1924,15 @@ io.on('connection', (socket) => {
       progress.playerStatuses = playerStatuses;
     }
 
+    // Collect the content IDs this player already reacted to so the frontend can
+    // keep the reaction buttons disabled after reconnecting.
+    const reactedContentIds = [];
+    if (game.playerReactions) {
+      for (const [contentDbId, reactors] of Object.entries(game.playerReactions)) {
+        if (reactors.has(socket.id)) reactedContentIds.push(contentDbId);
+      }
+    }
+
     // Notify player of successful reconnection with current game state
     const reconnectData = {
       success: true,
@@ -1927,7 +1946,8 @@ io.on('connection', (socket) => {
       alreadySubmittedQuestion: alreadySubmittedQuestion,
       submittedQuestion: alreadySubmittedQuestion ? game.questions[socket.id] : null,
       progress: progress,
-      anonymousMode: !!game.anonymousMode
+      anonymousMode: !!game.anonymousMode,
+      reactedContentIds: reactedContentIds
     };
 
     // If reconnecting during ended phase, include the game summary and current vote state
@@ -2021,11 +2041,18 @@ io.on('connection', (socket) => {
       const cardForAnswer = game.cardAssignments && game.cardAssignments[answerReaderId];
       
       if (cardForQuestion && cardForAnswer) {
+        const questionDbId = cardForQuestion.question?.dbId || null;
+        const answerDbId = cardForAnswer.answer?.dbId || null;
         socket.emit('reading-turn', {
           questionReader: { id: questionReaderId, name: game.players.find(p => p.id === questionReaderId)?.name || 'Unknown' },
           answerReader: { id: answerReaderId, name: game.players.find(p => p.id === answerReaderId)?.name || 'Unknown' },
           question: cardForQuestion.question.text,
           answer: isQuestionTurn ? null : cardForAnswer.answer.text,
+          questionDbId: questionDbId,
+          answerDbId: answerDbId,
+          currentContentDbId: isQuestionTurn ? questionDbId : answerDbId,
+          currentContentAuthorId: isQuestionTurn ? cardForQuestion.question?.authorId : cardForAnswer.answer?.authorId,
+          currentContentType: isQuestionTurn ? 'question' : 'answer',
           round: game.currentReaderIndex + 1,
           total: totalTurns,
           isQuestionTurn: isQuestionTurn
@@ -2063,7 +2090,7 @@ io.on('connection', (socket) => {
     console.log(`[RECONNECT] ${playerName} reconnected to room ${roomCode} successfully`);
   });
 
-  // Handle disconnect: lobby = immediate removal, in-game = 90s grace
+  // Handle disconnect: lobby = immediate removal, in-game = 180s grace
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     lastVoteTime.delete(socket.id);

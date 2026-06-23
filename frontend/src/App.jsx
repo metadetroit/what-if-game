@@ -224,6 +224,8 @@ function App() {
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [showBackToTop, setShowBackToTop] = useState(false)
+  const [showDisconnectOverlay, setShowDisconnectOverlay] = useState(false)
+  const [disconnectOverlayDeadline, setDisconnectOverlayDeadline] = useState(null)
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -328,7 +330,9 @@ function App() {
         setGameState('best-of')
         if (pairId) scrollBestOfIdRef.current = pairId
         setBestOfOffset(0)
-        fetchBestOfData({ offset: 0 })
+        sessionStorage.removeItem('bestOfSort')
+        setBestOfSort('votes')
+        fetchBestOfData({ sort: 'votes', offset: 0 })
       }
     } catch (_) {}
   }, [])
@@ -474,6 +478,9 @@ function App() {
     newSocket.on("connect", () => {
       console.log("Connected to server")
       const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
+      // Connection restored — hide the full-screen reconnect overlay.
+      setShowDisconnectOverlay(false)
+      setDisconnectOverlayDeadline(null)
       // Clear the persistent "Connection lost" notice now that we're back online.
       if (activeGameplay) {
         setNotice(noticeFor("Back online", "success", 1500))
@@ -511,6 +518,9 @@ function App() {
       // Persistent (no auto-expiry) so it stays visible until we actually reconnect.
       const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
       if (activeGameplay) {
+        // Show a blocking overlay so the disconnected player can't interact with a stale screen.
+        setShowDisconnectOverlay(true)
+        setDisconnectOverlayDeadline(Date.now() + 180000)
         setNotice(noticeFor("You disconnected. If you don't automatically reconnect, try refreshing your screen.", "warn", null))
       }
       touchSession()
@@ -641,12 +651,13 @@ function App() {
       setCurrentTurn(data)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
-      // Track what content is currently being read (for reaction self-checks)
+      // Track what content is currently being read (for reaction self-checks).
+      // Always use the explicit fields from the server so the author check is accurate.
       if (data.currentContentDbId) {
         setCurrentContent({
           dbId: data.currentContentDbId,
           authorId: data.currentContentAuthorId,
-          type: data.currentContentType
+          type: data.currentContentType || 'question'
         })
       }
       // No sounds between individual readings to avoid interrupting the flow
@@ -881,9 +892,15 @@ function App() {
       skipNextCountdownRef.current = true
       if (data.success) {
         playSound("success")
-        // Fresh authoritative state on our own reconnect — drop any stale waiting list.
+        // Fresh authoritative state on our own reconnect — drop any stale waiting list and overlay.
         disconnectedPlayersRef.current = []
         disconnectDeadlineRef.current = null
+        setShowDisconnectOverlay(false)
+        setDisconnectOverlayDeadline(null)
+        // Restore which content this player already reacted to so they can't double-react.
+        if (Array.isArray(data.reactedContentIds)) {
+          setMyReactions(new Set(data.reactedContentIds))
+        }
         const savedSession = loadSession()
         if (savedSession) {
           setPlayerName(savedSession.playerName)
@@ -936,11 +953,13 @@ function App() {
         if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
         if (data.currentTurn) {
           setCurrentTurn(data.currentTurn)
+          // Restore the current content using the explicit server fields so the
+          // self-reaction check is accurate after reconnecting.
           if (data.currentTurn.currentContentDbId) {
             setCurrentContent({
               dbId: data.currentTurn.currentContentDbId,
               authorId: data.currentTurn.currentContentAuthorId,
-              type: data.currentTurn.currentContentType
+              type: data.currentTurn.currentContentType || 'question'
             })
           }
         }
@@ -969,6 +988,8 @@ function App() {
       console.log("Reconnect failed:", data)
       clearSession()
       reconnectAttemptedRef.current = false
+      setShowDisconnectOverlay(false)
+      setDisconnectOverlayDeadline(null)
       setReconnectInfo({ roomCode: data.roomCode, playerName: data.playerName, reason: data.reason })
       setGameState("reconnect-failed")
     })
@@ -1123,6 +1144,8 @@ function App() {
     setCurrentContent(null)
     setMyReactions(new Set())
     setReactionCounts({})
+    setShowDisconnectOverlay(false)
+    setDisconnectOverlayDeadline(null)
   }, [socket])
 
   const resetGame = useCallback(() => {
@@ -1161,6 +1184,8 @@ function App() {
     setCurrentContent(null)
     setMyReactions(new Set())
     setReactionCounts({})
+    setShowDisconnectOverlay(false)
+    setDisconnectOverlayDeadline(null)
   }, [socket])
 
   const handleAbandonGame = useCallback(() => {
@@ -1201,6 +1226,8 @@ function App() {
     setCurrentContent(null)
     setMyReactions(new Set())
     setReactionCounts({})
+    setShowDisconnectOverlay(false)
+    setDisconnectOverlayDeadline(null)
   }, [])
 
   useEffect(() => {
@@ -1266,20 +1293,28 @@ function App() {
     return { ...top, tied: ranked.filter(pair => pair.voteCount === top.voteCount).length > 1 }
   }, [gameSummary, summaryVotes])
 
-  const getWaitingMessage = (phase) => {
-    const remaining = Math.max((progress.total || 0) - (progress.submitted || 0), 0)
+  const getWaitingMessage = (phase, remainingNames) => {
+    const remaining = remainingNames.length
     if (remaining <= 0) return phase === 'writing' ? 'Everyone is in — answers are loading.' : 'Everyone is in — performance is loading.'
-    if (remaining === 1) return 'One player left. Almost there.'
-    return `${remaining} players are still finishing up.`
+    if (remaining === 1) return `${remainingNames[0]} is still finishing up.`
+    if (remaining <= 4) {
+      const last = remainingNames[remaining - 1]
+      const rest = remainingNames.slice(0, -1)
+      return `${rest.join(', ')}${rest.length > 0 ? ' and ' : ''}${last} are still finishing up.`
+    }
+    const preview = remainingNames.slice(0, 4)
+    const more = remaining - preview.length
+    return `${preview.join(', ')} and ${more} more are still finishing up.`
   }
 
-  const getWaitingTip = () => {
-    const remaining = Math.max((progress.total || 0) - (progress.submitted || 0), 0)
+  const getWaitingTip = (remainingNames) => {
+    const remaining = remainingNames.length
     if (remaining <= 0) return 'The next phase should start any second.'
     return ''
   }
 
   const renderWaitingPanel = (phase) => {
+    const remainingNames = playerStatuses.filter(p => !p.submitted).map(p => p.name)
     const visiblePlayers = playerStatuses.slice(0, 6)
     const remainingPlayers = playerStatuses.length - visiblePlayers.length
 
@@ -1288,11 +1323,11 @@ function App() {
       <div className="waiting-panel__top">
         <div>
           <p className="summary-pill">Waiting Room</p>
-          <h3 className="waiting-panel__title">{getWaitingMessage(phase)}</h3>
+          <h3 className="waiting-panel__title">{getWaitingMessage(phase, remainingNames)}</h3>
         </div>
         <span className="waiting-panel__count">{progress.submitted}/{progress.total}</span>
       </div>
-      {getWaitingTip() && (<p className="waiting-panel__tip">{getWaitingTip()}</p>)}
+      {getWaitingTip(remainingNames) && (<p className="waiting-panel__tip">{getWaitingTip(remainingNames)}</p>)}
       {playerStatuses.length > 0 && (
         <div className="waiting-panel__players">
           {visiblePlayers.map((p, i) => (
@@ -2677,6 +2712,21 @@ function App() {
                 Skip
               </button>
             )}
+          </div>
+        </div>
+      )}
+      {showDisconnectOverlay && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" role="alert" aria-live="assertive">
+          <div className="bg-gray-900 border border-amber-500/40 rounded-2xl px-6 py-8 text-center shadow-2xl max-w-sm w-full">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/15 flex items-center justify-center">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <p className="text-lg font-bold text-white mb-2">Connection lost</p>
+            <p className="text-sm text-gray-400 mb-4">Trying to reconnect you to the game. You can close this tab and rejoin within the next 3 minutes.</p>
+            <div className="text-3xl font-black text-amber-400 tracking-wider">
+              {formatTimeLeft(Math.max(0, (disconnectOverlayDeadline || 0) - Date.now()))}
+            </div>
+            <p className="text-xs text-gray-500 mt-3">Refresh if the timer runs out.</p>
           </div>
         </div>
       )}

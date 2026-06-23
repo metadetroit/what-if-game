@@ -1101,9 +1101,9 @@ io.on('connection', (socket) => {
     const timeSinceDisconnect = Date.now() - player.disconnectedAt;
     console.log(`[RECONNECT] Time since disconnect: ${timeSinceDisconnect}ms`);
     
-    if (timeSinceDisconnect > 90000) {
+    if (timeSinceDisconnect > 180000) {
       game.players = game.players.filter(p => p.name !== playerName);
-      socket.emit('reconnect-failed', { reason: 'Reconnection window expired (90 seconds)', roomCode, playerName });
+      socket.emit('reconnect-failed', { reason: 'Reconnection window expired (3 minutes)', roomCode, playerName });
       return;
     }
     
@@ -1328,7 +1328,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    console.log(`Disconnect (${game.phase}) - ${player.name} marked inactive, 90s grace`);
+    console.log(`Disconnect (${game.phase}) - ${player.name} marked inactive, 180s grace`);
     player.isActive = false;
     player.disconnectedAt = Date.now();
 
@@ -1348,7 +1348,7 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('player-disconnected', {
       players: game.players.filter(p => p.isActive),
       disconnectedPlayer: player.name,
-      gracePeriod: 90
+      gracePeriod: 180
     });
 
     if (hostTransferredTo) {
