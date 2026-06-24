@@ -296,7 +296,7 @@ function App() {
 
   const fetchBestOfData = async (opts = {}) => {
     try {
-      if (bestOfLoading) return
+      if (bestOfLoading && !opts.force) return
       setBestOfLoading(true)
       const sort = opts.sort || bestOfSort
       const limit = opts.limit || bestOfLimit
@@ -329,13 +329,33 @@ function App() {
       if (view === 'best-of') {
         setGameState('best-of')
         if (pairId) scrollBestOfIdRef.current = pairId
-        setBestOfOffset(0)
         sessionStorage.removeItem('bestOfSort')
         setBestOfSort('votes')
-        fetchBestOfData({ sort: 'votes', offset: 0 })
+        setBestOfOffset(0)
+        setBestOfLoading(false)
+        setBestOfData(null)
       }
     } catch (_) {}
   }, [])
+
+  const prevGameStateRef = useRef(null)
+  useEffect(() => {
+    const prev = prevGameStateRef.current
+    prevGameStateRef.current = gameState
+    if (gameState === 'best-of' && prev !== 'best-of') {
+      sessionStorage.removeItem('bestOfSort')
+      setBestOfSort('votes')
+      setBestOfOffset(0)
+      setBestOfLoading(false)
+      setBestOfData(null)
+    }
+  }, [gameState])
+
+  useEffect(() => {
+    if (gameState === 'best-of' && bestOfData === null && !bestOfLoading) {
+      fetchBestOfData({ sort: 'votes', offset: 0, force: true })
+    }
+  }, [gameState, bestOfData, bestOfLoading])
 
   useEffect(() => {
     if (Array.isArray(bestOfData) && scrollBestOfIdRef.current) {
