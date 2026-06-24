@@ -217,6 +217,7 @@ function App() {
   const [bestOfOffset, setBestOfOffset] = useState(0)
   const [bestOfHasMore, setBestOfHasMore] = useState(true)
   const [bestOfLoading, setBestOfLoading] = useState(false)
+  const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('adminKey') || '')
   const scrollBestOfIdRef = useRef(null)
   const wakeLockRef = useRef(null)
   const bestOfSentinelRef = useRef(null)
@@ -415,9 +416,15 @@ function App() {
     try {
       const response = await fetch(`${SOCKET_URL}/api/hide-game`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ roomCode })
       })
+      if (response.status === 403) {
+        sessionStorage.removeItem('adminKey')
+        setAdminKey('')
+        setNotice(noticeFor('Admin key invalid', 'warn', 3000))
+        return
+      }
       console.log('hide-game response status:', response.status)
       const result = await response.json()
       console.log('hide-game result:', result)
@@ -437,9 +444,15 @@ function App() {
     try {
       const response = await fetch(`${SOCKET_URL}/api/delete-best-of`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ type, id })
       })
+      if (response.status === 403) {
+        sessionStorage.removeItem('adminKey')
+        setAdminKey('')
+        setNotice(noticeFor('Admin key invalid', 'warn', 3000))
+        return
+      }
       const result = await response.json()
       if (result.success) {
         setBestOfData(prev => prev.filter((_, i) => i !== index))
@@ -1434,15 +1447,35 @@ function App() {
               </div>
               <h1 className="text-xl font-extrabold text-gradient mb-1">Best Of</h1>
               <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
-              <div className="mt-2 inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
+              <div className="mt-2 flex items-center gap-2">
+                <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
+                  <button
+                    onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); setBestOfOffset(0); fetchBestOfData({ sort: 'votes', offset: 0 }) }}
+                    className={"px-3 py-1 " + (bestOfSort === 'votes' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
+                  >Most votes</button>
+                  <button
+                    onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); setBestOfOffset(0); fetchBestOfData({ sort: 'newest', offset: 0 }) }}
+                    className={"px-3 py-1 border-l border-gray-700 " + (bestOfSort === 'newest' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
+                  >Newest</button>
+                </div>
                 <button
-                  onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); setBestOfOffset(0); fetchBestOfData({ sort: 'votes', offset: 0 }) }}
-                  className={"px-3 py-1 " + (bestOfSort === 'votes' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
-                >Most votes</button>
-                <button
-                  onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); setBestOfOffset(0); fetchBestOfData({ sort: 'newest', offset: 0 }) }}
-                  className={"px-3 py-1 border-l border-gray-700 " + (bestOfSort === 'newest' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
-                >Newest</button>
+                  onClick={() => {
+                    if (adminKey) {
+                      sessionStorage.removeItem('adminKey')
+                      setAdminKey('')
+                    } else {
+                      const key = window.prompt('Enter admin key:')
+                      if (key) {
+                        sessionStorage.setItem('adminKey', key)
+                        setAdminKey(key)
+                      }
+                    }
+                  }}
+                  className={"text-[10px] px-2 py-1 rounded-lg border " + (adminKey ? "border-amber-500/50 text-amber-400 bg-amber-500/10" : "border-gray-700 text-gray-500 hover:text-gray-300")}
+                  title={adminKey ? "Admin mode active — click to disable" : "Enter admin key to enable delete"}
+                >
+                  {adminKey ? "🔓 Admin" : "🔒"}
+                </button>
               </div>
             </div>
             <div className="card py-3">
@@ -1469,11 +1502,13 @@ function App() {
                                 className="text-[10px] text-indigo-300 hover:text-indigo-200 underline"
                                 title="Copy shareable link"
                               >🔗 Copy link</button>
-                              <button
-                                onClick={() => handleDeleteBestOf(item.type, item.id, i)}
-                                className="text-[10px] text-red-400 hover:text-red-300 underline"
-                                title="Delete this item"
-                              >🗑 Delete</button>
+                              {adminKey && (
+                                <button
+                                  onClick={() => handleDeleteBestOf(item.type, item.id, i)}
+                                  className="text-[10px] text-red-400 hover:text-red-300 underline"
+                                  title="Delete this item"
+                                >🗑 Delete</button>
+                              )}
                               <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
                             </div>
                           </div>
@@ -2198,9 +2233,11 @@ function App() {
                   <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
                     🏠 New game (change number of players)
                   </button>
-                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
-                    🚫 Hide from Best Of
-                  </button>
+                  {adminKey && (
+                    <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
+                      🚫 Hide from Best Of
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (

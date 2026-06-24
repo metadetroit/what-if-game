@@ -5,6 +5,8 @@ const cors = require('cors');
 const path = require('path');
 const { initDatabase, getDb, saveDatabase } = require('./database');
 
+const ADMIN_KEY = 'fluke-admin-2024';
+
 const app = express();
 
 // CORS configuration for production
@@ -120,8 +122,11 @@ app.get('/api/best-of', async (req, res) => {
   res.json(results);
 });
 
-// API: Hide game from best of page
+// API: Hide game from best of page (admin only)
 app.post('/api/hide-game', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
   const { roomCode } = req.body;
   
   if (!roomCode) {
@@ -134,8 +139,11 @@ app.post('/api/hide-game', async (req, res) => {
   res.json({ success: true });
 });
 
-// API: Delete/hide a best-of item (moderation)
+// API: Delete/hide a best-of item (admin only)
 app.post('/api/delete-best-of', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
   const { type, id } = req.body;
   
   if (!type || !id) {
@@ -173,7 +181,10 @@ app.get('/api/random-pairs', async (req, res) => {
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0 AND (qp.hidden IS NULL OR qp.hidden = 0)
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
+            AND (qp.hidden IS NULL OR qp.hidden = 0)
+            AND (q.hidden IS NULL OR q.hidden = 0)
+            AND (a.hidden IS NULL OR a.hidden = 0)
       ORDER BY RANDOM()
       LIMIT ?
     `, [count]);
