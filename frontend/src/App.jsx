@@ -2237,7 +2237,7 @@ function App() {
                   <div className="summary-toggle card">
                     <div>
                       <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                      <p className="text-[11px] text-gray-400">Hide names in next summary + Best Of.</p>
+                      <p className="text-[11px] text-gray-400">Hide names in next game's summary + Best Of.</p>
                     </div>
                     <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
                       <span />
