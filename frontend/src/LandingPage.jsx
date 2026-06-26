@@ -71,7 +71,7 @@ export default function LandingPage({
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
 
         <div className="relative z-10 mx-auto max-w-3xl">
-          <h1 className="font-bubble glow-title text-[28vw] leading-[0.82] md:text-[160px] md:leading-[0.88]">
+          <h1 className="font-bubble glow-title text-[28vw] leading-[0.82] md:text-[160px] md:leading-[0.88] drop-shadow-[4px_4px_0px_rgba(20,5,35,0.85)]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
