@@ -575,6 +575,37 @@
       0 1px 3px rgba(25, 5, 40, 0.9);
   }
 
+  .hero-mini-pill {
+    position: relative;
+    isolation: isolate;
+    border-radius: 9999px;
+    color: #E6E1FF;
+    background: rgba(20, 8, 35, 0.55);
+    border: 1px solid transparent;
+    letter-spacing: 0.01em;
+    transition: color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 6px 18px rgba(12, 3, 20, 0.5);
+  }
+  .hero-mini-pill::before {
+    content: "";
+    position: absolute;
+    inset: -0.5px;
+    padding: 1.4px;
+    border-radius: inherit;
+    background: linear-gradient(120deg, #a855f7 0%, #ec4899 50%, #f5a524 100%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    z-index: -1;
+  }
+  .hero-mini-pill:hover {
+    color: #fff6ff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.25);
+  }
+
   .animate-pop-wiggle {
     animation: pop-wiggle 2.5s ease-in-out infinite;
     display: inline-block;

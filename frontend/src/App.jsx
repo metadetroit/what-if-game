@@ -1,166 +1,27 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { io } from "socket.io-client"
 import LandingPage from "./LandingPage"
+import BestOfView from "./components/BestOfView"
+import HelpPage from "./components/HelpPage"
+import SupportPage from "./components/SupportPage"
+import {
+  noticeFor,
+  loadSession,
+  saveSession,
+  touchSession,
+  clearSession,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  waitingForLabel,
+  formatTimeLeft,
+  getPrefillWhatIf,
+  setPrefillWhatIfStorage,
+  isSoundMuted,
+  writeSoundMuted,
+  playSound
+} from "./utils/gameUtils"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
-
-// Notice channel: tone is "success" | "info" | "warn" — not the same as a hard error.
-// Pass durationMs = null for a persistent notice that must be cleared manually.
-function noticeFor(message, tone = "info", durationMs = 3000) {
-  return { message, tone, expiresAt: durationMs == null ? null : Date.now() + durationMs }
-}
-
-function draftKey(roomCode, phase) {
-  return `whatif-draft:${roomCode}:${phase}`
-}
-
-// Persisted session + drafts use localStorage so they survive a mobile browser
-// killing/evicting a backgrounded tab (sessionStorage is wiped on full tab close).
-const SESSION_KEY = "gameSession"
-// TTL keeps a returning player auto-rejoining within a reasonable window while
-// avoiding stale auto-rejoins to long-dead rooms (the server is the final authority).
-const SESSION_TTL_MS = 1000 * 60 * 3 // 3 minutes — matches server reconnection grace period
-
-function loadSession() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    if (!raw) return null
-    const session = JSON.parse(raw)
-    if (!session || !session.roomCode || !session.playerName) {
-      localStorage.removeItem(SESSION_KEY)
-      return null
-    }
-    if (session.timestamp && Date.now() - session.timestamp > SESSION_TTL_MS) {
-      localStorage.removeItem(SESSION_KEY)
-      return null
-    }
-    return session
-  } catch (e) {
-    return null
-  }
-}
-
-function saveSession(session) {
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...session, timestamp: Date.now() }))
-  } catch (e) { /* ignore */ }
-}
-
-function touchSession() {
-  const session = loadSession()
-  if (session) saveSession(session)
-}
-
-function clearSession() {
-  try { localStorage.removeItem(SESSION_KEY) } catch (e) { /* ignore */ }
-}
-
-function saveDraft(roomCode, phase, value) {
-  try { localStorage.setItem(draftKey(roomCode, phase), value) } catch (e) { /* ignore */ }
-}
-
-function loadDraft(roomCode, phase) {
-  try { return localStorage.getItem(draftKey(roomCode, phase)) } catch (e) { return null }
-}
-
-function clearDraft(roomCode, phase) {
-  try { localStorage.removeItem(draftKey(roomCode, phase)) } catch (e) { /* ignore */ }
-}
-
-// Human-readable label naming the player(s) currently disconnected.
-function waitingForLabel(names) {
-  if (!names || names.length === 0) return ""
-  if (names.length === 1) return `${names[0]} disconnected — waiting for them to reconnect…`
-  return `${names.join(", ")} disconnected — waiting for them to reconnect…`
-}
-
-function formatTimeLeft(ms) {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
-  const m = Math.floor(totalSeconds / 60)
-  const s = totalSeconds % 60
-  return `${m}:${s.toString().padStart(2, "0")}`
-}
-
-// Simple Web Audio API tone generator (no external assets).
-// AudioContext is lazily created on first user interaction to avoid autoplay blocks.
-let audioCtx = null
-function ensureAudioContext() {
-  if (!audioCtx) {
-    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)() } catch (e) { /* ignore */ }
-  }
-  return audioCtx
-}
-
-function isSoundMuted() {
-  try { return localStorage.getItem("fluke-muted") === "1" } catch (e) { return false }
-}
-
-function writeSoundMuted(muted) {
-  try { localStorage.setItem("fluke-muted", muted ? "1" : "0") } catch (e) { /* ignore */ }
-}
-
-function getPrefillWhatIf() {
-  try { return localStorage.getItem("fluke-prefill") === "1" } catch (e) { return false }
-}
-
-function setPrefillWhatIfStorage(enabled) {
-  try { localStorage.setItem("fluke-prefill", enabled ? "1" : "0") } catch (e) { /* ignore */ }
-}
-
-function playSound(type) {
-  if (isSoundMuted()) return
-  const ctx = ensureAudioContext()
-  if (!ctx) return
-  if (ctx.state === "suspended") ctx.resume()
-
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-
-  const now = ctx.currentTime
-  switch (type) {
-    case "ding": // your turn
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(523, now)
-      osc.frequency.exponentialRampToValueAtTime(784, now + 0.1)
-      gain.gain.setValueAtTime(0.15, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
-      osc.start(now)
-      osc.stop(now + 0.3)
-      break
-    case "chime": // phase transition / all submitted
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(440, now)
-      osc.frequency.exponentialRampToValueAtTime(660, now + 0.15)
-      gain.gain.setValueAtTime(0.12, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4)
-      osc.start(now)
-      osc.stop(now + 0.4)
-      break
-    case "success": // vote for your pairing / reconnected
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(523, now)
-      osc.frequency.setValueAtTime(659, now + 0.1)
-      osc.frequency.setValueAtTime(784, now + 0.2)
-      gain.gain.setValueAtTime(0.12, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5)
-      osc.start(now)
-      osc.stop(now + 0.5)
-      break
-    case "warn": // subtle alert
-      osc.type = "triangle"
-      osc.frequency.setValueAtTime(300, now)
-      osc.frequency.linearRampToValueAtTime(200, now + 0.2)
-      gain.gain.setValueAtTime(0.08, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
-      osc.start(now)
-      osc.stop(now + 0.25)
-      break
-    default:
-      osc.stop(now)
-  }
-}
 
 function App() {
   const [socket, setSocket] = useState(null)
@@ -321,6 +182,34 @@ function App() {
       setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
     } finally { setBestOfLoading(false) }
   }
+
+  const handleBestOfSortChange = useCallback((sort) => {
+    sessionStorage.setItem('bestOfSort', sort)
+    setBestOfSort(sort)
+    setBestOfOffset(0)
+    setBestOfData(null)
+    fetchBestOfData({ sort, offset: 0, force: true })
+  }, [fetchBestOfData])
+
+  const handleAdminToggle = useCallback(() => {
+    if (adminKey) {
+      sessionStorage.removeItem('adminKey')
+      setAdminKey('')
+      return
+    }
+    const key = window.prompt('Enter admin key:')
+    if (key) {
+      sessionStorage.setItem('adminKey', key)
+      setAdminKey(key)
+    }
+  }, [adminKey])
+
+  const handleCopyBestOfLink = useCallback((pairId) => {
+    if (!pairId) return
+    const url = `${window.location.origin}?view=best-of&pair=${pairId}`
+    navigator.clipboard?.writeText(url)
+    setNotice(noticeFor('Link copied', 'success', 1200))
+  }, [])
 
   useEffect(() => {
     try {
@@ -1448,103 +1337,19 @@ function App() {
 
       case "best-of":
         return (
-          <div ref={bestOfScrollRef} className="game-container game-container--scroll py-4">
-            <div className="text-center mb-4 relative">
-              <button
-                onClick={() => setGameState("welcome")}
-                className="absolute top-0 left-0 flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors"
-                aria-label="Back to main screen"
-              >
-                ← Back
-              </button>
-              <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-xl">🏆</span>
-              </div>
-              <h1 className="font-bubble text-2xl font-extrabold text-gradient-chaos mb-1">Best Of</h1>
-              <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
-              <div className="mt-2 flex items-center gap-2">
-                <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
-                  <button
-                    onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); setBestOfOffset(0); setBestOfData(null); fetchBestOfData({ sort: 'votes', offset: 0, force: true }) }}
-                    className={"px-3 py-1 " + (bestOfSort === 'votes' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
-                  >Most votes</button>
-                  <button
-                    onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); setBestOfOffset(0); setBestOfData(null); fetchBestOfData({ sort: 'newest', offset: 0, force: true }) }}
-                    className={"px-3 py-1 border-l border-gray-700 " + (bestOfSort === 'newest' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
-                  >Newest</button>
-                </div>
-                <button
-                  onClick={() => {
-                    if (adminKey) {
-                      sessionStorage.removeItem('adminKey')
-                      setAdminKey('')
-                    } else {
-                      const key = window.prompt('Enter admin key:')
-                      if (key) {
-                        sessionStorage.setItem('adminKey', key)
-                        setAdminKey(key)
-                      }
-                    }
-                  }}
-                  className={"text-[10px] px-2 py-1 rounded-lg border " + (adminKey ? "border-amber-500/50 text-amber-400 bg-amber-500/10" : "border-gray-700 text-gray-500 hover:text-gray-300")}
-                  title={adminKey ? "Admin mode active — click to disable" : "Enter admin key to enable delete"}
-                >
-                  {adminKey ? "🔓 Admin" : "🔒"}
-                </button>
-              </div>
-            </div>
-            <div className="card py-3">
-              {/* Content */}
-              {bestOfData === null ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 text-sm">Loading...</p>
-                </div>
-              ) : bestOfData.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 text-sm">No content yet. Play some games to see the best content here!</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {bestOfData.map((item, i) => (
-                    <div key={i} id={`bestof-${item.id}`} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
-                      {item.type === 'qa_pair' && (
-                        <>
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-bold text-amber-400">🎯 GAME PAIRING</span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}?view=best-of&pair=${item.id}`); setNotice(noticeFor('Link copied', 'success', 1200)) }}
-                                className="text-[10px] text-indigo-300 hover:text-indigo-200 underline"
-                                title="Copy shareable link"
-                              >🔗 Copy link</button>
-                              {adminKey && (
-                                <button
-                                  onClick={() => handleDeleteBestOf(item.type, item.id, i)}
-                                  className="text-[10px] text-red-400 hover:text-red-300 underline"
-                                  title="Delete this item"
-                                >🗑 Delete</button>
-                              )}
-                              <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-white mb-1"><span className="text-indigo-400">Q:</span> {item.question}</p>
-                          <p className="text-sm text-white mb-2"><span className="text-purple-400">A:</span> {item.answer}</p>
-                          <p className="text-[10px] text-gray-500">— {item.question_author} → {item.answer_author}</p>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                  <div ref={bestOfSentinelRef} className="h-8" />
-                  {bestOfLoading && (
-                    <div className="pt-2 text-center text-[12px] text-gray-400">Loading…</div>
-                  )}
-                </div>
-              )}
-            </div>
-            <button onClick={() => setGameState("welcome")} className="btn-secondary py-3 text-sm w-full mt-3">
-              Back to Main Screen
-            </button>
-          </div>
+          <BestOfView
+            bestOfScrollRef={bestOfScrollRef}
+            bestOfSentinelRef={bestOfSentinelRef}
+            bestOfData={bestOfData}
+            bestOfSort={bestOfSort}
+            bestOfLoading={bestOfLoading}
+            adminKey={adminKey}
+            onBack={() => setGameState("welcome")}
+            onSortChange={handleBestOfSortChange}
+            onToggleAdmin={handleAdminToggle}
+            onCopyLink={handleCopyBestOfLink}
+            onDeleteItem={handleDeleteBestOf}
+          />
         )
 
       case "welcome":
@@ -2303,457 +2108,15 @@ function App() {
 
       case "help":
         return (
-          <div className="game-container game-container--help py-2">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bubble text-xl font-bold text-gradient-chaos">Help & Info</h2>
-              <button onClick={() => setGameState("welcome")} className="flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors">
-                ← Back
-              </button>
-            </div>
-            
-            <div className="flex gap-1 mb-3 overflow-x-auto pb-1">
-              {[
-                { id: "how-to-play", label: "How to Play", icon: "📝" },
-                { id: "faq", label: "FAQ", icon: "❓" },
-                { id: "tips", label: "Tips & Tricks", icon: "💡" },
-                { id: "about", label: "About", icon: "📖" }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setHelpTab(tab.id)}
-                  className={"flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors " + 
-                    (helpTab === tab.id 
-                      ? "bg-indigo-600 text-white" 
-                      : "bg-gray-800 text-gray-400 hover:bg-gray-700")}
-                >
-                  {tab.icon} {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="card flex-1 min-h-0 overflow-y-auto py-3 px-3 md:px-4 space-y-3 text-[13px] md:text-sm leading-relaxed">
-              {helpTab === "how-to-play" && (
-                <div className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <span className="text-xl">🎮</span>
-                    </div>
-                    <h3 className="font-bubble text-lg font-bold text-white">How Fluke Works</h3>
-                  </div>
-                  <p className="text-sm text-gray-300 leading-relaxed">
-                    Fluke is a fast party game about writing weird “What if…” questions, answering someone else’s prompt, then reading mixed-up question/answer pairings out loud. React, vote, laugh, and see the round summary at the end.
-                  </p>
-                  
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Getting Started</h4>
-                    <ol className="space-y-2 text-sm text-gray-300">
-                      <li className="flex gap-2">
-                        <span className="text-indigo-400 font-bold">1.</span>
-                        <span><strong>Join or create a room</strong> - Use a 4-digit room code. The host can share the code with everyone else.</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-indigo-400 font-bold">2.</span>
-                        <span><strong>Gather players</strong> - You need 3-15 players.</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-indigo-400 font-bold">3.</span>
-                        <span><strong>Start the round</strong> - The host starts when everyone is ready.</span>
-                      </li>
-                    </ol>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">1. Write Questions 📝</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• Everyone writes one question that starts with “What if”.</li>
-                      <li>• Keep it short, clear, and open-ended.</li>
-                      <li>• Example: “What if cats could talk, but only about taxes?”</li>
-                      <li>• The optional pre-fill setting starts your box with “What if ”.</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">2. Write Answers 🤔</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• Each player receives someone else’s question.</li>
-                      <li>• Write an answer that will be fun to hear out loud.</li>
-                      <li>• Your answer may later be performed with a different question.</li>
-                      <li>• Example: “They’d form a union and demand nap deductions.”</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">3. Perform & React 🎭</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• Players take turns reading the question/answer pairings.</li>
-                      <li>• Read with energy: voices, timing, and commitment help.</li>
-                      <li>• Everyone can react with ❤️, 😂, or ❓ during the reading.</li>
-                      <li>• ❤️ and 😂 count toward the most-adored writer award.</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">4. Vote & Review 🎉</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• Vote for your favorite question/answer pairing.</li>
-                      <li>• The summary shows pairings, votes, reactions, and round awards.</li>
-                      <li>• Anonymous rounds hide names in the summary.</li>
-                      <li>• The host can replay with the same group or start fresh.</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Host Controls</h4>
-                    <p className="text-xs text-gray-500 mb-2">(Only the host sees these)</p>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Anonymous Results</strong> - Hide writer names for the completed round’s summary.</li>
-                      <li>• <strong>No Self-Reading</strong> - Try to prevent players from reading their own content.</li>
-                      <li>• <strong>Force Advance</strong> - Move forward when submitted players are ready; non-submitters may be removed.</li>
-                      <li>• <strong>Kick Player</strong> - Remove a player from the lobby before the game starts.</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {helpTab === "faq" && (
-                <div className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
-                      <span className="text-xl">❓</span>
-                    </div>
-                    <h3 className="font-bubble text-lg font-bold text-white">Frequently Asked Questions</h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">How many players do I need?</h4>
-                      <p className="text-sm text-gray-300">At least 3 players, up to 15. The more players, the more chaos (and fun)!</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">How long does a game take?</h4>
-                      <p className="text-sm text-gray-300">Usually 10-25 minutes, depending on player count and how theatrical the readings get.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I play with friends who aren't in the same room?</h4>
-                      <p className="text-sm text-gray-300">Yes. Share the 4-digit room code. Everyone can join from their own phone, tablet, or computer.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What if someone disconnects?</h4>
-                      <p className="text-sm text-gray-300">They have a short reconnect window. If they return in time, they can resume. If not, they may be removed so the room can keep playing.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can we play again with the same group?</h4>
-                      <p className="text-sm text-gray-300">Yes. After the summary, the host can replay with the same players or start a fresh room setup.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What do the host toggles do?</h4>
-                      <p className="text-sm text-gray-300">
-                        <strong>Anonymous Results</strong> - Hides writer names in the round summary and awards.
-                        <br /><br />
-                        <strong>No Self-Reading</strong> - Tries to avoid assigning players a pairing that includes their own writing.
-                      </p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">How do reactions work?</h4>
-                      <p className="text-sm text-gray-300">During readings, players can react with ❤️, 😂, or ❓. Hearts and laughs count toward “Round’s most-adored writer”; question marks are just for fun/confusion.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I play on my phone?</h4>
-                      <p className="text-sm text-gray-300">Yes. The game is designed for mobile and desktop browsers.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What if someone is taking too long?</h4>
-                      <p className="text-sm text-gray-300">The host can force advance once enough players have submitted. Players who did not submit may be removed from that round.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">Can I kick a player?</h4>
-                      <p className="text-sm text-gray-300">Only the host can kick players, and only from the lobby player list.</p>
-                    </div>
-
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="text-sm font-bold text-indigo-400 mb-1">What do the summary awards mean?</h4>
-                      <p className="text-sm text-gray-300">
-                        <strong>Current top pairing</strong> - The question/answer pairing with the most summary votes.
-                        <br /><br />
-                        <strong>Round’s most-adored writer</strong> - The writer whose questions and answers received the most ❤️ and 😂 reactions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {helpTab === "tips" && (
-                <div className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
-                      <span className="text-xl">💡</span>
-                    </div>
-                    <h3 className="font-bubble text-lg font-bold text-white">Tips & Tricks</h3>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Writing Good Questions 🖊️</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Start with a clear “What if”</strong> - The game requires it.</li>
-                      <li>• <strong>Leave room for answers</strong> - Broad prompts create better surprises.</li>
-                      <li>• <strong>Use one funny idea</strong> - Too many twists can make it hard to answer.</li>
-                      <li>• <strong>Avoid tiny inside jokes</strong> - Unless the whole room will understand them.</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Writing Good Answers 💡</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Make it readable</strong> - Someone else may have to perform it.</li>
-                      <li>• <strong>Be specific</strong> - Details usually beat vague punchlines.</li>
-                      <li>• <strong>Think like a performer</strong> - Give them something fun to say.</li>
-                      <li>• <strong>Keep it punchy</strong> - Shorter answers often land better.</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Performing 🎭</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Read both parts clearly</strong> - The room needs to hear the setup and payoff.</li>
-                      <li>• <strong>Commit to the bit</strong> - Even nonsense is funnier when performed seriously.</li>
-                      <li>• <strong>Pause before the answer</strong> - Timing helps the reveal.</li>
-                      <li>• <strong>React to others</strong> - Use ❤️, 😂, and ❓ while they read.</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Hosting 🎮</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• <strong>Set expectations early</strong> - Tell players to write answers that are easy to read aloud.</li>
-                      <li>• <strong>Use anonymity intentionally</strong> - It hides names in the summary and awards.</li>
-                      <li>• <strong>Force advance carefully</strong> - It can remove players who did not submit.</li>
-                      <li>• <strong>Replay quickly</strong> - “Same players” keeps the room together for another round.</li>
-                    </ul>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Winning the Room 🌟</h4>
-                    <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• Vote for the pairing you most want preserved in the summary.</li>
-                      <li>• Send ❤️ and 😂 to reward writing you genuinely liked.</li>
-                      <li>• Use ❓ when something is confusing, cursed, or beautifully unhinged.</li>
-                      <li>• The best rounds are playful, quick, and not too overthought.</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {helpTab === "about" && (
-                <div className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                      <span className="text-xl">📖</span>
-                    </div>
-                    <h3 className="text-base font-bold text-white">About Fluke</h3>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">What It Is</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Fluke is a browser-based party game built around one simple prompt: “What if…?”
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Everyone writes a question, answers someone else’s question, then the game shuffles those ideas into read-aloud pairings. The fun comes from the mismatch: a strange setup, an unexpected answer, and the person brave enough to perform it.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                      It works best when players write quickly, commit to the bit, and react generously.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">What Makes This Version Different</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      The app handles the room code, player flow, shuffled assignments, live reactions, summary votes, reconnects, and host controls.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      At the end, the summary highlights the current top pairing and the round’s most-adored writer, based on ❤️ and 😂 reactions to the questions and answers each player wrote.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                      Anonymous mode can hide names, so groups can choose mystery over credit.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">The Spirit</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      Fluke is not about perfect jokes. It is about giving the room something to play with.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                      A good question invites chaos. A good answer gives someone else a moment. A good performance turns whatever happened into a shared laugh.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                      Keep it kind, keep it moving, and let the weirdness do the work.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Best With</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      Friends, family, coworkers, remote groups, or any room that can handle a little absurdity.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      Use phones for easy writing and reacting. Use a shared screen if you want the summary to feel like a scoreboard.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                      Three players is enough; bigger groups create more surprising pairings.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-sm font-bold text-indigo-400 mb-2">Thanks</h4>
-                    <p className="text-sm text-gray-300 leading-relaxed mb-2">
-                      Thanks for playing, testing, reacting, voting, and making the questions stranger than expected.
-                    </p>
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                      Now go ask something ridiculous.
-                    </p>
-                  </div>
-
-                  <div className="text-center pt-4">
-                    <span className="text-4xl">🎉</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <button onClick={() => setGameState("welcome")} className="btn-secondary py-3 text-sm w-full mt-3">
-              Back to Main Screen
-            </button>
-          </div>
+          <HelpPage
+            helpTab={helpTab}
+            onTabChange={setHelpTab}
+            onBack={() => setGameState("welcome")}
+          />
         )
 
       case "support":
-        return (
-          <div className="game-container py-2">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bubble text-xl font-bold text-gradient-chaos">Support the Project</h2>
-              <button onClick={() => setGameState("welcome")} className="flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors">
-                ← Back
-              </button>
-            </div>
-
-            <div className="card flex-1 min-h-0 overflow-y-auto py-3 px-4 space-y-4">
-              <div className="text-center mb-4">
-                <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
-                  <span className="text-xl">🎁</span>
-                </div>
-                <h3 className="font-bubble text-lg font-bold text-white">Value for Value</h3>
-              </div>
-
-              <p className="text-sm text-gray-300 leading-relaxed">
-                If Fluke gave you a good laugh, a memorable night, or a reason to reconnect with friends, consider returning some of that value back. This game is free to play, but it is not free to build, host, and improve.
-              </p>
-
-              <div className="border-t border-gray-700 pt-4">
-                <h4 className="text-sm font-bold text-pink-400 mb-2">Send a Tip</h4>
-                <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                  A small donation helps cover server costs and keeps the game online. No amount is too small.
-                </p>
-
-                {/* Desktop: QR + Web button */}
-                <div className="hidden md:flex md:items-center md:gap-4">
-                  <div className="flex-1 flex flex-col items-center gap-2">
-                    <img
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://cash.app/$playfluke"
-                      alt="Cash App QR code for $playfluke"
-                      className="w-52 h-52 rounded-lg bg-white p-2"
-                    />
-                    <p className="text-xs font-semibold text-gray-300 text-center max-w-[10rem] leading-relaxed">
-                      Playing on PC? Scan with your phone camera to open Cash App instantly.
-                    </p>
-                  </div>
-                  <div className="flex-1 flex flex-col items-center gap-2">
-                    <a
-                      href="https://square.link/u/YPi6d86H"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors shadow-lg"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-                      </svg>
-                      pay with any credit card (no account needed) or Cash App
-                    </a>
-                    <p className="text-xs font-semibold text-gray-300 text-center leading-relaxed">
-                      Opens in a new tab — works without the app.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Mobile: QR + button */}
-                <div className="md:hidden flex flex-col gap-3">
-                  <div className="flex flex-col items-center gap-2">
-                    <img
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://cash.app/$playfluke"
-                      alt="Cash App QR code for $playfluke"
-                      className="w-44 h-44 rounded-lg bg-white p-2"
-                    />
-                    <p className="text-xs font-semibold text-gray-300 text-center max-w-[12rem] leading-relaxed">
-                      Scan with your phone camera to open Cash App instantly.
-                    </p>
-                  </div>
-                  <a
-                    href="https://square.link/u/YPi6d86H"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-                    </svg>
-                    pay with any credit card (no account needed) or Cash App
-                  </a>
-                  <p className="text-[10px] text-gray-500 text-center">
-                    Opens the Cash App if installed, or a secure web checkout otherwise.
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-700 pt-4">
-                <h4 className="text-sm font-bold text-pink-400 mb-2">Beta Test & Feedback</h4>
-                <p className="text-sm text-gray-300 leading-relaxed mb-3">
-                  Spotted a bug? Have an idea? Want to test new features before they go live? Your feedback shapes what Fluke becomes next.
-                </p>
-                <a
-                  href="mailto:hello@playfluke.com"
-                  className="text-sm text-indigo-300 hover:text-indigo-200 underline"
-                >
-                  hello@playfluke.com
-                </a>
-              </div>
-
-              <div className="border-t border-gray-700 pt-4">
-                <h4 className="text-sm font-bold text-pink-400 mb-2">Share the Game</h4>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  The easiest way to support Fluke is to bring more people into the room. Share the link, teach a friend, or bring it to your next group hangout.
-                </p>
-              </div>
-
-              <div className="border-t border-gray-700 pt-4">
-                <h4 className="text-sm font-bold text-pink-400 mb-2">Thank You</h4>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  However you choose to give back — whether it is a donation, a bug report, or simply playing another round — it matters. Thanks for being part of this.
-                </p>
-              </div>
-            </div>
-
-            <button onClick={() => setGameState("welcome")} className="btn-secondary py-3 text-sm w-full mt-3">
-              Back to Main Screen
-            </button>
-          </div>
-        )
+        return <SupportPage onBack={() => setGameState("welcome")} />
 
       default:
         return null

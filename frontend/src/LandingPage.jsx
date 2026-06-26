@@ -98,19 +98,19 @@ export default function LandingPage({
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               <button
                 onClick={() => setGameState("best-of")}
-                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="hero-mini-pill px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
               >
                 View Best Of
               </button>
               <button
                 onClick={() => setGameState("help")}
-                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="hero-mini-pill px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
               >
                 How to Play
               </button>
               <button
                 onClick={() => setGameState("support")}
-                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="hero-mini-pill px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
               >
                 💜 Support
               </button>
@@ -123,7 +123,7 @@ export default function LandingPage({
 
       </section>
 
-      <section className="relative overflow-hidden px-4 py-10 md:py-12">
+      <section className="relative overflow-hidden px-4 py-10 md:py-12 -mt-16 sm:-mt-20 md:mt-0">
         <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-2">
           <div className="space-y-4 overflow-hidden">
             <PromptCard text={exampleCards?.[0]?.prompt || DECK[0].prompt} rotate={-4} />
