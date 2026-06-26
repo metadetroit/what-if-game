@@ -95,19 +95,19 @@ export default function LandingPage({
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               <button
                 onClick={() => setGameState("best-of")}
-                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors md:text-xs md:px-3 md:py-2.5"
               >
                 View Best Of
               </button>
               <button
                 onClick={() => setGameState("help")}
-                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors md:text-xs md:px-3 md:py-2.5"
               >
                 How to Play
               </button>
               <button
                 onClick={() => setGameState("support")}
-                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors md:text-xs md:px-3 md:py-2.5"
               >
                 💜 Support
               </button>
@@ -130,7 +130,7 @@ export default function LandingPage({
           </div>
           <div className="space-y-4 overflow-hidden">
             <PromptCard text={exampleCards?.[1]?.prompt || DECK[1].prompt} rotate={3} />
-            <div className="py-1 text-center text-[10px] tracking-[0.4em] text-white/40">
+            <div className="py-1 text-center text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">
               ─── COLLIDES WITH ───
             </div>
             <AnswerCard text={exampleCards?.[1]?.answer || DECK[1].answer} rotate={-2} />
@@ -142,10 +142,10 @@ export default function LandingPage({
         <div className="mx-auto max-w-4xl text-center">
           <p className="mb-3 text-[10px] tracking-[0.4em] text-purple-300">— LIVE CHAOS</p>
           <h2 className="font-bubble text-4xl md:text-6xl">
-            <span className="text-white">Press the button. </span>
+            <span className="text-[#E6E1FF]">Press the button. </span>
             <span className="text-gradient-chaos">See what collides.</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-white/60">
+          <p className="mx-auto mt-4 max-w-md text-[#E6E1FF]/60">
             No signup. No rules. One button between you and a perfectly stupid combination.
           </p>
 
@@ -160,7 +160,7 @@ export default function LandingPage({
               <AnswerCard text={current.answer} />
             </div>
 
-            <p className="mt-6 text-xs tracking-[0.3em] text-white/40">ready</p>
+            <p className="mt-6 text-xs tracking-[0.3em] text-[#E6E1FF]/40">ready</p>
             <button
               onClick={fluke}
               className="btn-primary font-bubble mt-3 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center"
@@ -168,10 +168,10 @@ export default function LandingPage({
               ✦ Fluke It! ✦
             </button>
 
-            <p className="mt-6 text-[10px] tracking-[0.4em] text-white/40">SHARE</p>
+            <p className="mt-6 text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">SHARE</p>
             <div className="mt-3 flex justify-center gap-3">
               {["f", "♪", "◎", "𝕏"].map((c) => (
-                <span key={c} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-white/70">
+                <span key={c} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70">
                   {c}
                 </span>
               ))}
@@ -195,7 +195,7 @@ export default function LandingPage({
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="Your name"
                   aria-label="Your name"
-                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
+                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-[#E6E1FF]"
                   maxLength={20}
                 />
                 {/* Spacer matching room-code field height so rows align on desktop */}
@@ -233,7 +233,7 @@ export default function LandingPage({
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="Your name"
                   aria-label="Your name"
-                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
+                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-[#E6E1FF]"
                   maxLength={20}
                 />
                 <input
@@ -245,7 +245,7 @@ export default function LandingPage({
                   onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
                   placeholder="4-digit code"
                   aria-label="Room code"
-                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
+                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-[#E6E1FF]"
                   maxLength={4}
                 />
                 <div className="flex items-center justify-start gap-3">
@@ -282,8 +282,8 @@ export default function LandingPage({
         </div>
       </section>
 
-      <footer className="border-t border-white/5 px-4 py-10 text-center text-sm text-white/50 overflow-hidden">
-        <p className="font-bubble text-lg text-white">fluke</p>
+      <footer className="border-t border-white/5 px-4 py-10 text-center text-sm text-[#E6E1FF]/50 overflow-hidden">
+        <p className="font-bubble text-lg text-[#E6E1FF]">fluke</p>
         <p className="mt-1">— chaos that connects.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200">
@@ -308,7 +308,7 @@ function PromptCard({ text, rotate = 0 }) {
   return (
     <div className="card-prompt rounded-2xl p-5 text-left" style={{ transform: `rotate(${rotate}deg)` }}>
       <p className="mb-2 text-[10px] font-semibold tracking-[0.3em] text-purple-300">● PROMPT</p>
-      <p className="text-lg font-semibold text-white md:text-xl">{text}</p>
+      <p className="text-lg font-semibold text-[#E6E1FF] md:text-xl">{text}</p>
     </div>
   )
 }
@@ -325,7 +325,7 @@ function AnswerCard({ text, rotate = 0 }) {
 function PanelCard({ title, children }) {
   return (
     <div className="rounded-3xl border border-white/10 bg-black/50 p-8 text-center h-full flex flex-col">
-      <h3 className="font-bubble text-2xl text-white">{title}</h3>
+      <h3 className="font-bubble text-2xl text-[#E6E1FF]">{title}</h3>
       <div className="mt-6 flex flex-col items-center flex-1">{children}</div>
     </div>
   )
