@@ -62,12 +62,15 @@ export default function LandingPage({
   return (
     <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
       <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center" style={{ height: '100svh', minHeight: '100svh' }}>
-        <img
-          src={bannerSrc}
-          onError={() => setBannerSrc("/hero-chaos-v2.png")}
-          alt="A laughing crowd of friends celebrating with confetti, sparks, and emojis"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <picture>
+          <source media="(max-width: 768px)" srcSet="/hero-chaos-v3-mobile.png" />
+          <img
+            src={bannerSrc}
+            onError={() => setBannerSrc("/hero-chaos-v2.png")}
+            alt="A laughing crowd of friends celebrating with confetti, sparks, and emojis"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
 
         <div className="relative z-10 mx-auto max-w-3xl">
