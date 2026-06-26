@@ -1622,6 +1622,18 @@ function App() {
                   >
                     📋
                   </button>
+                  <button
+                    onClick={() => {
+                      const next = !soundMuted
+                      writeSoundMuted(next)
+                      setSoundMuted(next)
+                    }}
+                    className="shrink-0 bg-gray-800 border border-gray-700 rounded-lg w-8 h-8 flex items-center justify-center text-sm hover:bg-gray-700 transition-colors"
+                    title={soundMuted ? "Sounds muted — click to unmute" : "Sounds on — click to mute"}
+                    aria-label={soundMuted ? "Unmute sounds" : "Mute sounds"}
+                  >
+                    {soundMuted ? "🔇" : "🔊"}
+                  </button>
                 </div>
                 <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
               </div>

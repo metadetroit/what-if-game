@@ -19,9 +19,6 @@ export default function LandingPage({
   createRoom,
   joinRoom,
   setGameState,
-  soundMuted,
-  setSoundMuted,
-  writeSoundMuted,
   prefillWhatIf,
   setPrefillWhatIf,
   setPrefillWhatIfStorage,
@@ -64,30 +61,6 @@ export default function LandingPage({
 
   return (
     <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
-        <button
-          onClick={() => setGameState("support")}
-          className="bg-black/30 border border-white/20 rounded-full px-3 h-10 flex items-center gap-1.5 text-sm font-bold text-white/90 hover:bg-white/10 hover:text-white transition-colors"
-          aria-label="Support this project"
-          title="Support this project"
-        >
-          <span className="text-base leading-none">💜</span>
-          <span className="hidden sm:inline">Support</span>
-        </button>
-        <button
-          onClick={() => {
-            const next = !soundMuted
-            writeSoundMuted(next)
-            setSoundMuted(next)
-          }}
-          className="bg-black/30 border border-white/20 rounded-full w-10 h-10 flex items-center justify-center text-lg hover:bg-white/10 transition-colors"
-          aria-label={soundMuted ? "Unmute sounds" : "Mute sounds"}
-          title={soundMuted ? "Sounds muted — click to unmute" : "Sounds on — click to mute"}
-        >
-          {soundMuted ? "🔇" : "🔊"}
-        </button>
-      </div>
-
       <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center" style={{ height: '100svh', minHeight: '100svh' }}>
         <img
           src={bannerSrc}
@@ -98,42 +71,50 @@ export default function LandingPage({
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
 
         <div className="relative z-10 mx-auto max-w-3xl">
-          <h1 className="font-bubble glow-title text-[18vw] leading-[0.82] md:text-[140px] md:leading-[0.88]">
+          <h1 className="font-bubble glow-title text-[22vw] leading-[0.82] md:text-[160px] md:leading-[0.88]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
             <span style={{ color: "#f43f5e" }}>k</span>
             <span style={{ color: "#a855f7" }}>e</span>
-            <span style={{ color: "#facc15" }}>!</span>
+            <span style={{ color: "#facc15" }} className="ml-1 md:ml-2 animate-pop-wiggle">!</span>
           </h1>
 
-          <p className="mx-auto mt-3 max-w-xl text-base font-bold leading-relaxed text-white/85 md:text-lg">
+          <p className="mx-auto mt-5 max-w-xl text-base font-black leading-relaxed hero-readable-text md:text-lg">
             <span>What if </span>
             <span className="italic">...the possibilities were endless?</span>
           </p>
 
-          <div className="mt-6 flex flex-nowrap items-center justify-center gap-2 md:gap-3 max-w-full">
+          <div className="mt-7 max-w-xl mx-auto w-full flex flex-col gap-3">
             <button
               onClick={scrollToPlay}
-              className="btn-primary flex-[1.4] rounded-full px-4 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-6 md:py-3 md:text-sm"
+              className="btn-primary w-full rounded-full px-6 py-3.5 text-sm font-black tracking-wide whitespace-nowrap md:py-4 md:text-base shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               ▶ PLAY
             </button>
-            <button
-              onClick={() => setGameState("best-of")}
-              className="btn-secondary flex-1 rounded-full px-2 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-4 md:py-3 md:text-sm"
-            >
-              View Best Of
-            </button>
-            <button
-              onClick={() => setGameState("help")}
-              className="btn-secondary flex-1 rounded-full px-2 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap md:px-4 md:py-3 md:text-sm"
-            >
-              How to Play
-            </button>
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
+              <button
+                onClick={() => setGameState("best-of")}
+                className="rounded-full px-2 py-2 text-[10px] font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+              >
+                View Best Of
+              </button>
+              <button
+                onClick={() => setGameState("help")}
+                className="rounded-full px-2 py-2 text-[10px] font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+              >
+                How to Play
+              </button>
+              <button
+                onClick={() => setGameState("support")}
+                className="rounded-full px-2 py-2 text-[10px] font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+              >
+                💜 Support
+              </button>
+            </div>
           </div>
-          <p className="mt-4 text-center text-[11px] tracking-[0.3em] text-white/60">
-            NO SIGNUP · NO DOWNLOAD · NO IDEA WHAT HAPPENS NEXT
+          <p className="mt-5 text-center text-sm font-black leading-relaxed hero-readable-text md:text-base">
+            No signup · No download · No idea what happens next
           </p>
         </div>
 
