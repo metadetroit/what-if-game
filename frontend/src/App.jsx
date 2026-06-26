@@ -2246,7 +2246,7 @@ function App() {
                   <div className="summary-toggle card">
                     <div>
                       <p className="text-xs text-white font-semibold">No Self-Reading</p>
-                      <p className="text-[11px] text-gray-400">Keep performances anonymous next round.</p>
+                      <p className="text-[11px] text-gray-400">Players won't read their own content next round.</p>
                     </div>
                     <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
                       <span />
