@@ -90,7 +90,7 @@ export default function LandingPage({
               onClick={scrollToPlay}
               className="btn-primary w-full rounded-full px-6 py-4 text-base font-black tracking-wide whitespace-nowrap md:py-4 md:text-base shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
-              ▶ PLAY
+              START GAME
             </button>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               <button
@@ -208,8 +208,8 @@ export default function LandingPage({
                 />
                 {/* Spacer matching room-code field height so rows align on desktop */}
                 <div className="hidden md:block" style={{ height: '54px' }} />
-                <div className="flex items-center justify-start gap-2 text-sm text-gray-300">
-                  <span>Pre-fill "What if..."</span>
+                <div className="flex items-center justify-start gap-3 text-sm text-gray-300">
+                  <span className="mr-1">Pre-fill "What if..."</span>
                   <button
                     onClick={() => {
                       const next = !prefillWhatIf
@@ -228,7 +228,7 @@ export default function LandingPage({
                   disabled={!socket}
                   className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold"
                 >
-                  {socket ? "▶ START NOW" : "..."}
+                  {socket ? "START NOW" : "..."}
                 </button>
               </div>
             </PanelCard>
@@ -256,8 +256,8 @@ export default function LandingPage({
                   className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-white"
                   maxLength={4}
                 />
-                <div className="flex items-center justify-start gap-2">
-                  <span className="text-sm text-gray-300">Pre-fill "What if..."</span>
+                <div className="flex items-center justify-start gap-3">
+                  <span className="text-sm text-gray-300 mr-1">Pre-fill "What if..."</span>
                   <button
                     onClick={() => {
                       const next = !prefillWhatIf
@@ -276,7 +276,7 @@ export default function LandingPage({
                   disabled={!socket}
                   className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold"
                 >
-                  {socket ? "▶ JOIN NOW" : "..."}
+                  {socket ? "JOIN NOW" : "..."}
                 </button>
               </div>
             </PanelCard>
