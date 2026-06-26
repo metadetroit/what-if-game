@@ -26,7 +26,7 @@ export default function LandingPage({
   error,
 }) {
   const [idx, setIdx] = useState(0)
-  const [bannerSrc, setBannerSrc] = useState("/hero-chaos.jpg")
+  const [bannerSrc, setBannerSrc] = useState("/hero-chaos-v2.png")
   const [dbPairs, setDbPairs] = useState([])
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
@@ -64,8 +64,8 @@ export default function LandingPage({
       <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center" style={{ height: '100svh', minHeight: '100svh' }}>
         <img
           src={bannerSrc}
-          onError={() => setBannerSrc("/hero-chaos.jpg")}
-          alt="A laughing crowd of friends celebrating under vivid purple stage light"
+          onError={() => setBannerSrc("/hero-chaos-v1.jpg")}
+          alt="A laughing crowd of friends celebrating with confetti, sparks, and emojis"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
