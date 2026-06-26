@@ -569,8 +569,10 @@
   .hero-readable-text {
     color: white;
     font-weight: 800;
-    -webkit-text-stroke: 1px black;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    text-shadow:
+      0 1px 4px rgba(0, 0, 0, 0.8),
+      0 4px 16px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(0, 0, 0, 0.3);
   }
 
   .animate-pop-wiggle {

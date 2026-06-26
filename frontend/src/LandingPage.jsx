@@ -71,7 +71,7 @@ export default function LandingPage({
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
 
         <div className="relative z-10 mx-auto max-w-3xl">
-          <h1 className="font-bubble glow-title text-[22vw] leading-[0.82] md:text-[160px] md:leading-[0.88]">
+          <h1 className="font-bubble glow-title text-[28vw] leading-[0.82] md:text-[160px] md:leading-[0.88]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
@@ -80,40 +80,40 @@ export default function LandingPage({
             <span style={{ color: "#facc15" }} className="ml-1 md:ml-2 animate-pop-wiggle">!</span>
           </h1>
 
-          <p className="mx-auto mt-5 max-w-xl text-base font-black leading-relaxed hero-readable-text md:text-lg">
+          <p className="mx-auto mt-6 max-w-xl text-lg font-black leading-relaxed hero-readable-text md:text-xl">
             <span>What if </span>
             <span className="italic">...the possibilities were endless?</span>
           </p>
 
-          <div className="mt-7 max-w-xl mx-auto w-full flex flex-col gap-3">
+          <div className="mt-8 max-w-xl mx-auto w-full flex flex-col gap-4">
             <button
               onClick={scrollToPlay}
-              className="btn-primary w-full rounded-full px-6 py-3.5 text-sm font-black tracking-wide whitespace-nowrap md:py-4 md:text-base shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
+              className="btn-primary w-full rounded-full px-6 py-4 text-base font-black tracking-wide whitespace-nowrap md:py-4 md:text-base shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               ▶ PLAY
             </button>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               <button
                 onClick={() => setGameState("best-of")}
-                className="rounded-full px-2 py-2 text-[10px] font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
               >
                 View Best Of
               </button>
               <button
                 onClick={() => setGameState("help")}
-                className="rounded-full px-2 py-2 text-[10px] font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
               >
                 How to Play
               </button>
               <button
                 onClick={() => setGameState("support")}
-                className="rounded-full px-2 py-2 text-[10px] font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
+                className="rounded-full px-2 py-2.5 text-xs font-bold whitespace-nowrap border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors md:text-xs md:px-3 md:py-2.5"
               >
                 💜 Support
               </button>
             </div>
           </div>
-          <p className="mt-5 text-center text-sm font-black leading-relaxed hero-readable-text md:text-base">
+          <p className="mt-6 text-center text-base font-bold leading-relaxed hero-readable-text md:text-lg">
             No signup · No download · No idea what happens next
           </p>
         </div>
