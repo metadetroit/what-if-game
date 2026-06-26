@@ -263,7 +263,8 @@
   }
 
   .phase-banner strong {
-    @apply text-sm text-white font-black;
+    @apply text-base text-white font-black;
+    font-family: "Fredoka", system-ui, sans-serif;
   }
 
   .phase-banner em {

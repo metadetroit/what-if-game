@@ -339,6 +339,8 @@ function App() {
     } catch (_) {}
   }, [])
 
+  // Push browser history entry when entering sub-pages from landing
+  const SUB_PAGES = ['best-of', 'help', 'support']
   const prevGameStateRef = useRef(null)
   useEffect(() => {
     const prev = prevGameStateRef.current
@@ -350,7 +352,20 @@ function App() {
       setBestOfLoading(false)
       setBestOfData(null)
     }
+    if (SUB_PAGES.includes(gameState) && (prev === 'welcome' || prev === null)) {
+      history.pushState({ flukeSubPage: gameState }, '')
+    }
   }, [gameState])
+
+  useEffect(() => {
+    const handlePop = () => {
+      if (SUB_PAGES.includes(gameStateRef.current)) {
+        setGameState('welcome')
+      }
+    }
+    window.addEventListener('popstate', handlePop)
+    return () => window.removeEventListener('popstate', handlePop)
+  }, [])
 
   useEffect(() => {
     if (gameState === 'best-of' && bestOfData === null && !bestOfLoading) {
@@ -1437,24 +1452,24 @@ function App() {
             <div className="text-center mb-4 relative">
               <button
                 onClick={() => setGameState("welcome")}
-                className="absolute top-0 right-0 text-gray-400 hover:text-white text-sm px-2 py-1"
-                aria-label="Close Best Of and return to main screen"
+                className="absolute top-0 left-0 flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors"
+                aria-label="Back to main screen"
               >
-                ✕ Close
+                ← Back
               </button>
               <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-xl">🏆</span>
               </div>
-              <h1 className="text-xl font-extrabold text-gradient mb-1">Best Of</h1>
+              <h1 className="font-bubble text-2xl font-extrabold text-gradient-chaos mb-1">Best Of</h1>
               <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
               <div className="mt-2 flex items-center gap-2">
                 <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
                   <button
-                    onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); setBestOfOffset(0); fetchBestOfData({ sort: 'votes', offset: 0 }) }}
+                    onClick={() => { setBestOfSort('votes'); sessionStorage.setItem('bestOfSort', 'votes'); setBestOfOffset(0); setBestOfData(null); fetchBestOfData({ sort: 'votes', offset: 0, force: true }) }}
                     className={"px-3 py-1 " + (bestOfSort === 'votes' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
                   >Most votes</button>
                   <button
-                    onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); setBestOfOffset(0); fetchBestOfData({ sort: 'newest', offset: 0 }) }}
+                    onClick={() => { setBestOfSort('newest'); sessionStorage.setItem('bestOfSort', 'newest'); setBestOfOffset(0); setBestOfData(null); fetchBestOfData({ sort: 'newest', offset: 0, force: true }) }}
                     className={"px-3 py-1 border-l border-gray-700 " + (bestOfSort === 'newest' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700')}
                   >Newest</button>
                 </div>
@@ -1720,7 +1735,7 @@ function App() {
                 </div>
                 <div className="text-center mb-1">
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
-                  <h2 className="text-base font-bold text-white leading-tight">Write a Question</h2>
+                  <h2 className="font-bubble text-base font-bold text-white leading-tight">Write a Question</h2>
                   <p className="text-[10px] text-indigo-400 leading-tight">Must begin with "What if..."</p>
                 </div>
                 <label htmlFor="question-input" className="sr-only">Your question</label>
@@ -1745,7 +1760,7 @@ function App() {
               <div className="flex-1 flex flex-col items-center text-center gap-3 min-h-0 overflow-hidden">
                 <div className="flex-1 flex flex-col items-center text-center gap-3 overflow-hidden min-h-0 w-full">
                   <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
-                  <h3 className="text-xl font-bold text-white mb-1">Submitted!</h3>
+                  <h3 className="font-bubble text-xl font-bold text-white mb-1">Submitted!</h3>
                   {renderWaitingPanel('writing')}
                   {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
                 </div>
@@ -1808,7 +1823,7 @@ function App() {
               <div className="flex-1 flex flex-col items-center text-center gap-4 min-h-0 overflow-hidden">
                 <div className="flex-1 flex flex-col items-center text-center gap-3 overflow-hidden min-h-0 w-full">
                   <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
-                  <h3 className="text-xl font-bold text-white mb-1">Answer Submitted!</h3>
+                  <h3 className="font-bubble text-xl font-bold text-white mb-1">Answer Submitted!</h3>
                   {renderWaitingPanel('answering')}
                   {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
                 </div>
@@ -1851,13 +1866,13 @@ function App() {
                   <div className="mb-1">
                     {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
                     <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
-                      <span className="text-xl md:text-2xl font-black text-white tracking-wider">READ QUESTION</span>
+                      <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ QUESTION</span>
                       <p className="text-green-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
                     <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                      <span className="text-base md:text-lg font-bold text-gray-400">WAITING</span>
+                      <span className="font-bubble text-base md:text-lg font-bold text-gray-400">WAITING</span>
                       <p className="text-gray-500 text-xs md:text-sm mt-1">{currentTurn.answerReader.name} is reading the answer</p>
                     </div>
                   )}
@@ -1870,14 +1885,14 @@ function App() {
                         </span>
                       </div>
                       <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                        <span className="text-xl md:text-2xl font-black text-white tracking-wider">GET READY</span>
+                        <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">GET READY</span>
                         <p className="text-purple-100 text-xs md:text-sm mt-1">You're reading the answer next</p>
                       </div>
                     </div>
                   )}
                   {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
                     <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                      <span className="text-xl md:text-2xl font-black text-white tracking-wider">READ ANSWER</span>
+                      <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ ANSWER</span>
                       <p className="text-purple-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
                     </div>
                   )}
@@ -1975,7 +1990,7 @@ function App() {
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <div className="text-6xl mb-4">🎭</div>
-                <h3 className="text-2xl font-bold text-white mb-2">Get Ready!</h3>
+                <h3 className="font-bubble text-2xl font-bold text-white mb-2">Get Ready!</h3>
                 <p className="text-gray-400 text-base">Reading round starting soon...</p>
               </div>
             )}
@@ -2000,7 +2015,7 @@ function App() {
             <div className="summary-header card">
               <div className="flex flex-col gap-1">
                 <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Round Complete</p>
-                <h2 className="text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
+                <h2 className="font-bubble text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
                 <p className="text-sm text-gray-400">Scroll through and vote for the best game-paired combo</p>
               </div>
               <div className="summary-header__meta">
@@ -2290,9 +2305,9 @@ function App() {
         return (
           <div className="game-container game-container--help py-2">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-white">Help & Info</h2>
-              <button onClick={() => setGameState("welcome")} className="text-gray-400 hover:text-white text-sm">
-                ✕ Close
+              <h2 className="font-bubble text-xl font-bold text-gradient-chaos">Help & Info</h2>
+              <button onClick={() => setGameState("welcome")} className="flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors">
+                ← Back
               </button>
             </div>
             
@@ -2323,7 +2338,7 @@ function App() {
                     <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                       <span className="text-xl">🎮</span>
                     </div>
-                    <h3 className="text-base font-bold text-white">How Fluke Works</h3>
+                    <h3 className="font-bubble text-lg font-bold text-white">How Fluke Works</h3>
                   </div>
                   <p className="text-sm text-gray-300 leading-relaxed">
                     Fluke is a fast party game about writing weird “What if…” questions, answering someone else’s prompt, then reading mixed-up question/answer pairings out loud. React, vote, laugh, and see the round summary at the end.
@@ -2406,7 +2421,7 @@ function App() {
                     <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
                       <span className="text-xl">❓</span>
                     </div>
-                    <h3 className="text-base font-bold text-white">Frequently Asked Questions</h3>
+                    <h3 className="font-bubble text-lg font-bold text-white">Frequently Asked Questions</h3>
                   </div>
 
                   <div className="space-y-3">
@@ -2482,7 +2497,7 @@ function App() {
                     <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
                       <span className="text-xl">💡</span>
                     </div>
-                    <h3 className="text-base font-bold text-white">Tips & Tricks</h3>
+                    <h3 className="font-bubble text-lg font-bold text-white">Tips & Tricks</h3>
                   </div>
 
                   <div className="border-t border-gray-700 pt-4">
@@ -2625,9 +2640,9 @@ function App() {
         return (
           <div className="game-container py-2">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-white">Support the Project</h2>
-              <button onClick={() => setGameState("welcome")} className="text-gray-400 hover:text-white text-sm">
-                ✕ Close
+              <h2 className="font-bubble text-xl font-bold text-gradient-chaos">Support the Project</h2>
+              <button onClick={() => setGameState("welcome")} className="flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors">
+                ← Back
               </button>
             </div>
 
@@ -2636,7 +2651,7 @@ function App() {
                 <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
                   <span className="text-xl">🎁</span>
                 </div>
-                <h3 className="text-base font-bold text-white">Value for Value</h3>
+                <h3 className="font-bubble text-lg font-bold text-white">Value for Value</h3>
               </div>
 
               <p className="text-sm text-gray-300 leading-relaxed">

@@ -118,13 +118,6 @@ export default function LandingPage({
           </p>
         </div>
 
-        <button
-          onClick={scrollToPlay}
-          className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 hover:text-white/80 text-[10px] tracking-[0.3em] animate-pulse transition-colors"
-          aria-label="Scroll to play"
-        >
-          SCROLL ↓
-        </button>
       </section>
 
       <section className="relative overflow-hidden px-4 py-10 md:py-12">
