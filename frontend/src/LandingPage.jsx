@@ -190,8 +190,7 @@ export default function LandingPage({
       <section id="play" className="relative overflow-hidden px-4 pt-2 pb-12 md:pt-4 md:pb-16">
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl">
-            <span className="text-white">Ready when </span>
-            <span className="text-gradient-chaos">you are.</span>
+            <span className="text-gradient-chaos">Let's get it started</span>
           </h2>
 
           <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto items-stretch">
