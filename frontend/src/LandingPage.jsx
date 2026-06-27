@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react"
+import usePWAInstall from "./hooks/usePWAInstall"
+import IOSInstallHelp from "./components/IOSInstallHelp"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
@@ -28,8 +30,10 @@ export default function LandingPage({
   const [idx, setIdx] = useState(0)
   const [bannerSrc, setBannerSrc] = useState("/hero-chaos-v3.png")
   const [dbPairs, setDbPairs] = useState([])
+  const [showIOSHelp, setShowIOSHelp] = useState(false)
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
+  const { showInstallLink, isIOS, promptInstall } = usePWAInstall()
 
   useEffect(() => {
     if (fetchedRef.current) return
@@ -286,8 +290,10 @@ export default function LandingPage({
       </section>
 
       <footer className="border-t border-white/5 px-4 py-10 text-center text-sm text-[#E6E1FF]/50 overflow-hidden">
-        <p className="font-bubble text-lg text-[#E6E1FF]">fluke</p>
-        <p className="mt-1">— chaos that connects.</p>
+        <p className="font-bubble text-lg text-[#E6E1FF] inline-flex items-baseline gap-2">
+          fluke!
+          <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
+        </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200">
             How to play →
@@ -295,6 +301,14 @@ export default function LandingPage({
           <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200">
             Best Of →
           </button>
+          {showInstallLink && (
+            <button
+              onClick={() => (isIOS ? setShowIOSHelp(true) : promptInstall())}
+              className="text-purple-300 hover:text-purple-200"
+            >
+              Play fullscreen (Install app) →
+            </button>
+          )}
           <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200">
             Support this project →
           </button>
@@ -303,6 +317,8 @@ export default function LandingPage({
           </span>
         </div>
       </footer>
+
+      {showIOSHelp && <IOSInstallHelp onClose={() => setShowIOSHelp(false)} />}
     </div>
   )
 }
