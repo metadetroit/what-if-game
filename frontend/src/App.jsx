@@ -104,6 +104,7 @@ function App() {
   const lastSubmitterTimerRef = useRef(null)
   const pendingVoteRef = useRef(null)
   const playerNameRef = useRef("")
+  const playersRef = useRef([])
   // Names of OTHER players currently disconnected (within their reconnect grace window).
   const disconnectedPlayersRef = useRef([])
   const disconnectDeadlineRef = useRef(null)
