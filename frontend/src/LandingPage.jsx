@@ -32,7 +32,7 @@ function AnimatedText({ text, interval = 2200 }) {
           key={i}
           className={activeIndex === i ? "inline-block animate-pop-wiggle" : "inline-block"}
         >
-          {char}
+          {char === " " ? "\u00A0" : char}
         </span>
       ))}
     </span>
