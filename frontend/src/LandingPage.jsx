@@ -91,7 +91,7 @@ export default function LandingPage({
           <div className="mt-8 max-w-xl mx-auto w-full flex flex-col gap-4">
             <button
               onClick={scrollToPlay}
-              className="btn-primary w-full rounded-full px-6 py-4 text-base font-black tracking-wide whitespace-nowrap md:py-4 md:text-base shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
+              className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               START GAME
             </button>

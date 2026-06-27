@@ -86,12 +86,20 @@ export default function PerformancePhase({
           </div>
           {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
             <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-3 px-4 overflow-y-auto max-h-[40vh] md:max-h-[35vh]">
-              <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
+              <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">
+                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+                {currentTurn.question}
+                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+              </p>
             </div>
           )}
           {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && currentTurn.answer && (
             <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-3 px-4 overflow-y-auto max-h-[40vh] md:max-h-[35vh]">
-              <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
+              <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">
+                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+                {currentTurn.answer}
+                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+              </p>
             </div>
           )}
           {!hasRead && currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
