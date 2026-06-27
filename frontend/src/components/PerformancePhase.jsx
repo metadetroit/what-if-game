@@ -41,19 +41,19 @@ export default function PerformancePhase({
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             <div className="mb-1">
-              {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
+              {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
               <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
                 <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ QUESTION</span>
                 <p className="text-green-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
               </div>
             )}
-            {!currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
+            {!currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
               <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
                 <span className="font-bubble text-base md:text-lg font-bold text-gray-400">WAITING</span>
                 <p className="text-gray-500 text-xs md:text-sm mt-1">{currentTurn.answerReader.name} is reading the answer</p>
               </div>
             )}
-            {currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
+            {currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
               <div>
                 <div className="text-center mb-2">
                   <span className="inline-flex items-center gap-1.5 text-xs text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30">
@@ -67,13 +67,13 @@ export default function PerformancePhase({
                 </div>
               </div>
             )}
-            {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
+            {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
               <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
                 <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ ANSWER</span>
                 <p className="text-purple-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
               </div>
             )}
-            {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
+            {socket?.id !== currentTurn.questionReader.id && socket?.id !== currentTurn.answerReader.id && (
               <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
                 <p className="text-gray-300 text-base md:text-lg">
                   <span className="text-green-400 font-bold text-lg md:text-xl">{currentTurn.questionReader.name}</span>
@@ -84,20 +84,20 @@ export default function PerformancePhase({
               </div>
             )}
           </div>
-          {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
+          {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
             <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-3 px-4">
               <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
             </div>
           )}
-          {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && currentTurn.answer && (
+          {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && currentTurn.answer && (
             <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-3 px-4">
               <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
             </div>
           )}
-          {!hasRead && currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
+          {!hasRead && currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
             <button onClick={completeReading} className="btn-primary mb-2 bg-green-600 hover:bg-green-700 text-base py-3">Done Reading →</button>
           )}
-          {!hasRead && !currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
+          {!hasRead && !currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
             <button onClick={completeReading} className="btn-primary mb-2 bg-purple-600 hover:bg-purple-700 text-base py-3">Done Reading →</button>
           )}
           </div>

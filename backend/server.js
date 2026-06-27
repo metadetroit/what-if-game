@@ -408,39 +408,41 @@ function disbandIfBelowMinimum(roomCode) {
 }
 
 // --- Socket.IO rate limiting ---
-// Per-socket event frequency limiter
-const socketRateMap = new Map(); // socketId -> { count, resetTime }
-const SOCKET_RATE_WINDOW = 60 * 1000; // 1 minute
-const SOCKET_RATE_MAX = 60; // 60 events per minute per socket
+// Only the high-frequency, spammable 'reaction' event is throttled. Critical
+// lifecycle/gameplay events (reconnect-player, check-presence, reading-complete,
+// submit-vote, etc.) are NEVER blocked so reconnection and game flow can't break.
+// Excess reactions are silently dropped (no error emitted to the client).
+const reactionRateMap = new Map(); // socketId -> { count, resetTime }
+const REACTION_RATE_WINDOW = 10 * 1000; // 10 seconds
+const REACTION_RATE_MAX = 20; // 20 reactions per 10s per socket
 
-function checkSocketRate(socket) {
+function checkReactionRate(socketId) {
   const now = Date.now();
-  let entry = socketRateMap.get(socket.id);
+  let entry = reactionRateMap.get(socketId);
   if (!entry || now > entry.resetTime) {
-    entry = { count: 1, resetTime: now + SOCKET_RATE_WINDOW };
-    socketRateMap.set(socket.id, entry);
+    entry = { count: 1, resetTime: now + REACTION_RATE_WINDOW };
+    reactionRateMap.set(socketId, entry);
     return true;
   }
   entry.count++;
-  return entry.count <= SOCKET_RATE_MAX;
+  return entry.count <= REACTION_RATE_MAX;
 }
 
 // Cleanup rate map on disconnect
 function clearSocketRate(socketId) {
-  socketRateMap.delete(socketId);
+  reactionRateMap.delete(socketId);
 }
 
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
   
-  // Rate limit all incoming events
+  // Throttle ONLY the 'reaction' event; silently drop excess. All other events pass through.
   socket.use((packet, next) => {
-    if (checkSocketRate(socket)) {
-      next();
-    } else {
-      console.warn(`[rate-limit] Socket ${socket.id} exceeded event rate limit`);
-      next(new Error('Rate limit exceeded'));
+    const eventName = Array.isArray(packet) ? packet[0] : null;
+    if (eventName === 'reaction' && !checkReactionRate(socket.id)) {
+      return; // drop excess reaction silently — do not call next(), do not error
     }
+    next();
   });
   
   // NOTE: Stale connection cleanup happens implicitly via the reconnect-player handler
