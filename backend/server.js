@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const { initDatabase, getDb, saveDatabase } = require('./database');
 
 const ADMIN_KEY = 'fluke-admin-2024';
@@ -13,6 +14,28 @@ const app = express();
 const corsOrigin = process.env.CORS_ORIGIN || "*";
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
+
+// --- Rate limiting ---
+// General API limiter: 100 requests per minute per IP
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests, please slow down.' }
+});
+app.use('/api/', apiLimiter);
+
+// Stricter limiter for write operations: 10 per minute per IP
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests, please slow down.' }
+});
+app.use('/api/hide-game', writeLimiter);
+app.use('/api/delete-best-of', writeLimiter);
 
 // Health check endpoint for Render.com
 app.get('/api/health', (req, res) => {
@@ -384,8 +407,41 @@ function disbandIfBelowMinimum(roomCode) {
   return false;
 }
 
+// --- Socket.IO rate limiting ---
+// Per-socket event frequency limiter
+const socketRateMap = new Map(); // socketId -> { count, resetTime }
+const SOCKET_RATE_WINDOW = 60 * 1000; // 1 minute
+const SOCKET_RATE_MAX = 60; // 60 events per minute per socket
+
+function checkSocketRate(socket) {
+  const now = Date.now();
+  let entry = socketRateMap.get(socket.id);
+  if (!entry || now > entry.resetTime) {
+    entry = { count: 1, resetTime: now + SOCKET_RATE_WINDOW };
+    socketRateMap.set(socket.id, entry);
+    return true;
+  }
+  entry.count++;
+  return entry.count <= SOCKET_RATE_MAX;
+}
+
+// Cleanup rate map on disconnect
+function clearSocketRate(socketId) {
+  socketRateMap.delete(socketId);
+}
+
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
+  
+  // Rate limit all incoming events
+  socket.use((packet, next) => {
+    if (checkSocketRate(socket)) {
+      next();
+    } else {
+      console.warn(`[rate-limit] Socket ${socket.id} exceeded event rate limit`);
+      next(new Error('Rate limit exceeded'));
+    }
+  });
   
   // NOTE: Stale connection cleanup happens implicitly via the reconnect-player handler
   // which checks if the 'active' socket is actually dead before rejecting the reconnect.
@@ -2105,6 +2161,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     lastVoteTime.delete(socket.id);
+    clearSocketRate(socket.id);
 
     const roomCode = socket.roomCode;
     if (!roomCode || !games[roomCode]) return;
