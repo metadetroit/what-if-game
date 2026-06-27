@@ -4,23 +4,82 @@ A hilarious multiplayer question & answer chain game for 3-15 players. Perfect f
 
 ## How to Play
 
-1. **Create a Room** - One player hosts and shares the 6-digit room code
+1. **Create a Room** - One player hosts and shares the 5-digit room code
 2. **Join** - Everyone enters their name and the room code
 3. **Write** - Each player writes a "What if..." question
-4. **Answer** - Everyone gets someone else's question and writes an answer
-5. **Perform** - Players read questions and answers in a chain, creating hilarious mismatched Q&A pairs!
+4. **Answer** - Questions are shuffled and distributed, everyone answers
+5. **Perform** - Players take turns reading questions and answers aloud, creating hilarious mismatched Q&A pairs
+6. **Vote** - After all readings, everyone votes for the best Q&A pair
+7. **Replay** - Host can start a new round with the same players or disband for a new group
+
+## Features
+
+- **Real-time multiplayer** via Socket.IO (3-15 players per game)
+- **Best Of page** - Public gallery of top-voted questions, answers, and Q&A pairs from all games
+- **Anonymous mode** - Host can hide player names in end-game summary and Best Of
+- **No self-reading toggle** - Prevents players from reading their own content
+- **Emoji reactions** - React with ❤️ 😂 ❓ during the performance phase
+- **Reconnect grace period** - Disconnected players have 3 minutes to rejoin
+- **Force advance** - Host can skip players who haven't submitted
+- **Round history** - Review past rounds during the voting phase
+- **Awards** - Fastest typer, slowest typer, and most-adored writer recognitions
+- **Sound effects** - Toggleable sound cues for game events
+- **PWA installable** - Add to home screen on mobile devices
+- **Accessibility** - ARIA dialog attributes, focus traps, and keyboard navigation for modals
+- **Error boundary** - Graceful error handling with reload option
+- **Rate limiting** - Backend API and socket event rate limiting to prevent abuse
 
 ## Tech Stack
 
-- **Frontend**: React + Vite + Tailwind CSS
-- **Backend**: Node.js + Express + Socket.io
+- **Frontend**: React 18 + Vite + Tailwind CSS
+- **Backend**: Node.js + Express + Socket.IO
+- **Database**: Turso (libSQL) for Best Of content persistence
 - **Real-time**: WebSocket connections for instant game state sync
+
+## Project Structure
+
+```
+windsurf-project/
+├── backend/
+│   ├── server.js          # Express + Socket.IO server
+│   ├── server-static.js   # Combined server (serves frontend + API)
+│   ├── database.js        # Turso/libSQL database wrapper
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx              # Main app component & game state
+│   │   ├── LandingPage.jsx      # Welcome screen with hero image
+│   │   ├── main.jsx             # Entry point (wraps App in ErrorBoundary)
+│   │   ├── index.css            # Global styles + Tailwind
+│   │   ├── components/
+│   │   │   ├── LobbyView.jsx       # Lobby phase (room code, players, host controls)
+│   │   │   ├── WritingPhase.jsx    # Question writing phase
+│   │   │   ├── AnsweringPhase.jsx  # Answer writing phase
+│   │   │   ├── PerformancePhase.jsx # Reading/performance phase
+│   │   │   ├── SummaryPhase.jsx    # End-game voting & awards
+│   │   │   ├── BestOfView.jsx      # Public Best Of gallery
+│   │   │   ├── HelpPage.jsx        # How to play / FAQ
+│   │   │   ├── SupportPage.jsx     # Support/contact page
+│   │   │   └── ErrorBoundary.jsx   # React error boundary
+│   │   ├── hooks/
+│   │   │   ├── useSocketEvents.js  # Socket.IO event handlers
+│   │   │   └── useFocusTrap.js     # Focus trap for modal accessibility
+│   │   └── utils/
+│   │       └── gameUtils.js        # Shared utility functions
+│   ├── public/
+│   │   ├── manifest.json        # PWA manifest
+│   │   └── hero-chaos-v3.png    # Hero image
+│   ├── index.html              # HTML with OG tags, favicon, PWA links
+│   └── package.json
+└── README.md
+```
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 18+ installed
-- npm or yarn
+- npm
+- Turso database account (for Best Of feature) — set `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` env vars
 
 ### 1. Start the Backend
 
@@ -31,6 +90,11 @@ npm run dev
 ```
 
 Backend runs on `http://localhost:3001`
+
+Required environment variables:
+- `TURSO_DATABASE_URL` - Turso database URL
+- `TURSO_AUTH_TOKEN` - Turso auth token
+- `CORS_ORIGIN` - CORS origin (defaults to `*`)
 
 ### 2. Start the Frontend
 
@@ -55,24 +119,24 @@ Frontend runs on `http://localhost:3000`
 
 | Phase | Description |
 |-------|-------------|
-| **Lobby** | Players join using room code, host starts when ready |
+| **Lobby** | Players join using room code, host configures settings and starts when ready |
 | **Writing** | Everyone writes a "What if..." question |
-| **Answering** | Questions are shuffled and distributed, everyone answers |
-| **Performing** | Chain reading where Q&A pairs create funny mismatches |
-| **Ended** | Game complete! |
+| **Answering** | Questions are shuffled and distributed, everyone answers someone else's question |
+| **Performing** | Players take turns reading Q&A pairs aloud — mismatched pairings create comedy |
+| **Ended** | Vote for best Q&A pair, view awards, host starts new round or disbands |
 
 ## Architecture
 
 ```
 ┌─────────────┐     WebSocket      ┌─────────────┐
 │   Frontend  │◄─────────────────►│   Backend   │
-│  (React)    │    Socket.io       │  (Node.js)  │
+│  (React)    │    Socket.IO       │  (Node.js)  │
 └─────────────┘                    └─────────────┘
                                         │
                                    ┌────┴────┐
-                                   │  Games  │
-                                   │  Store  │
-                                   │(Memory) │
+                                   │  Turso  │
+                                   │   DB    │
+                                   │(Best Of)│
                                    └─────────┘
 ```
 
@@ -99,7 +163,10 @@ Play with friends across the internet! The easiest deployment is using **Render.
    - **Runtime**: `Node`
    - **Start Command**: `node server-static.js`
    - **Plan**: `Free`
-   - **Environment Variable**: `CORS_ORIGIN` = `*`
+   - **Environment Variables**:
+     - `CORS_ORIGIN` = `*`
+     - `TURSO_DATABASE_URL` = your Turso URL
+     - `TURSO_AUTH_TOKEN` = your Turso auth token
 
 4. **Done!** Your game is live at `https://what-if-game.onrender.com`
 
@@ -115,21 +182,22 @@ For separate frontend/backend deployment (see `DEPLOY.md` for full instructions)
 ### Deployment Notes
 
 - **Free tier**: Service sleeps after 15 min inactivity (30 sec to wake up)
-- **CORS**: Already configured for any origin (`*`)
+- **CORS**: Configurable via `CORS_ORIGIN` env var
 - **Socket.IO**: Fully supported on Render.com
 - **Players**: Up to 15 concurrent players per game
+- **Rate limiting**: API endpoints limited to 100 req/min; write ops 10 req/min; socket events 60/min per connection
 
-## Future Enhancements
+## API Endpoints
 
-- [ ] Persistent storage (Redis/MongoDB)
-- [ ] Spectator mode
-- [ ] Custom question categories
-- [ ] Timer for each phase
-- [ ] Score/voting system
-- [ ] Emoji reactions during reading
-- [ ] Game history/recap
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/best-of` | Get top-voted content (questions, answers, Q&A pairs) |
+| GET | `/api/random-pairs` | Get random Q&A pairs for front page examples |
+| POST | `/api/hide-game` | Hide a game from Best Of (admin only) |
+| POST | `/api/delete-best-of` | Hide individual Best Of item (admin only) |
 
 ## License
 
-Copyright (c) 2026 FLuke Games. All rights reserved. >
+Copyright (c) 2026 FLuke Games. All rights reserved.
 No one is permitted to copy, distribute, or modify this software for any purpose without explicit written permission from the author.
