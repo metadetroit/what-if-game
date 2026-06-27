@@ -1,0 +1,18 @@
+{
+  "name": "Fluke — The What If Party Game",
+  "short_name": "Fluke",
+  "description": "Write weird What If questions, answer someone else's, and perform the chaos. 3-15 players, no signup, no download.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0617",
+  "theme_color": "#2a0f45",
+  "icons": [
+    {
+      "src": "/hero-chaos-v3.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

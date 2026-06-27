@@ -3,6 +3,11 @@ import LandingPage from "./LandingPage"
 import BestOfView from "./components/BestOfView"
 import HelpPage from "./components/HelpPage"
 import SupportPage from "./components/SupportPage"
+import LobbyView from "./components/LobbyView"
+import WritingPhase from "./components/WritingPhase"
+import AnsweringPhase from "./components/AnsweringPhase"
+import PerformancePhase from "./components/PerformancePhase"
+import SummaryPhase from "./components/SummaryPhase"
 import {
   noticeFor,
   loadSession,
@@ -20,6 +25,8 @@ import {
   writeSoundMuted,
   playSound
 } from "./utils/gameUtils"
+import { useFocusTrap } from "./hooks/useFocusTrap"
+import { useSocketEvents } from "./hooks/useSocketEvents"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
@@ -103,6 +110,13 @@ function App() {
   const disconnectNoticeTimerRef = useRef(null)
   const prefillWhatIfRef = useRef(getPrefillWhatIf())
   const skipNextCountdownRef = useRef(false)
+
+  const reconnectTrapRef = useFocusTrap(!!reconnectPrompt)
+  const kickTrapRef = useFocusTrap(!!kickConfirm)
+  const forceConfirmTrapRef = useFocusTrap(!!forceConfirm)
+  const hideGameTrapRef = useFocusTrap(!!hideGameConfirm)
+  const countdownTrapRef = useFocusTrap(!!showCountdown)
+  const disconnectTrapRef = useFocusTrap(!!showDisconnectOverlay)
 
   useEffect(() => { roomCodeRef.current = roomCode }, [roomCode])
   useEffect(() => { prefillWhatIfRef.current = prefillWhatIf }, [prefillWhatIf])
@@ -380,570 +394,67 @@ function App() {
     }
   }, [])
 
-  const handleVote = (type, targetId) => {
-    if (pendingVoteRef.current) {
-      setNotice(noticeFor('Please wait…', 'info', 1200))
-      return
-    }
-    console.log('handleVote called:', { type, targetId, userVotes: userVotes[targetId], socket: !!socketRef.current, socketId: socketRef.current?.id, roomCode: roomCodeRef.current, socketRoomCode: socketRef.current?.roomCode })
-    if (type === 'qa_pair' && summaryPairVoteId && summaryPairVoteId !== targetId) {
-      setNotice(noticeFor('You already voted for a different pairing', 'warn', 2500))
-      return
-    }
-    if (!socketRef.current) {
-      console.log('Vote rejected: socket not connected')
-      return // Socket not connected
-    }
-    if (!roomCodeRef.current) {
-      console.log('Vote rejected: roomCode not set')
-      return // Room code not set
-    }
-    console.log('Emitting submit-vote:', { type, targetId })
-    pendingVoteRef.current = { type, targetId }
-    socketRef.current.emit("submit-vote", { type, targetId })
-  }
-
-  useEffect(() => {
-    const newSocket = io(SOCKET_URL, {
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000
-    })
-    setSocket(newSocket)
-    socketRef.current = newSocket
-
-    newSocket.on("connect", () => {
-      console.log("Connected to server")
-      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
-      // Connection restored — hide the full-screen reconnect overlay.
-      setShowDisconnectOverlay(false)
-      setDisconnectOverlayDeadline(null)
-      // Clear the persistent "Connection lost" notice now that we're back online.
-      if (activeGameplay) {
-        setNotice(noticeFor("Back online", "success", 1500))
-      } else {
-        setNotice((prev) => (prev && prev.tone === "warn" ? null : prev))
-      }
-
-      const session = loadSession()
-      if (!session) {
-        console.log("No saved session found")
-        return
-      }
-      // Guard: only attempt reconnect-player once per session entry, even if
-      // socket.io fires multiple "connect" events (transport upgrade, etc.).
-      if (reconnectAttemptedRef.current) {
-        console.log("Reconnect already attempted - skipping duplicate emit")
-        return
-      }
-      reconnectAttemptedRef.current = true
-      if (gameStateRef.current !== "welcome") {
-        // Mid-session reconnect (e.g. phone woke up): re-register silently without showing the prompt
-        console.log("Mid-game socket reconnect — auto-emitting reconnect-player")
-        newSocket.emit("reconnect-player", { roomCode: session.roomCode, playerName: session.playerName })
-      } else {
-        console.log("Prompting reconnect to room:", session.roomCode, "for player:", session.playerName)
-        setReconnectPrompt({ roomCode: session.roomCode, playerName: session.playerName })
-      }
-    })
-
-    newSocket.on("disconnect", () => {
-      console.log("Socket disconnected")
-      // CRITICAL: reset so the next 'connect' event can re-emit reconnect-player
-      reconnectAttemptedRef.current = false
-      // Only show notice during active gameplay; welcome/summary screens stay silent.
-      // Persistent (no auto-expiry) so it stays visible until we actually reconnect.
-      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
-      if (activeGameplay) {
-        // Show a blocking overlay so the disconnected player can't interact with a stale screen.
-        setShowDisconnectOverlay(true)
-        setDisconnectOverlayDeadline(Date.now() + 180000)
-        setNotice(noticeFor("You disconnected. If you don't automatically reconnect, try refreshing your screen.", "warn", null))
-      }
-      touchSession()
-    })
-
-    const handleBeforeUnload = () => {
-      touchSession()
-    }
-    window.addEventListener("beforeunload", handleBeforeUnload)
-
-    // Re-validate our presence with the server after the page becomes visible
-    // again (phone wake-up / tab switch) or is restored from the bfcache.
-    const revalidatePresence = () => {
-      const state = gameStateRef.current
-      if (state === "welcome" || state === "reconnect-failed") return
-      const session = loadSession()
-      if (!session) return
-      if (socketRef.current?.connected) {
-        console.log("[presence] Page active — sending check-presence")
-        socketRef.current.emit("check-presence", { roomCode: session.roomCode, playerName: session.playerName })
-      } else {
-        // Socket not connected yet — ensure reconnect-player fires when it does
-        reconnectAttemptedRef.current = false
-        console.log("[presence] Page active — socket offline, cleared reconnect flag")
-      }
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") return
-      revalidatePresence()
-    }
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-
-    // iOS Safari restores pages from the back/forward cache without firing
-    // "connect"; pageshow is a more reliable trigger to re-validate presence.
-    const handlePageShow = () => {
-      revalidatePresence()
-    }
-    window.addEventListener("pageshow", handlePageShow)
-
-    const updatePlayersAndHost = (payload) => {
-      if (!payload) return;
-      const playerList = Array.isArray(payload) ? payload : payload.players || [];
-      const nextHostId = !Array.isArray(payload) ? payload.hostId : null;
-      console.log("updatePlayersAndHost called with:", payload)
-      console.log("nextHostId:", nextHostId, "Socket ID:", newSocket.id)
-      setPlayers(playerList)
-      // Only update host state if hostId is provided in the payload
-      // This prevents overriding the correct host state set during reconnection
-      if (nextHostId) {
-        console.log("Updating host state from updatePlayersAndHost")
-        setHostId(nextHostId)
-        setIsHost(newSocket.id === nextHostId)
-      } else {
-        console.log("No hostId in payload, not updating host state")
-      }
-    }
-
-    newSocket.on("player-joined", (payload) => {
-      console.log("player-joined event received:", payload)
-      updatePlayersAndHost(payload)
-    })
-    newSocket.on("player-left", (payload) => {
-      updatePlayersAndHost(payload)
-      // A player was removed (left/abandoned, or dropped after the grace window).
-      // Stop showing any stale "waiting for…" notice for disconnected players.
-      if (disconnectedPlayersRef.current.length > 0) {
-        disconnectedPlayersRef.current = []
-        disconnectDeadlineRef.current = null
-        if (disconnectNoticeTimerRef.current) {
-          clearTimeout(disconnectNoticeTimerRef.current)
-          disconnectNoticeTimerRef.current = null
-        }
-        setNotice((prev) => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
-      }
-    })
-    newSocket.on("game-started", (data) => { setGameState("writing"); setSubmitted(false); setFirstSubmitter(null); setCurrentContent(null); setMyReactions(new Set()); setReactionCounts({}); setProgress({ submitted: 0, total: data.totalPlayers || players.length }); const prefill = prefillWhatIfRef.current; setQuestion(prefill ? "What if" : ""); if (prefill) saveDraft(roomCodeRef.current, "writing", "What if"); playSound("chime"); if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode) })
-    newSocket.on("progress-update", (data) => {
-      console.log("Progress-update received:", data)
-      setProgress(data)
-      if (data.playerStatuses) { setPlayerStatuses(data.playerStatuses) }
-      // Sounds only at phase transitions, not on all-submitted
-      if (data.firstSubmitter) { setFirstSubmitter(data.firstSubmitter) }
-      if (data.lastQuestionSubmitter) {
-        console.log("Setting lastQuestionSubmitter to:", data.lastQuestionSubmitter)
-        setLastQuestionSubmitter(data.lastQuestionSubmitter)
-      }
-    })
-    newSocket.on("question-submitted", () => { setSubmitted(true); setError("") })
-    newSocket.on("answer-submitted", () => { setSubmitted(true); setError("") })
-
-    newSocket.on("answer-phase", (data) => {
-      console.log("Answer-phase event received:", data)
-      if (!data || !data.question) {
-        console.log("ERROR: Invalid answer-phase data received:", data)
-        setError("Invalid question data received")
-        return
-      }
-      if (data.lastQuestionSubmitter) {
-        console.log("Setting lastQuestionSubmitter from answer-phase to:", data.lastQuestionSubmitter)
-        setLastQuestionSubmitter(data.lastQuestionSubmitter)
-      }
-      setAssignedQuestion(data.question)
-      setGameState("answering")
-      setSubmitted(false)
-      playSound("chime")
-      setProgress({ submitted: 0, total: players.length })
-      setPlayerStatuses(players.map(p => ({ name: p.name, submitted: false })))
-      setFirstSubmitter(null)
-      setShowLastSubmitterIndicator(false)
-    })
-
-    newSocket.on("performance-phase", (data) => {
-      setGameState("performing")
-      setGameStats({ round: 1, total: data.totalRounds })
-      setReactionCounts({})
-      setMyReactions(new Set())
-      setCurrentContent(null)
-      playSound("chime")
-      setProgress({ submitted: 0, total: 0 })
-      setPlayerStatuses([])
-      setForceConfirm(false)
-      setShowLastSubmitterIndicator(false)
-      setLastQuestionSubmitter(null)
-    })
-
-    newSocket.on("reading-turn", (data) => {
-      setCurrentTurn(data)
-      setGameStats({ round: data.round, total: data.total })
-      setHasRead(false)
-      // Track what content is currently being read (for reaction self-checks).
-      // Always use the explicit fields from the server so the author check is accurate.
-      if (data.currentContentDbId) {
-        setCurrentContent({
-          dbId: data.currentContentDbId,
-          authorId: data.currentContentAuthorId,
-          type: data.currentContentType || 'question'
-        })
-      }
-      // No sounds between individual readings to avoid interrupting the flow
-      // Reset performance votes for new turn
-      setPerformanceVotes({})
-    })
-
-    newSocket.on("reaction", (data) => {
-      const id = Math.random().toString(36).slice(2)
-      setReactions(prev => [...prev, { id, emoji: data.emoji, x: data.x, y: data.y, createdAt: Date.now() }])
-    })
-
-    newSocket.on("reaction-counts", (data) => {
-      setReactionCounts(prev => ({ ...prev, [data.contentDbId]: data.counts }))
-    })
-
-    newSocket.on("vote-update", (data) => {
-      setSummaryVotes(prev => ({
-        ...prev,
-        [data.targetId]: data.voteCount
-      }))
-      if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
-    })
-
-    newSocket.on("vote-submitted", (data) => {
-      const pendingVote = pendingVoteRef.current
-      pendingVoteRef.current = null
-      if (data.success) {
-        const isVoted = typeof data.isVoted === 'boolean' ? data.isVoted : true
-        setUserVotes(prev => ({
-          ...prev,
-          [data.targetId]: isVoted
-        }))
-        if (pendingVote?.type === 'qa_pair') {
-          setSummaryPairVoteId(isVoted ? data.targetId : null)
-        }
-        setNotice(noticeFor(isVoted ? 'Vote saved' : 'Vote removed', 'success', 1200))
-      } else {
-        setNotice(noticeFor(data.message || 'Vote failed', 'warn', 2000))
-      }
-    })
-
-    newSocket.on("game-ended", (data) => {
-      setGameState("ended")
-      setCurrentContent(null)
-      setMyReactions(new Set())
-      playSound("chime")
-      if (data.summary) {
-        applySummaryData(data.summary, anonymousMode)
-        setRoundHistory(prev => [...prev, { summary: data.summary, anonymousMode, timestamp: Date.now() }])
-      }
-      if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
-      if (data.mostAdoredWriter) setMostAdoredWriter(data.mostAdoredWriter)
-      if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
-        setGameAwards({
-          firstQuestionSubmitter: data.firstQuestionSubmitter,
-          firstAnswerSubmitter: data.firstAnswerSubmitter,
-          lastQuestionSubmitter: data.lastQuestionSubmitter,
-          lastAnswerSubmitter: data.lastAnswerSubmitter
-        })
-      }
-    })
-
-    newSocket.on("game-restarted", (data) => {
-      setGameState("writing")
-      setSubmitted(false)
-      const prefill = prefillWhatIfRef.current
-      setQuestion(prefill ? "What if " : "")
-      setAnswer("")
-      setAssignedQuestion("")
-      setCurrentTurn(null)
-      setGameStats({ round: 0, total: 0 })
-      setHasRead(false)
-      setProgress({ submitted: 0, total: 0 })
-      setError("")
-      applySummaryData(null, false)
-      setPlayerStatuses([])
-      setForceConfirm(false)
-      setShowLastSubmitterIndicator(false)
-      setLastQuestionSubmitter(null)
-      setGameAwards({ firstQuestionSubmitter: null, firstAnswerSubmitter: null, lastQuestionSubmitter: null, lastAnswerSubmitter: null })
-      setPerformanceVotes({})
-      setUserVotes({})
-      setSummaryVotes({})
-      setSummaryPairVoteId(null)
-      setMostAdoredWriter(null)
-
-      // Carry over lastQuestionSubmitter from prior round (if provided) so the "you were last" nudge shows on the writing screen after replay
-      const carried = data && data.lastQuestionSubmitter ? data.lastQuestionSubmitter : null
-      if (carried) {
-        setLastQuestionSubmitter(carried)
-        setShowLastSubmitterIndicator(false)
-      }
-    })
-
-    newSocket.on("game-disbanded", (data) => {
-      console.log("Game disbanded:", data.message)
-      clearSession()
-      setGameState("welcome")
-      setRoomCode("")
-      setPlayers([])
-      setIsHost(false)
-      setQuestion("")
-      setAnswer("")
-      setAssignedQuestion("")
-      setSubmitted(false)
-      setProgress({ submitted: 0, total: 0 })
-      setCurrentTurn(null)
-      setGameStats({ round: 0, total: 0 })
-      setHasRead(false)
-      applySummaryData(null, false)
-      setPlayerStatuses([])
-      setForceConfirm(false)
-      setNotice(noticeFor(data.message || "The host returned everyone to the main screen.", "info", 5000))
-      setPerformanceVotes({})
-      setUserVotes({})
-      setSummaryVotes({})
-      setSummaryPairVoteId(null)
-      setMostAdoredWriter(null)
-    })
-
-    newSocket.on("anonymous-toggled", (data) => {
-      setAnonymousMode(data.anonymousMode)
-    })
-
-    newSocket.on("player-disconnected", (data) => {
-      setPlayers(data.players)
-      // Track every other player currently disconnected so the notice can name
-      // all of them, and persist until they reconnect (or are removed).
-      const name = data.disconnectedPlayer
-      if (name && !disconnectedPlayersRef.current.includes(name)) {
-        disconnectedPlayersRef.current = [...disconnectedPlayersRef.current, name]
-      }
-      if (typeof data.gracePeriod === "number" && !disconnectDeadlineRef.current) {
-        disconnectDeadlineRef.current = Date.now() + data.gracePeriod * 1000
-      }
-      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
-      if (activeGameplay) {
-        if (disconnectNoticeTimerRef.current) clearTimeout(disconnectNoticeTimerRef.current)
-        disconnectNoticeTimerRef.current = setTimeout(() => {
-          setNotice((prev) => (prev && prev.expiresAt == null && prev.tone === "warn" ? null : prev))
-          disconnectNoticeTimerRef.current = null
-        }, 150000)
-        setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
-      }
-    })
-
-    newSocket.on("player-rejoined", (data) => {
-      setPlayers(data.players)
-      if (data.hostId) {
-        setHostId(data.hostId)
-        setIsHost(newSocket.id === data.hostId)
-      }
-      // Drop the reconnected player from the waiting list.
-      disconnectedPlayersRef.current = disconnectedPlayersRef.current.filter((n) => n !== data.playerName)
-      // Don't announce our own reconnection here — the "reconnected" handler covers that.
-      if (data.playerName === playerNameRef.current) return
-      const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(gameStateRef.current)
-      const remaining = disconnectedPlayersRef.current
-      if (remaining.length === 0) {
-        disconnectDeadlineRef.current = null
-        if (disconnectNoticeTimerRef.current) {
-          clearTimeout(disconnectNoticeTimerRef.current)
-          disconnectNoticeTimerRef.current = null
-        }
-        if (activeGameplay) {
-          setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2500))
-        }
-      } else {
-        // Someone reconnected but others are still gone — keep naming who we're waiting on.
-        if (activeGameplay) {
-          setNotice(noticeFor(`${data.playerName} reconnected — still waiting for ${remaining.join(", ")}…`, "info", null))
-        }
-      }
-    })
-
-    // Host transferred during game (e.g. previous host disconnected)
-    newSocket.on("host-changed", (data) => {
-      if (data.hostId) setHostId(data.hostId)
-      // Only react when this client is the new host or current host changed identity
-      if (newSocket.id === data.hostId) {
-        setIsHost(true)
-        setNotice(noticeFor("You're the host now", "info", 3000))
-      } else {
-        setIsHost(false)
-        setNotice(noticeFor(`${data.hostName} is now the host`, "info", 2500))
-      }
-    })
-
-    // Player was kicked (force-progress non-submitter or host-kick)
-    newSocket.on("kicked-from-game", (data) => {
-      console.log("kicked-from-game received:", data)
-      clearSession()
-      // Clear any drafts for the active room
-      const kickCode = roomCodeRef.current
-      if (kickCode) {
-        clearDraft(kickCode, "writing")
-        clearDraft(kickCode, "answering")
-      }
-      reconnectAttemptedRef.current = false
-      setGameState("welcome")
-      setRoomCode("")
-      setPlayers([])
-      setIsHost(false)
-      setQuestion("")
-      setAnswer("")
-      setAssignedQuestion("")
-      setSubmitted(false)
-      setProgress({ submitted: 0, total: 0 })
-      setCurrentTurn(null)
-      setGameStats({ round: 0, total: 0 })
-      setHasRead(false)
-      applySummaryData(null, false)
-      setPlayerStatuses([])
-      setForceConfirm(false)
-      setKickConfirm(null)
-      setError(data?.reason || "You were removed from the game.")
-      setTimeout(() => setError(""), 6000)
-      setPerformanceVotes({})
-      setUserVotes({})
-      setSummaryVotes({})
-      setSummaryPairVoteId(null)
-      setMostAdoredWriter(null)
-    })
-
-    newSocket.on("reconnected", (data) => {
-      console.log("Reconnected event received:", data)
-      console.log("Socket ID:", newSocket.id, "Host ID from data:", data.hostId)
-      console.log("Should be host?", newSocket.id === data.hostId)
-      setReconnectPrompt(null)
-      // Prevent phase-start countdown from flashing when restoring an in-progress phase.
-      skipNextCountdownRef.current = true
-      if (data.success) {
-        playSound("success")
-        // Fresh authoritative state on our own reconnect — drop any stale waiting list and overlay.
-        disconnectedPlayersRef.current = []
-        disconnectDeadlineRef.current = null
-        setShowDisconnectOverlay(false)
-        setDisconnectOverlayDeadline(null)
-        // Restore which content this player already reacted to so they can't double-react.
-        if (Array.isArray(data.reactedContentIds)) {
-          setMyReactions(new Set(data.reactedContentIds))
-        }
-        const savedSession = loadSession()
-        if (savedSession) {
-          setPlayerName(savedSession.playerName)
-        }
-        setReconnectInfo(null)
-        setRoomCode(data.roomCode)
-        // Set socket.roomCode on client side for voting and other socket events
-        newSocket.roomCode = data.roomCode
-        if (data.hostId) {
-          console.log("Setting hostId to:", data.hostId)
-          console.log("Is host?", newSocket.id === data.hostId)
-          setHostId(data.hostId)
-          setIsHost(newSocket.id === data.hostId)
-        } else {
-          console.log("No hostId in data, using isHost flag:", !!data.isHost)
-          setIsHost(!!data.isHost)
-        }
-        setPlayers(data.players)
-        setGameState(data.phase)
-        if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode)
-        if (data.assignedQuestion && data.assignedQuestion.text) {
-          setAssignedQuestion(data.assignedQuestion.text)
-        }
-        if (data.alreadySubmittedQuestion || data.alreadyAnswered) {
-          setSubmitted(true)
-          // Restore the text of what they already submitted so they can see it
-          if (data.alreadySubmittedQuestion && data.submittedQuestion?.text) {
-            setQuestion(data.submittedQuestion.text)
-          }
-        } else {
-          setSubmitted(false)
-          // Try to restore in-flight drafts for the current phase
-          try {
-            const code = data.roomCode
-            if (data.phase === "writing") {
-              const draft = loadDraft(code, "writing")
-              if (draft) setQuestion(draft)
-            } else if (data.phase === "answering") {
-              const draft = loadDraft(code, "answering")
-              if (draft) setAnswer(draft)
-            }
-          } catch (e) { /* ignore */ }
-        }
-        if (data.progress) {
-          setProgress({ submitted: data.progress.submitted, total: data.progress.total })
-          if (data.progress.playerStatuses) setPlayerStatuses(data.progress.playerStatuses)
-        }
-        if (data.summary) { applySummaryData(data.summary, typeof data.anonymousMode === "boolean" ? data.anonymousMode : anonymousMode) }
-        if (data.mostAdoredWriter) setMostAdoredWriter(data.mostAdoredWriter)
-        if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
-        if (data.currentTurn) {
-          setCurrentTurn(data.currentTurn)
-          // Restore the current content using the explicit server fields so the
-          // self-reaction check is accurate after reconnecting.
-          if (data.currentTurn.currentContentDbId) {
-            setCurrentContent({
-              dbId: data.currentTurn.currentContentDbId,
-              authorId: data.currentTurn.currentContentAuthorId,
-              type: data.currentTurn.currentContentType || 'question'
-            })
-          }
-        }
-        const activeGameplay = ['lobby', 'writing', 'answering', 'performing'].includes(data.phase)
-        if (activeGameplay) {
-          setNotice(noticeFor("Reconnected", "success", 2000))
-        }
-      } else {
-        console.log("Reconnection failed:", data)
-      }
-    })
-
-    // Server tells us we are no longer active in the room (detected via check-presence).
-    // Silently re-emit reconnect-player so the server restores our state.
-    newSocket.on("presence-stale", () => {
-      const session = loadSession()
-      if (!session) return
-      try {
-        console.log("[presence-stale] Re-registering with server")
-        reconnectAttemptedRef.current = true
-        newSocket.emit("reconnect-player", { roomCode: session.roomCode, playerName: session.playerName })
-      } catch (e) {}
-    })
-
-    newSocket.on("reconnect-failed", (data) => {
-      console.log("Reconnect failed:", data)
-      clearSession()
-      reconnectAttemptedRef.current = false
-      setShowDisconnectOverlay(false)
-      setDisconnectOverlayDeadline(null)
-      setReconnectInfo({ roomCode: data.roomCode, playerName: data.playerName, reason: data.reason })
-      setGameState("reconnect-failed")
-    })
-
-    newSocket.on("error", (message) => {
-      console.log("Socket error received:", message)
-      setError(message)
-      setTimeout(() => setError(""), 5000)
-    })
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-      window.removeEventListener("pageshow", handlePageShow)
-      newSocket.close()
-    }
-  }, [])
+  const { handleVote } = useSocketEvents({
+    socketUrl: SOCKET_URL,
+    refs: {
+      socketRef,
+      reconnectAttemptedRef,
+      roomCodeRef,
+      gameStateRef,
+      prefillWhatIfRef,
+      disconnectedPlayersRef,
+      disconnectDeadlineRef,
+      disconnectNoticeTimerRef,
+      playerNameRef,
+      skipNextCountdownRef,
+      pendingVoteRef,
+      playersRef
+    },
+    actions: {
+      setSocket,
+      setShowDisconnectOverlay,
+      setDisconnectOverlayDeadline,
+      setNotice,
+      setReconnectPrompt,
+      setReconnectInfo,
+      setPlayers,
+      setHostId,
+      setIsHost,
+      setGameState,
+      setSubmitted,
+      setFirstSubmitter,
+      setCurrentContent,
+      setMyReactions,
+      setReactionCounts,
+      setProgress,
+      setQuestion,
+      setAnonymousMode,
+      setPlayerStatuses,
+      setAssignedQuestion,
+      setShowLastSubmitterIndicator,
+      setAnswer,
+      setGameStats,
+      setForceConfirm,
+      setLastQuestionSubmitter,
+      setPerformanceVotes,
+      setSummaryVotes,
+      setSummaryPairVoteId,
+      setMostAdoredWriter,
+      setGameAwards,
+      setUserVotes,
+      setRoundHistory,
+      setVotersCount,
+      setRoomCode,
+      setPlayerName,
+      setHasRead,
+      setKickConfirm,
+      setError,
+      setReactions,
+      setCurrentTurn
+    },
+    helpers: { applySummaryData, playSound },
+    voteState: { summaryPairVoteId }
+  })
 
   // Screen Wake Lock: keep the screen on during active game phases so the phone
   // doesn't blank and drop the connection mid-round.
@@ -1356,12 +867,12 @@ function App() {
         return (
           <div className="relative h-full">
             {reconnectPrompt && (
-              <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl">
+              <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="reconnect-title">
+                <div ref={reconnectTrapRef} className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl">
                   <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-2xl">🎮</span>
                   </div>
-                  <h2 className="text-lg font-bold text-white mb-1">Active Game Found</h2>
+                  <h2 id="reconnect-title" className="text-lg font-bold text-white mb-1">Active Game Found</h2>
                   <p className="text-sm text-gray-400 mb-3">You have a game in progress</p>
                   <div className="text-center mb-4">
                     <p className="text-xs text-gray-500 mb-1 uppercase tracking-wider">Room Code</p>
@@ -1416,694 +927,123 @@ function App() {
 
       case "lobby":
         return (
-          <div className="game-container game-container--active py-2">
-            {kickConfirm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
-                  <p className="text-lg font-bold text-white mb-2">Kick Player?</p>
-                  <p className="text-sm text-gray-400 mb-4">Remove <span className="text-white font-semibold">{kickConfirm.name}</span> from the room?</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setKickConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
-                    <button onClick={() => { socketRef.current?.emit("host-kick-player", { playerId: kickConfirm.id }); setKickConfirm(null) }} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Kick</button>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="card mb-2 py-2">
-              <div className="text-center">
-                <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Room Code</p>
-                <div className="flex items-center justify-center gap-2">
-                  <div className="text-3xl font-black text-gradient tracking-[0.2em]">{roomCode}</div>
-                  <button
-                    onClick={() => { navigator.clipboard?.writeText(roomCode); setNotice(noticeFor('Room code copied', 'success', 1200)) }}
-                    className="shrink-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm hover:bg-gray-700 transition-colors"
-                    title="Copy room code"
-                    aria-label="Copy room code"
-                  >
-                    📋
-                  </button>
-                  <button
-                    onClick={() => {
-                      const next = !soundMuted
-                      writeSoundMuted(next)
-                      setSoundMuted(next)
-                    }}
-                    className="shrink-0 bg-gray-800 border border-gray-700 rounded-lg w-8 h-8 flex items-center justify-center text-sm hover:bg-gray-700 transition-colors"
-                    title={soundMuted ? "Sounds muted — click to unmute" : "Sounds on — click to mute"}
-                    aria-label={soundMuted ? "Unmute sounds" : "Mute sounds"}
-                  >
-                    {soundMuted ? "🔇" : "🔊"}
-                  </button>
-                </div>
-                <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
-              </div>
-            </div>
-            <div className="card flex-1 min-h-0 py-2 px-2 flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider">Players</span>
-                <span className="text-[10px] text-gray-400">{players.length}/15</span>
-              </div>
-              <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
-                {players.map((player, index) => (
-                  <div key={player.id} className={"flex items-center gap-2 py-0.5 px-1.5 rounded-lg " + (player.id === socket?.id ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800")}>
-                    <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">{index + 1}</div>
-                    <span className={"text-sm truncate leading-tight " + (player.id === socket?.id ? "text-indigo-300 font-semibold" : "text-white")}>{player.name}{player.id === socket?.id && " (you)"}</span>
-                    {player.isHost && (<span className="ml-auto text-[9px] bg-indigo-900/50 text-indigo-400 px-1.5 py-0.5 rounded font-semibold">HOST</span>)}
-                    {isHost && player.id !== socket?.id && (
-                      <button onClick={() => setKickConfirm({ id: player.id, name: player.name })} className="ml-1 text-[10px] text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-red-900/30 transition-colors" title="Kick player" aria-label={`Kick ${player.name}`}>✕</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {isHost && (
-              <div className="grid grid-cols-2 gap-2">
-                <div className="card py-2 px-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-white font-medium leading-tight">Anonymous Results</p>
-                      <p className="text-[9px] text-gray-500 leading-tight">Hide names in end-game summary</p>
-                    </div>
-                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 ml-2 " + (anonymousMode ? "bg-indigo-600" : "bg-gray-600")}>
-                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (anonymousMode ? "translate-x-5" : "translate-x-0.5")} />
-                    </button>
-                  </div>
-                </div>
-                <div className="card py-2 px-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-white font-medium leading-tight">No Self-Reading</p>
-                      <p className="text-[9px] text-gray-500 leading-tight">Players won't read their own content</p>
-                    </div>
-                    <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 ml-2 " + (noSelfReading ? "bg-indigo-600" : "bg-gray-600")}>
-                      <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (noSelfReading ? "translate-x-5" : "translate-x-0.5")} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            {isHost ? (
-              <button onClick={startGame} disabled={players.length < 3} className="btn-primary py-3 text-base">
-                {players.length < 3 ? "Need " + (3 - players.length) + " more player" + (3 - players.length === 1 ? "" : "s") : "Start Game!"}
-              </button>
-            ) : (
-              <div className="text-center py-2"><span className="text-sm text-indigo-400 animate-pulse">Waiting for host to start...</span></div>
-            )}
-          </div>
+          <LobbyView
+            roomCode={roomCode}
+            players={players}
+            socket={socket}
+            isHost={isHost}
+            soundMuted={soundMuted}
+            kickConfirm={kickConfirm}
+            kickTrapRef={kickTrapRef}
+            anonymousMode={anonymousMode}
+            noSelfReading={noSelfReading}
+            setNoSelfReading={setNoSelfReading}
+            startGame={startGame}
+            setKickConfirm={setKickConfirm}
+            setSoundMuted={setSoundMuted}
+            writeSoundMuted={writeSoundMuted}
+            setNotice={setNotice}
+            socketRef={socketRef}
+          />
         )
 
       case "writing":
         return (
-          <div className="game-container game-container--active py-2">
-            {forceConfirm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
-                  <p className="text-lg font-bold text-white mb-2">Force Advance?</p>
-                  <p className="text-sm text-gray-400 mb-4">Players who haven't submitted will be removed from the game.</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setForceConfirm(false)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
-                    <button onClick={forceProgress} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Confirm</button>
-                  </div>
-                </div>
-              </div>
-            )}
-            {!submitted ? (
-              <div className="flex-1 flex flex-col min-h-0">
-                {anonymousMode && (
-                  <div className="mb-3 p-2 bg-purple-900/30 border border-purple-700 rounded-lg text-center">
-                    <p className="text-xs font-bold text-purple-300">🔒 This round is anonymized!</p>
-                  </div>
-                )}
-                <div className="phase-banner mb-2">
-                  <span>Phase 1</span>
-                  <strong>Question Time</strong>
-                </div>
-                <div className="text-center mb-1">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
-                  <h2 className="font-bubble text-base font-bold text-white leading-tight">Write a Question</h2>
-                  <p className="text-[10px] text-indigo-400 leading-tight">Must begin with "What if..."</p>
-                </div>
-                <label htmlFor="question-input" className="sr-only">Your question</label>
-                <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoCapitalize="sentences" aria-label="Your question" className="input-field h-24 resize-none mb-2 text-[15px] leading-snug md:h-28" maxLength={300} />
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-500">{question.length}/300</span>
-                  {question && !question.toLowerCase().startsWith("what if") && (<span className="text-xs text-red-500 font-semibold">Must start with "What if"</span>)}
-                </div>
-                {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mb-2">{error}</div>)}
-                <button onClick={submitQuestion} disabled={!question.trim() || !question.toLowerCase().startsWith("what if")} className="btn-primary py-3 text-base mb-2">Submit Question</button>
-                <div className="w-full">
-                  <div className={"flex justify-between text-[10px] mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
-                  <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
-                </div>
-                {canForceAdvance && (
-                  <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
-                    ⚡ Force Advance (skip waiting players)
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center text-center gap-3 min-h-0 overflow-hidden">
-                <div className="flex-1 flex flex-col items-center text-center gap-3 overflow-hidden min-h-0 w-full">
-                  <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
-                  <h3 className="font-bubble text-xl font-bold text-white mb-1">Submitted!</h3>
-                  {renderWaitingPanel('writing')}
-                  {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
-                </div>
-                {canForceAdvance && (
-                  <div className="host-nudge shrink-0 mt-2">
-                    <div>
-                      <p>Host option</p>
-                      <span>Only use this if someone disappeared.</span>
-                    </div>
-                    <button onClick={() => setForceConfirm(true)}>Skip waiting players</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <WritingPhase
+            submitted={submitted}
+            anonymousMode={anonymousMode}
+            question={question}
+            setQuestion={setQuestion}
+            roomCodeRef={roomCodeRef}
+            error={error}
+            submitQuestion={submitQuestion}
+            progress={progress}
+            canForceAdvance={canForceAdvance}
+            setForceConfirm={setForceConfirm}
+            forceConfirm={forceConfirm}
+            forceConfirmTrapRef={forceConfirmTrapRef}
+            forceProgress={forceProgress}
+            renderWaitingPanel={renderWaitingPanel}
+          />
         )
 
       case "answering":
         return (
-          <div className="game-container game-container--active py-2">
-            {forceConfirm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
-                  <p className="text-lg font-bold text-white mb-2">Force Advance?</p>
-                  <p className="text-sm text-gray-400 mb-4">Players who haven't submitted will be removed from the game.</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setForceConfirm(false)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
-                    <button onClick={forceProgress} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Confirm</button>
-                  </div>
-                </div>
-              </div>
-            )}
-            {!submitted ? (
-              <div className="flex-1 flex flex-col min-h-0">
-                <div className="phase-banner mb-2">
-                  <span>Phase 2</span>
-                  <strong>Answer this question</strong>
-                </div>
-                <div className="card mb-2 py-2 px-3 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
-                  <p className="text-base font-bold text-white leading-snug text-center">{assignedQuestion}</p>
-                </div>
-                <label htmlFor="answer-input" className="sr-only">Your answer</label>
-                <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoCapitalize="sentences" aria-label="Your answer" className="input-field h-24 resize-none mb-2 text-[15px] leading-snug md:h-28" maxLength={400} />
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-gray-500">{answer.length}/400 characters</span>
-                </div>
-                {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mb-2">{error}</div>)}
-                <button onClick={submitAnswer} disabled={!answer.trim()} className="btn-primary py-3 text-base mb-2">Submit Answer</button>
-                <div className="w-full">
-                  <div className={"flex justify-between text-[10px] mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
-                  <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
-                </div>
-                {canForceAdvance && (
-                  <button onClick={() => setForceConfirm(true)} className="mt-4 text-xs text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
-                    ⚡ Force Advance (skip waiting players)
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center text-center gap-4 min-h-0 overflow-hidden">
-                <div className="flex-1 flex flex-col items-center text-center gap-3 overflow-hidden min-h-0 w-full">
-                  <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
-                  <h3 className="font-bubble text-xl font-bold text-white mb-1">Answer Submitted!</h3>
-                  {renderWaitingPanel('answering')}
-                  {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
-                </div>
-                {canForceAdvance && (
-                  <div className="host-nudge shrink-0 mt-2">
-                    <div>
-                      <p>Host option</p>
-                      <span>Only use this if someone disappeared.</span>
-                    </div>
-                    <button onClick={() => setForceConfirm(true)}>Skip waiting players</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <AnsweringPhase
+            submitted={submitted}
+            assignedQuestion={assignedQuestion}
+            answer={answer}
+            setAnswer={setAnswer}
+            roomCodeRef={roomCodeRef}
+            error={error}
+            submitAnswer={submitAnswer}
+            progress={progress}
+            canForceAdvance={canForceAdvance}
+            setForceConfirm={setForceConfirm}
+            forceConfirm={forceConfirm}
+            forceConfirmTrapRef={forceConfirmTrapRef}
+            forceProgress={forceProgress}
+            renderWaitingPanel={renderWaitingPanel}
+          />
         )
 
       case "performing":
         return (
-          <div className="game-container game-container--active py-2">
-            {forceConfirm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
-                  <p className="text-lg font-bold text-white mb-2">Skip This Turn?</p>
-                  <p className="text-sm text-gray-400 mb-4">The current reader will be skipped and the next player will read.</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setForceConfirm(false)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
-                    <button onClick={forceProgress} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Confirm</button>
-                  </div>
-                </div>
-              </div>
-            )}
-            {currentTurn ? (
-              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="phase-banner mb-2">
-                  <span>Phase 3</span>
-                  <strong>Performance Time</strong>
-                </div>
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  <div className="mb-1">
-                    {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                    <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
-                      <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ QUESTION</span>
-                      <p className="text-green-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
-                    </div>
-                  )}
-                  {!currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                    <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                      <span className="font-bubble text-base md:text-lg font-bold text-gray-400">WAITING</span>
-                      <p className="text-gray-500 text-xs md:text-sm mt-1">{currentTurn.answerReader.name} is reading the answer</p>
-                    </div>
-                  )}
-                  {currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                    <div>
-                      <div className="text-center mb-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30">
-                          <span className="text-base">🎤</span>
-                          <span className="font-medium">{currentTurn.questionReader.name}</span> is reading the question to you
-                        </span>
-                      </div>
-                      <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                        <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">GET READY</span>
-                        <p className="text-purple-100 text-xs md:text-sm mt-1">You're reading the answer next</p>
-                      </div>
-                    </div>
-                  )}
-                  {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                    <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                      <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ ANSWER</span>
-                      <p className="text-purple-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
-                    </div>
-                  )}
-                  {socket.id !== currentTurn.questionReader.id && socket.id !== currentTurn.answerReader.id && (
-                    <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
-                      <p className="text-gray-300 text-base md:text-lg">
-                        <span className="text-green-400 font-bold text-lg md:text-xl">{currentTurn.questionReader.name}</span>
-                        <span className="text-gray-500 mx-3">→</span>
-                        <span className="text-purple-400 font-bold text-lg md:text-xl">{currentTurn.answerReader.name}</span>
-                      </p>
-                      <p className="text-gray-500 text-sm md:text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
-                    </div>
-                  )}
-                </div>
-                {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                  <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-3 px-4">
-                    <p className="text-center text-sm md:text-base text-green-100 font-bold uppercase tracking-widest mb-2">📖 Read Aloud</p>
-                    <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
-                  </div>
-                )}
-                {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && currentTurn.answer && (
-                  <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-3 px-4">
-                    <p className="text-center text-sm md:text-base text-purple-100 font-bold uppercase tracking-widest mb-2">💬 Read Aloud</p>
-                    <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
-                  </div>
-                )}
-                {!hasRead && currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
-                  <button onClick={completeReading} className="btn-primary mb-2 bg-green-600 hover:bg-green-700 text-base py-3">Done Reading →</button>
-                )}
-                {!hasRead && !currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && (
-                  <button onClick={completeReading} className="btn-primary mb-2 bg-purple-600 hover:bg-purple-700 text-base py-3">Done Reading →</button>
-                )}
-                </div>
-                <div className="shrink-0 pt-2 border-t border-gray-800">
-                  <div className="flex justify-center gap-1 mb-2">
-                    {Array.from({ length: gameStats.total }).map((_, i) => (
-                      <div key={i} className={"w-2 h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between text-xs md:text-sm text-gray-500 mb-2">
-                    <span>Turn {gameStats.round}/{gameStats.total}</span>
-                    <div className="flex-1 mx-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: (gameStats.total > 0 ? (gameStats.round / gameStats.total) * 100 : 0) + "%" }} />
-                    </div>
-                  </div>
-                  {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2">{error}</div>)}
-                  {(() => {
-                    const isSelfContent = currentContent && socketRef.current?.id === currentContent.authorId
-                    const alreadyReacted = currentContent && myReactions.has(currentContent.dbId)
-                    const currentCounts = currentContent ? reactionCounts[currentContent.dbId] : null
-                    const canReact = !isSelfContent && !alreadyReacted
-                    return (
-                      <div className="flex justify-center gap-2 mt-2">
-                        {isSelfContent && (
-                          <span className="text-[10px] text-gray-500 self-center mr-1">You wrote this — no self-reactions</span>
-                        )}
-                        {alreadyReacted && !isSelfContent && (
-                          <span className="text-[10px] text-gray-500 self-center mr-1">You reacted ✓</span>
-                        )}
-                        {['❤️', '😂', '❓'].map(emoji => {
-                          const count = currentCounts?.[emoji] || 0
-                          return (
-                            <button
-                              key={emoji}
-                              onClick={() => {
-                                if (!canReact || !currentContent) return
-                                const x = 20 + Math.random() * 60
-                                const y = 20 + Math.random() * 60
-                                socketRef.current?.emit('reaction', { emoji, x, y, contentDbId: currentContent.dbId })
-                                setReactions(prev => [...prev, { id: Math.random().toString(36).slice(2), emoji, x, y, createdAt: Date.now() }])
-                                setMyReactions(prev => new Set(prev).add(currentContent.dbId))
-                              }}
-                              disabled={!canReact}
-                              className={`text-xl bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none relative ${canReact ? 'hover:bg-gray-700' : 'opacity-30 cursor-not-allowed'}`}
-                              aria-label={`React with ${emoji}${count > 0 ? ` (${count})` : ''}`}
-                              title={`React with ${emoji}${count > 0 ? ` — ${count} reaction${count === 1 ? '' : 's'}` : ''}`}
-                            >
-                              {emoji}
-                              {count > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{count}</span>
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )
-                  })()}
-                  {isHost && (
-                    <button onClick={() => setForceConfirm(true)} className="w-full text-xs text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-1">
-                      ⚡ Skip Current Turn
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="text-6xl mb-4">🎭</div>
-                <h3 className="font-bubble text-2xl font-bold text-white mb-2">Get Ready!</h3>
-                <p className="text-gray-400 text-base">Reading round starting soon...</p>
-              </div>
-            )}
-          </div>
+          <PerformancePhase
+            currentTurn={currentTurn}
+            socket={socket}
+            socketRef={socketRef}
+            hasRead={hasRead}
+            completeReading={completeReading}
+            gameStats={gameStats}
+            error={error}
+            forceConfirm={forceConfirm}
+            forceConfirmTrapRef={forceConfirmTrapRef}
+            setForceConfirm={setForceConfirm}
+            forceProgress={forceProgress}
+            isHost={isHost}
+            currentContent={currentContent}
+            myReactions={myReactions}
+            reactionCounts={reactionCounts}
+            setReactions={setReactions}
+            setMyReactions={setMyReactions}
+          />
         )
-
       case "ended":
         return (
-          <div className="game-container game-container--summary py-4">
-            {hideGameConfirm && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
-                  <p className="text-lg font-bold text-white mb-2">Hide from Best Of?</p>
-                  <p className="text-sm text-gray-400 mb-4">This will prevent any content from this game from appearing on the public Best Of page.</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setHideGameConfirm(false)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
-                    <button onClick={handleHideGame} className="btn-primary flex-1 py-2 text-sm bg-red-700 hover:bg-red-800">Confirm</button>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="summary-header card">
-              <div className="flex flex-col gap-1">
-                <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Round Complete</p>
-                <h2 className="font-bubble text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
-                <p className="text-sm text-gray-400">Scroll through and vote for the best game-paired combo</p>
-              </div>
-              <div className="summary-header__meta">
-                {roundHistory.length > 0 && (
-                  <div>
-                    <p className="summary-pill">History</p>
-                    <button onClick={() => setShowRoundHistory(true)} className="text-xs text-indigo-300 hover:text-indigo-200 underline">
-                      {roundHistory.length} past round{roundHistory.length === 1 ? '' : 's'}
-                    </button>
-                  </div>
-                )}
-                <div>
-                  <p className="summary-pill">Players</p>
-                  <p className="summary-meta-value">{players.length}</p>
-                </div>
-                <div>
-                  <p className="summary-pill">Voting Status</p>
-                  <p className={"summary-meta-value " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ Everyone voted" : `${votersCount}/${players.length} voted`}</p>
-                  <p className="summary-meta-note">{votersCount >= players.length ? "Ready to start next round" : "Waiting for votes"}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="summary-scroll">
-              {gameSummary && gameSummary.length > 0 ? (
-                <div className="summary-grid">
-                  {gameSummary.map((pair, i) => {
-                    const maskNames = typeof summaryAnonymousMode === 'boolean' ? summaryAnonymousMode : anonymousMode
-                    const questionAuthor = maskNames ? '???' : (pair.questionAuthorName || 'Unknown')
-                    const pairedAuthor = maskNames ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')
-                    const actualAuthor = maskNames ? '???' : (pair.actualAnswerAuthorName || 'Unknown')
-                    const pairKey = pair.pairDbId || `${pair.question}-${i}`
-                    const voteCount = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
-                    const hasPairId = Boolean(pair.pairDbId)
-                    const userVotedForPair = hasPairId ? Boolean(userVotes[pair.pairDbId]) : false
-                    const userLockedToDifferentPair = summaryPairVoteId && hasPairId && summaryPairVoteId !== pair.pairDbId
-                    const inFlight = pendingVoteRef.current && pendingVoteRef.current.type === 'qa_pair' && pendingVoteRef.current.targetId === pair.pairDbId
-                    const voteDisabled = userLockedToDifferentPair || inFlight
-                    const isWinner = roundLeader && roundLeader.pairDbId === pair.pairDbId && !roundLeader.tied
-
-                    return (
-                      <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card " + (userVotedForPair ? "summary-card--active " : "") + (isWinner ? "summary-card--winner" : "")}>
-                        <div className="summary-card__body">
-                          {isWinner && <div className="text-right"><span className="text-sm" title="Top voted!">👑</span></div>}
-                          <p className="summary-question">{pair.question}</p>
-                          <div className="summary-paired">
-                            <p className="summary-paired__answer">{pair.pairedAnswer || 'No pairing was performed'}</p>
-                          </div>
-                          <p className="text-[11px] text-gray-400">
-                            Q by {questionAuthor}{pair.pairedAnswer && <> · Paired by {pairedAuthor}</>}
-                            {pair.actualAnswer && <> · <span className="text-emerald-300/80">Actual: {pair.actualAnswer}</span>{pair.actualAnswerAuthorName && <> — {actualAuthor}</>}</>}
-                          </p>
-                          {maskNames && (
-                            <div className="inline-flex items-center gap-1 text-[10px] text-purple-300 bg-purple-900/30 border border-purple-700/50 rounded-full px-2 py-0.5 w-fit">
-                              <span>🙈</span>
-                              <span>Anonymous</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="summary-card__footer">
-                          <div className="summary-vote-meta">
-                            <span className="text-gray-400 text-xs uppercase tracking-widest">Votes</span>
-                            <p className="text-2xl font-black text-amber-300">{voteCount}</p>
-                            {userVotedForPair && (<span className="you-badge">You</span>)}
-                          </div>
-                          <div className="flex items-center gap-2 flex-1">
-                            {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
-                              <div className="flex flex-wrap gap-1 text-[10px]">
-                                {pair.questionReactions && Object.entries(pair.questionReactions).map(([emoji, count]) => (
-                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
-                                ))}
-                                {pair.answerReactions && Object.entries(pair.answerReactions).map(([emoji, count]) => (
-                                  <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
-                                ))}
-                              </div>
-                            )}
-                            {hasPairId ? (
-                              <button
-                                onClick={() => handleVote('qa_pair', pair.pairDbId)}
-                                className={`summary-vote-btn ${
-                                  userVotedForPair ? 'summary-vote-btn--active' : ''
-                                } ${voteDisabled ? 'summary-vote-btn--disabled' : ''}`}
-                                title="Vote for best game pairing"
-                                disabled={voteDisabled}
-                                aria-busy={inFlight ? 'true' : 'false'}
-                              >
-                                {inFlight ? '…' : userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Locked' : 'Vote'}
-                              </button>
-                            ) : (
-                              <button disabled className="summary-vote-btn summary-vote-btn--disabled">Unavailable</button>
-                            )}
-                          </div>
-                        </div>
-
-                      </article>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="card text-center py-6">
-                  <p className="text-sm text-gray-400">No pairings available. Finish a round to unlock voting.</p>
-                </div>
-              )}
-            </div>
-
-            {showRoundHistory && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl">
-                  <div className="flex items-center justify-between p-4 border-b border-gray-700">
-                    <h3 className="text-lg font-bold text-white">Round History</h3>
-                    <button onClick={() => setShowRoundHistory(false)} className="text-gray-400 hover:text-white text-sm">✕ Close</button>
-                  </div>
-                  <div className="overflow-y-auto flex-1 p-4 space-y-4">
-                    {roundHistory.map((round, idx) => {
-                      const isExpanded = expandedHistoryRounds.has(idx)
-                      const visiblePairs = isExpanded ? round.summary : round.summary.slice(0, 3)
-                      return (
-                        <div key={idx} className="card p-3">
-                          <p className="text-xs text-gray-400 mb-2">Round {idx + 1} — {new Date(round.timestamp).toLocaleTimeString()}</p>
-                          <div className="space-y-2">
-                            {visiblePairs.map((pair, pIdx) => (
-                              <div key={pIdx} className="text-sm">
-                                <p className="text-white font-medium">{pair.question}</p>
-                                <p className="text-gray-400 text-xs">↗ {pair.pairedAnswer || 'No pairing'}</p>
-                              </div>
-                            ))}
-                            {round.summary.length > 3 && (
-                              <button
-                                onClick={() => setExpandedHistoryRounds(prev => {
-                                  const next = new Set(prev)
-                                  if (next.has(idx)) next.delete(idx)
-                                  else next.add(idx)
-                                  return next
-                                })}
-                                className="text-xs text-indigo-300 hover:text-indigo-200 underline"
-                              >
-                                {isExpanded ? 'Show less' : `+${round.summary.length - 3} more pairings`}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {roundLeader && (
-              <div className="summary-leader card">
-                <div className="summary-leader__icon">🔥</div>
-                <div>
-                  <p className="text-sm text-rose-200">{roundLeader.tied ? 'Current tie for top pairing' : 'Current top pairing'}</p>
-                  <p className="text-base font-extrabold text-white leading-snug">{roundLeader.question}</p>
-                  <p className="text-sm text-rose-100/80 leading-snug">Performed with: {roundLeader.pairedAnswer || 'No pairing was performed'}</p>
-                </div>
-                <div className="summary-leader__badge">{roundLeader.voteCount} vote{roundLeader.voteCount === 1 ? '' : 's'}</div>
-              </div>
-            )}
-
-            {fastestTyper && (
-              <div className="summary-fastest card">
-                <div className="summary-fastest__icon">🏆</div>
-                <div>
-                  <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
-                  <p className="text-xl font-extrabold text-white">{fastestTyper}</p>
-                  <p className="text-xs text-amber-100/70">First to submit both their question and answer!</p>
-                </div>
-                <div className="summary-fastest__badge">Fastest Typer!</div>
-              </div>
-            )}
-
-            {slowestTyper && (
-              <div className="summary-slowest card">
-                <div className="summary-slowest__icon">⏰</div>
-                <div>
-                  <p className="text-sm text-sky-200">Slowest typer in both rounds</p>
-                  <p className="text-xl font-extrabold text-white">{slowestTyper}</p>
-                  <p className="text-xs text-sky-100/70">Last to finish both the question and the answer.</p>
-                </div>
-                <div className="summary-slowest__badge">Slowest Typer!</div>
-              </div>
-            )}
-
-            {mostAdoredWriter ? (
-              <div className="summary-mvp card">
-                <div className="summary-mvp__icon">💖</div>
-                <div>
-                  <p className="text-sm text-yellow-200">Round's most-adored writer</p>
-                  {mostAdoredWriter.tied ? (
-                    <>
-                      <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : mostAdoredWriter.names.join(' & ')}</p>
-                      <p className="text-xs text-yellow-100/70">Tied with {mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'} each!</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (mostAdoredWriter.names[0] || 'Unknown')}</p>
-                      <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
-                    </>
-                  )}
-                </div>
-                <div className="summary-mvp__badge">{mostAdoredWriter.tied ? 'Tied!' : 'Adored!'}</div>
-              </div>
-            ) : (
-              <div className="summary-mvp card" style={{ opacity: 0.6 }}>
-                <div className="summary-mvp__icon">💭</div>
-                <div>
-                  <p className="text-sm text-yellow-200">Round's most-adored writer</p>
-                  <p className="text-xl font-extrabold text-white">No reactions yet</p>
-                  <p className="text-xs text-yellow-100/70">Send ❤️ and 😂 during the next round!</p>
-                </div>
-              </div>
-            )}
-
-            {isHost ? (
-              <div className="summary-actions">
-                <div className="summary-actions__toggles">
-                  <div className="summary-toggle card">
-                    <div>
-                      <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                      <p className="text-[11px] text-gray-400">Hide names in next game's summary + Best Of.</p>
-                    </div>
-                    <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
-                      <span />
-                    </button>
-                  </div>
-                  <div className="summary-toggle card">
-                    <div>
-                      <p className="text-xs text-white font-semibold">No Self-Reading</p>
-                      <p className="text-[11px] text-gray-400">Players won't read their own content next round.</p>
-                    </div>
-                    <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
-                      <span />
-                    </button>
-                  </div>
-                  <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
-                    🔄 Replay (same players)
-                  </button>
-                </div>
-                <div className="summary-actions__cta">
-                  <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
-                    🏠 New game (change number of players)
-                  </button>
-                  {adminKey && (
-                    <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
-                      🚫 Hide from Best Of
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="summary-actions">
-                <div className="card text-center py-5 px-6">
-                  <p className="text-sm text-gray-200 mb-1">Please wait for the host to start a new round</p>
-                  <p className="text-xs text-gray-500 mb-5">Your screen will automatically refresh</p>
-                  <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs">
-                    Abandon game (exit to main screen)
-                  </button>
-                </div>
-              </div>
-            )}
-            {gameSummary && gameSummary.length > 0 && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => {
-                    const lines = gameSummary.map((pair, i) => {
-                      const q = pair.question || 'No question'
-                      const a = pair.pairedAnswer || 'No pairing'
-                      const votes = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
-                      return `${i + 1}. ${q}\n   → ${a} (${votes} vote${votes === 1 ? '' : 's'})`
-                    })
-                    const text = `What If Game — Round Summary\n\n${lines.join('\n\n')}`
-                    navigator.clipboard?.writeText(text)
-                    setNotice(noticeFor('Summary copied as text', 'success', 1500))
-                  }}
-                  className="text-xs text-gray-400 hover:text-white underline"
-                >
-                  📋 Copy summary as text
-                </button>
-              </div>
-            )}
-          </div>
+          <SummaryPhase
+            hideGameConfirm={hideGameConfirm}
+            hideGameTrapRef={hideGameTrapRef}
+            setHideGameConfirm={setHideGameConfirm}
+            handleHideGame={handleHideGame}
+            roundHistory={roundHistory}
+            showRoundHistory={showRoundHistory}
+            setShowRoundHistory={setShowRoundHistory}
+            expandedHistoryRounds={expandedHistoryRounds}
+            setExpandedHistoryRounds={setExpandedHistoryRounds}
+            players={players}
+            votersCount={votersCount}
+            gameSummary={gameSummary}
+            summaryAnonymousMode={summaryAnonymousMode}
+            anonymousMode={anonymousMode}
+            summaryVotes={summaryVotes}
+            userVotes={userVotes}
+            summaryPairVoteId={summaryPairVoteId}
+            pendingVoteRef={pendingVoteRef}
+            handleVote={handleVote}
+            roundLeader={roundLeader}
+            fastestTyper={fastestTyper}
+            slowestTyper={slowestTyper}
+            mostAdoredWriter={mostAdoredWriter}
+            isHost={isHost}
+            socketRef={socketRef}
+            noSelfReading={noSelfReading}
+            setNoSelfReading={setNoSelfReading}
+            disbandGame={disbandGame}
+            adminKey={adminKey}
+            handleAbandonGame={handleAbandonGame}
+            setNotice={setNotice}
+          />
         )
 
       case "help":
@@ -2148,9 +1088,9 @@ function App() {
         </div>
       )}
       {showCountdown && ["writing", "answering", "performing"].includes(gameState) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="alert" aria-live="assertive">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl px-8 py-8 text-center shadow-2xl max-w-xs">
-            <p className="text-sm text-indigo-300 uppercase tracking-widest font-bold mb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="countdown-title">
+          <div ref={countdownTrapRef} className="bg-gray-900 border border-gray-700 rounded-2xl px-8 py-8 text-center shadow-2xl max-w-xs">
+            <p id="countdown-title" className="text-sm text-indigo-300 uppercase tracking-widest font-bold mb-3">
               {gameState === 'writing' ? 'Starting new round…' : gameState === 'answering' ? 'Answer time!' : 'Reading time!'}
             </p>
             <div className="text-6xl font-black text-white">{countdown}</div>
@@ -2163,12 +1103,12 @@ function App() {
         </div>
       )}
       {showDisconnectOverlay && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" role="alert" aria-live="assertive">
-          <div className="bg-gray-900 border border-amber-500/40 rounded-2xl px-6 py-8 text-center shadow-2xl max-w-sm w-full">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-labelledby="disconnect-title">
+          <div ref={disconnectTrapRef} className="bg-gray-900 border border-amber-500/40 rounded-2xl px-6 py-8 text-center shadow-2xl max-w-sm w-full">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/15 flex items-center justify-center">
               <span className="text-3xl">⚠️</span>
             </div>
-            <p className="text-lg font-bold text-white mb-2">Connection lost</p>
+            <p id="disconnect-title" className="text-lg font-bold text-white mb-2">Connection lost</p>
             <p className="text-sm text-gray-400 mb-4">Trying to reconnect you to the game. You can close this tab and rejoin within the next 3 minutes.</p>
             <div className="text-3xl font-black text-amber-400 tracking-wider">
               {formatTimeLeft(Math.max(0, (disconnectOverlayDeadline || 0) - Date.now()))}

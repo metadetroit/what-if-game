@@ -68,7 +68,8 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     setHasRead,
     setKickConfirm,
     setError,
-    setReactions
+    setReactions,
+    setCurrentTurn
   } = actions
 
   const { applySummaryData, playSound } = helpers
@@ -344,6 +345,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setSubmitted(false)
       setProgress({ submitted: 0, total: 0 })
       setCurrentContent(null)
+      setCurrentTurn(null)
       setGameStats({ round: 0, total: 0 })
       setHasRead(false)
       applySummaryData(null, false)
@@ -437,6 +439,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setSubmitted(false)
       setProgress({ submitted: 0, total: 0 })
       setCurrentContent(null)
+      setCurrentTurn(null)
       setGameStats({ round: 0, total: 0 })
       setHasRead(false)
       applySummaryData(null, false)
@@ -510,6 +513,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
         if (data.mostAdoredWriter) setMostAdoredWriter(data.mostAdoredWriter)
         if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
         if (data.currentTurn) {
+          setCurrentTurn(data.currentTurn)
           if (data.currentTurn.currentContentDbId) {
             setCurrentContent({
               dbId: data.currentTurn.currentContentDbId,
@@ -553,7 +557,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       window.removeEventListener("pageshow", handlePageShow)
       newSocket.close()
     }
-  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef])
+  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef, setCurrentTurn])
 
   return { handleVote }
 }
