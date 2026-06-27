@@ -244,6 +244,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     })
 
     newSocket.on("reading-turn", (data) => {
+      setCurrentTurn(data)
       setCurrentContent(null)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
