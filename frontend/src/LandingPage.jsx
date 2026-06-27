@@ -2,43 +2,6 @@ import { useState, useEffect, useRef, useMemo } from "react"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
-function AnimatedText({ text, interval = 2200 }) {
-  const [activeIndex, setActiveIndex] = useState(null)
-  useEffect(() => {
-    const letterIndices = text.split("").map((_, i) => i).filter((i) => text[i] !== " ")
-    let lastIndex = null
-    const pick = () => {
-      if (letterIndices.length === 0) return
-      let next
-      if (letterIndices.length === 1) {
-        next = letterIndices[0]
-      } else {
-        do {
-          next = letterIndices[Math.floor(Math.random() * letterIndices.length)]
-        } while (next === lastIndex)
-      }
-      lastIndex = next
-      setActiveIndex(next)
-    }
-    pick()
-    const id = setInterval(pick, interval)
-    return () => clearInterval(id)
-  }, [text, interval])
-
-  return (
-    <span>
-      {text.split("").map((char, i) => (
-        <span
-          key={i}
-          className={activeIndex === i ? "inline-block animate-pop-wiggle" : "inline-block"}
-        >
-          {char === " " ? "\u00A0" : char}
-        </span>
-      ))}
-    </span>
-  )
-}
-
 const DECK = [
   { prompt: "What if all the genealogy was found out to be wrong?", answer: "Then here there'd be dragons 🐉!" },
   { prompt: "What if everyday were like a dothraki wedding (you know, from game of thrones)?", answer: "It would be like Where's Waldo? (but Waldo is a fugitive from the law)" },
@@ -222,10 +185,8 @@ export default function LandingPage({
 
       <section id="play" className="relative overflow-hidden px-4 pt-2 pb-12 md:pt-4 md:pb-16">
         <div className="mx-auto max-w-6xl text-center">
-          <h2 className="font-bubble text-4xl md:text-6xl">
-            <span className="text-gradient-chaos">
-              <AnimatedText text="Let's get it started" />
-            </span>
+          <h2 className="font-bubble text-4xl md:text-6xl heading-pulse">
+            <span className="text-gradient-chaos">Let's get it started</span>
           </h2>
 
           <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto items-stretch">

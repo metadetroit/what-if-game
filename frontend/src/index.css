@@ -618,4 +618,14 @@
     15% { transform: scale(1.25) rotate(-6deg); }
     20% { transform: scale(1) rotate(0deg); }
   }
+
+  .heading-pulse {
+    animation: heading-pulse 3s ease-in-out infinite;
+    display: inline-block;
+  }
+
+  @keyframes heading-pulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0)); }
+    50% { transform: scale(1.03); filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.35)); }
+  }
 }
