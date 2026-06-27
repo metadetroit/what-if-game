@@ -4,7 +4,7 @@ A hilarious multiplayer question & answer chain game for 3-15 players. Perfect f
 
 ## How to Play
 
-1. **Create a Room** - One player hosts and shares the 5-digit room code
+1. **Create a Room** - One player hosts and shares the 4-digit room code
 2. **Join** - Everyone enters their name and the room code
 3. **Write** - Each player writes a "What if..." question
 4. **Answer** - Questions are shuffled and distributed, everyone answers
@@ -41,8 +41,8 @@ A hilarious multiplayer question & answer chain game for 3-15 players. Perfect f
 ```
 windsurf-project/
 ├── backend/
-│   ├── server.js          # Express + Socket.IO server
-│   ├── server-static.js   # Combined server (serves frontend + API)
+│   ├── server.js          # Express + Socket.IO server (serves frontend + API)
+│   ├── server-static.js   # Legacy static-only server (kept for reference)
 │   ├── database.js        # Turso/libSQL database wrapper
 │   └── package.json
 ├── frontend/
@@ -161,7 +161,7 @@ Play with friends across the internet! The easiest deployment is using **Render.
    - **Name**: `what-if-game`
    - **Root Directory**: `backend`
    - **Runtime**: `Node`
-   - **Start Command**: `node server-static.js`
+   - **Start Command**: `node server.js`
    - **Plan**: `Free`
    - **Environment Variables**:
      - `CORS_ORIGIN` = `*`
@@ -185,7 +185,7 @@ For separate frontend/backend deployment (see `DEPLOY.md` for full instructions)
 - **CORS**: Configurable via `CORS_ORIGIN` env var
 - **Socket.IO**: Fully supported on Render.com
 - **Players**: Up to 15 concurrent players per game
-- **Rate limiting**: API endpoints limited to 100 req/min; write ops 10 req/min; socket events 60/min per connection
+- **Rate limiting**: API endpoints limited to 100 req/min; write ops 10 req/min; socket `reaction` events limited to 20 per 10s per connection
 
 ## API Endpoints
 

@@ -5,7 +5,6 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "start:static": "node server-static.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {

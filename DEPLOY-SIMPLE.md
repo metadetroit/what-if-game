@@ -23,7 +23,7 @@ This creates a `dist` folder with your production frontend.
    - **Root Directory**: `backend` (important!)
    - **Environment**: `Node`
    - **Build Command**: (leave blank or `cd ../frontend && npm install && npm run build && cd ../backend && npm install`)
-   - **Start Command**: `node server-static.js`
+   - **Start Command**: `node server.js`
    - **Plan**: Free
 
 5. Add Environment Variable:
@@ -77,4 +77,4 @@ cd backend && node server.js
 cd frontend && npm run dev
 ```
 
-Use `server.js` for local dev, `server-static.js` for production (serves the built frontend).
+Use `server.js` for both local dev and production (it serves the built frontend and runs the API).

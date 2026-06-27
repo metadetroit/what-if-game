@@ -263,7 +263,7 @@ const VOTE_RATE_LIMIT_MS = 500;
 
 function generateRoomCode() {
   const existingCodes = new Set(Object.keys(games));
-  for (let attempt = 0; attempt < 10; attempt++) {
+  for (let attempt = 0; attempt < 50; attempt++) {
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     if (!existingCodes.has(code) && !recentRoomCodes.has(code)) {
       recentRoomCodes.add(code);
@@ -274,20 +274,8 @@ function generateRoomCode() {
       return code;
     }
   }
-  // Fallback to 5-digit if 4-digit exhausted
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const code = Math.floor(10000 + Math.random() * 90000).toString();
-    if (!existingCodes.has(code) && !recentRoomCodes.has(code)) {
-      recentRoomCodes.add(code);
-      if (recentRoomCodes.size > MAX_RECENT_CODES) {
-        const first = recentRoomCodes.values().next().value;
-        recentRoomCodes.delete(first);
-      }
-      return code;
-    }
-  }
-  // Extremely unlikely — just timestamp-based
-  return Date.now().toString().slice(-5);
+  // Extremely unlikely — just timestamp-based 4-digit suffix
+  return Date.now().toString().slice(-4);
 }
 
 function shuffleArray(array) {
@@ -2028,58 +2016,8 @@ io.on('connection', (socket) => {
       reconnectData.votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
     }
 
-    // If reconnecting during performance phase, include current turn data
-    if (game.phase === 'performing' && game.currentReaderIndex !== undefined && game.playerOrder) {
-      const currentReaderId = game.playerOrder[game.currentReaderIndex];
-      const isQuestionTurn = game.currentReaderIndex % 2 === 0;
-      const questionReaderId = isQuestionTurn ? currentReaderId : game.playerOrder[game.currentReaderIndex - 1];
-      const answerReaderId = isQuestionTurn ? game.playerOrder[game.currentReaderIndex + 1] : currentReaderId;
-
-      // Find the question and answer for this turn
-      let question = null;
-      let pairedAnswer = null;
-      let actualAnswer = null;
-
-      let questionDbId = null;
-      let answerDbId = null;
-      let questionAuthorId = null;
-      let answerAuthorId = null;
-      if (game.cardAssignments) {
-        for (const cardKey of Object.keys(game.cardAssignments)) {
-          const card = game.cardAssignments[cardKey];
-          if (card.playerId === questionReaderId) {
-            question = card.question?.text;
-            pairedAnswer = card.answer?.text;
-            actualAnswer = card.actualAnswer?.text;
-            questionDbId = card.question?.dbId || null;
-            questionAuthorId = card.question?.authorId || null;
-            break;
-          }
-        }
-        for (const cardKey of Object.keys(game.cardAssignments)) {
-          const card = game.cardAssignments[cardKey];
-          if (card.playerId === answerReaderId) {
-            answerDbId = card.answer?.dbId || null;
-            answerAuthorId = card.answer?.authorId || null;
-            break;
-          }
-        }
-      }
-
-      reconnectData.currentTurn = {
-        isQuestionTurn,
-        questionReader: { id: questionReaderId, name: game.players.find(p => p.id === questionReaderId)?.name || 'Unknown' },
-        answerReader: { id: answerReaderId, name: game.players.find(p => p.id === answerReaderId)?.name || 'Unknown' },
-        question,
-        pairedAnswer,
-        actualAnswer,
-        currentContentDbId: isQuestionTurn ? questionDbId : answerDbId,
-        currentContentAuthorId: isQuestionTurn ? questionAuthorId : answerAuthorId,
-        currentContentType: isQuestionTurn ? 'question' : 'answer',
-        round: game.currentRound || 1,
-        total: game.totalRounds || 1
-      };
-    }
+    // If reconnecting during performance phase, the fresh current-turn state is delivered
+    // via the 'reading-turn' event emitted below, so we don't duplicate it here.
 
     socket.emit('reconnected', reconnectData);
     

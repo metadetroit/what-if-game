@@ -43,6 +43,7 @@ function BestOfView({
                       onClick={() => onCopyLink(item.id)}
                       className="text-[10px] text-indigo-300 hover:text-indigo-200 underline"
                       title="Copy shareable link"
+                      aria-label="Copy shareable link"
                     >
                       🔗 Copy link
                     </button>
@@ -51,6 +52,7 @@ function BestOfView({
                         onClick={() => onDeleteItem(item.type, item.id, index)}
                         className="text-[10px] text-red-400 hover:text-red-300 underline"
                         title="Delete this item"
+                        aria-label="Delete this item"
                       >
                         🗑 Delete
                       </button>

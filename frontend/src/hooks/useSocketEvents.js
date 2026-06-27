@@ -368,6 +368,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setPlayers(data.players)
       playersRef.current = data.players
       const name = data.disconnectedPlayer
+      if (name === playerNameRef.current) return
       if (name && !disconnectedPlayersRef.current.includes(name)) {
         disconnectedPlayersRef.current = [...disconnectedPlayersRef.current, name]
       }

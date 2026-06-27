@@ -6,7 +6,6 @@
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start",
-    "start:static": "cd backend && npm run start:static",
     "install:all": "cd backend && npm install && cd ../frontend && npm install"
   },
   "devDependencies": {
