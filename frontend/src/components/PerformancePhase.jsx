@@ -86,13 +86,11 @@ export default function PerformancePhase({
           </div>
           {currentTurn.isQuestionTurn && socket.id === currentTurn.questionReader.id && (
             <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-3 px-4">
-              <p className="text-center text-sm md:text-base text-green-100 font-bold uppercase tracking-widest mb-2">📖 Read Aloud</p>
               <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.question}</p>
             </div>
           )}
           {!currentTurn.isQuestionTurn && socket.id === currentTurn.answerReader.id && currentTurn.answer && (
             <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-3 px-4">
-              <p className="text-center text-sm md:text-base text-purple-100 font-bold uppercase tracking-widest mb-2">💬 Read Aloud</p>
               <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">{currentTurn.answer}</p>
             </div>
           )}
