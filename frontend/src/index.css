@@ -490,7 +490,7 @@
       radial-gradient(ellipse at bottom right, rgba(244, 63, 94, 0.18), transparent 55%),
       #0c0617;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
+    touch-action: pan-y pinch-zoom;
     overscroll-behavior-x: none;
   }
   .text-gradient-chaos {
