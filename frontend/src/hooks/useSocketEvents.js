@@ -514,16 +514,19 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
         if (data.summary) { applySummaryData(data.summary, typeof data.anonymousMode === "boolean" ? data.anonymousMode : false) }
         if (data.mostAdoredWriter) setMostAdoredWriter(data.mostAdoredWriter)
         if (typeof data.votersCount === 'number') setVotersCount(data.votersCount)
-        if (data.currentTurn) {
-          setCurrentTurn(data.currentTurn)
-          if (data.currentTurn.currentContentDbId) {
-            setCurrentContent({
-              dbId: data.currentTurn.currentContentDbId,
-              authorId: data.currentTurn.currentContentAuthorId,
-              type: data.currentTurn.currentContentType || 'question'
-            })
-          }
+        if (data.firstQuestionSubmitter || data.firstAnswerSubmitter || data.lastQuestionSubmitter || data.lastAnswerSubmitter) {
+          setGameAwards({
+            firstQuestionSubmitter: data.firstQuestionSubmitter || null,
+            firstAnswerSubmitter: data.firstAnswerSubmitter || null,
+            lastQuestionSubmitter: data.lastQuestionSubmitter || null,
+            lastAnswerSubmitter: data.lastAnswerSubmitter || null
+          })
         }
+        if (data.userVotes) setUserVotes(data.userVotes)
+        if (data.summaryVotes) setSummaryVotes(data.summaryVotes)
+        if (data.summaryPairVoteId) setSummaryPairVoteId(data.summaryPairVoteId)
+        if (Array.isArray(data.roundHistory)) setRoundHistory(data.roundHistory)
+        setReactions([])
         if (ACTIVE_GAMEPLAY.includes(data.phase)) {
           setNotice(noticeFor("Reconnected", "success", 2000))
         }
@@ -559,7 +562,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       window.removeEventListener("pageshow", handlePageShow)
       newSocket.close()
     }
-  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef, setCurrentTurn])
+  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef, setCurrentTurn, setReactions])
 
   return { handleVote }
 }

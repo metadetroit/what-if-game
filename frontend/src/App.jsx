@@ -605,6 +605,7 @@ function App() {
     setPlayerName("")
     setRoomCode("")
     setPlayers([])
+    playersRef.current = []
     setIsHost(false)
     setError("")
     setNotice(null)
@@ -647,6 +648,7 @@ function App() {
     setPlayerName("")
     setRoomCode("")
     setPlayers([])
+    playersRef.current = []
     setIsHost(false)
     setError("")
     setNotice(null)
@@ -832,8 +834,7 @@ function App() {
                   saveSession({ roomCode: code, playerName: name })
                   setPlayerName(name)
                   setRoomCode(code)
-                  setGameState("welcome")
-                  setReconnectInfo(null)
+                  reconnectAttemptedRef.current = true
                   socketRef.current?.emit("reconnect-player", { roomCode: code, playerName: name })
                 }}
                 className="btn-primary py-3 text-base w-full"

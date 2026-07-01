@@ -1165,7 +1165,8 @@ io.on('connection', (socket) => {
   async function startNextReading(roomCode) {
     const game = games[roomCode];
     // CRITICAL FIX: Use stable playerOrder set at start of performing phase, not current player list
-    const playerIds = game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id);
+    // Filter out null entries from permanently removed players to avoid phantom turns
+    const playerIds = (game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id)).filter(id => id !== null);
     const totalTurns = playerIds.length * 2;
     
     if (game.currentReaderIndex >= totalTurns) {
@@ -1285,7 +1286,8 @@ io.on('connection', (socket) => {
     if (!game || game.phase !== 'performing') return;
     
     // CRITICAL FIX: Use stable playerOrder for reader validation
-    const playerIds = game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id);
+    // Filter out null entries from permanently removed players
+    const playerIds = (game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id)).filter(id => id !== null);
     const isQuestionTurn = game.currentReaderIndex % 2 === 0;
     let expectedReaderId;
     
@@ -1651,7 +1653,7 @@ io.on('connection', (socket) => {
       }
     } else if (game.phase === 'performing') {
       // If kicked player was the active reader, advance the turn
-      const playerIds = game.playerOrder || activePlayers.map(p => p.id);
+      const playerIds = (game.playerOrder || activePlayers.map(p => p.id)).filter(id => id !== null);
       const isQuestionTurn = game.currentReaderIndex % 2 === 0;
       let expectedReaderId;
       if (isQuestionTurn) {
@@ -1795,7 +1797,7 @@ io.on('connection', (socket) => {
     
     if (!player) {
       console.log(`[RECONNECT] No player named '${playerName}' in room ${roomCode}`);
-      socket.emit('error', `Player '${playerName}' not found in room`);
+      socket.emit('reconnect-failed', { reason: 'Player not found in room (may have been removed)', roomCode, playerName });
       return;
     }
     
@@ -2014,6 +2016,43 @@ io.on('connection', (socket) => {
       const db = getDb();
       const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
       reconnectData.votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
+      reconnectData.firstQuestionSubmitter = game.firstQuestionSubmitter || null;
+      reconnectData.firstAnswerSubmitter = game.firstAnswerSubmitter || null;
+      reconnectData.lastQuestionSubmitter = game.lastQuestionSubmitter || null;
+      reconnectData.lastAnswerSubmitter = game.lastAnswerSubmitter || null;
+
+      // Restore this player's existing votes so the frontend can show vote state
+      const voteRows = await db.exec("SELECT vote_type, target_id FROM votes WHERE game_id = ? AND player_id = ?", [game.dbGameId, socket.id]);
+      const userVotes = {};
+      if (voteRows.length > 0 && voteRows[0].values.length > 0) {
+        for (const row of voteRows[0].values) {
+          const [voteType, targetId] = row;
+          userVotes[targetId] = true;
+          if (voteType === 'qa_pair') {
+            reconnectData.summaryPairVoteId = targetId;
+          }
+        }
+      }
+      reconnectData.userVotes = userVotes;
+
+      // Restore summary vote counts so the frontend shows correct tallies
+      const summaryVotes = {};
+      const qaPairVotes = await db.exec("SELECT id, vote_count FROM qa_pairs WHERE game_id = ?", [game.dbGameId]);
+      if (qaPairVotes.length > 0 && qaPairVotes[0].values.length > 0) {
+        for (const row of qaPairVotes[0].values) {
+          summaryVotes[row[0]] = row[1];
+        }
+      }
+      reconnectData.summaryVotes = summaryVotes;
+
+      // Restore round history so the reconnecting player can view past rounds
+      if (reconnectData.summary && reconnectData.summary.length > 0) {
+        reconnectData.roundHistory = [{
+          summary: reconnectData.summary,
+          anonymousMode: !!game.anonymousMode,
+          timestamp: Date.now()
+        }];
+      }
     }
 
     // If reconnecting during performance phase, the fresh current-turn state is delivered
@@ -2029,7 +2068,7 @@ io.on('connection', (socket) => {
     
     // If reconnecting during performing phase, send current turn state
     if (game.phase === 'performing') {
-      const playerIds = game.playerOrder || activePlayers.map(p => p.id);
+      const playerIds = (game.playerOrder || activePlayers.map(p => p.id)).filter(id => id !== null);
       const totalTurns = playerIds.length * 2;
       const isQuestionTurn = game.currentReaderIndex % 2 === 0;
       
@@ -2091,6 +2130,15 @@ io.on('connection', (socket) => {
       if (nowActive.length >= 3 && nowActive.every(p => game.questions[p.id])) {
         console.log(`[RECONNECT] ${playerName} rejoined during writing with question already submitted — all active players ready, distributing now`);
         distributeQuestions(roomCode);
+      }
+    }
+
+    // Same logic for answering phase: if all active players have answers, advance to performance.
+    if (game.phase === 'answering' && game.answers[socket.id]) {
+      const nowActive = game.players.filter(p => p.isActive);
+      if (nowActive.length >= 2 && nowActive.every(p => game.answers[p.id])) {
+        console.log(`[RECONNECT] ${playerName} rejoined during answering with answer already submitted — all active players ready, moving to performance`);
+        preparePerformancePhase(roomCode);
       }
     }
 
@@ -2219,7 +2267,7 @@ io.on('connection', (socket) => {
 
       // Performing phase: skip turn if disconnected player was the active reader
       if (stillThere.phase === 'performing') {
-        const playerIds = stillThere.playerOrder || stillThere.players.filter(p => p.isActive).map(p => p.id);
+        const playerIds = (stillThere.playerOrder || stillThere.players.filter(p => p.isActive).map(p => p.id)).filter(id => id !== null);
         const isQuestionTurn = stillThere.currentReaderIndex % 2 === 0;
         let expectedReaderId;
         if (isQuestionTurn) {
