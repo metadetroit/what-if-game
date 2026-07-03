@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef } from "react"
 import usePWAInstall from "./hooks/usePWAInstall"
 import IOSInstallHelp from "./components/IOSInstallHelp"
 
@@ -27,7 +27,8 @@ export default function LandingPage({
   socket,
   error,
 }) {
-  const [idx, setIdx] = useState(0)
+  const [idxA, setIdxA] = useState(0)
+  const [idxB, setIdxB] = useState(1)
   const [bannerSrc, setBannerSrc] = useState("/hero-chaos-v3.png")
   const [dbPairs, setDbPairs] = useState([])
   const [showIOSHelp, setShowIOSHelp] = useState(false)
@@ -49,10 +50,19 @@ export default function LandingPage({
   }, [])
 
   const combinedDeck = [...DECK, ...dbPairs]
-  const current = combinedDeck[idx % combinedDeck.length]
-  const fluke = () => setIdx(i => (i + 1) % combinedDeck.length)
+  const currentA = combinedDeck[idxA % combinedDeck.length]
+  const currentB = combinedDeck[idxB % combinedDeck.length]
 
-  const exampleCards = useMemo(() => [...combinedDeck].sort(() => Math.random() - 0.5).slice(0, 3), [combinedDeck.length])
+  const fluke = () => {
+    const len = combinedDeck.length
+    if (len <= 1) return
+    let nextA = Math.floor(Math.random() * len)
+    while (nextA === idxA % len) nextA = Math.floor(Math.random() * len)
+    let nextB = Math.floor(Math.random() * len)
+    while (nextB === nextA || nextB === idxB % len) nextB = Math.floor(Math.random() * len)
+    setIdxA(nextA)
+    setIdxB(nextB)
+  }
 
   const scrollToPlay = () => {
     const container = scrollRef.current
@@ -127,24 +137,6 @@ export default function LandingPage({
 
       </section>
 
-      <section className="relative overflow-hidden px-4 py-10 md:py-12 -mt-16 sm:-mt-20 md:mt-0">
-        <div className="mx-auto grid max-w-5xl items-center gap-6 md:grid-cols-2">
-          <div className="space-y-4 overflow-hidden">
-            <PromptCard text={exampleCards?.[0]?.prompt || DECK[0].prompt} rotate={-4} />
-            <AnswerCard text={exampleCards?.[0]?.answer || DECK[0].answer} rotate={3} />
-            <PromptCard text={exampleCards?.[2]?.prompt || DECK[2].prompt} rotate={2} />
-            <AnswerCard text={exampleCards?.[2]?.answer || DECK[2].answer} rotate={-3} />
-          </div>
-          <div className="space-y-4 overflow-hidden">
-            <PromptCard text={exampleCards?.[1]?.prompt || DECK[1].prompt} rotate={3} />
-            <div className="py-1 text-center text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">
-              ─── COLLIDES WITH ───
-            </div>
-            <AnswerCard text={exampleCards?.[1]?.answer || DECK[1].answer} rotate={-2} />
-          </div>
-        </div>
-      </section>
-
       <section id="live" className="relative overflow-hidden px-4 py-12 md:py-16">
         <div className="mx-auto max-w-4xl text-center">
           <p className="mb-3 text-[10px] tracking-[0.4em] text-purple-300">— LIVE CHAOS</p>
@@ -153,7 +145,7 @@ export default function LandingPage({
             <span className="text-gradient-chaos">See what collides.</span>
           </h2>
           <p className="mx-auto mt-4 max-w-md text-[#E6E1FF]/60">
-            No signup. No rules. One button between you and a perfectly stupid combination.
+            Real prompts. Real answers. Pulled straight from games people actually played.
           </p>
 
           <div className="font-hand mt-8 text-5xl text-yellow-300" style={{ textShadow: "0 0 30px rgba(250,204,21,0.6)" }}>
@@ -162,12 +154,12 @@ export default function LandingPage({
           </div>
 
           <div className="mt-8 rounded-3xl border border-white/10 bg-black/50 p-6 md:p-10">
-            <div className="grid gap-4 md:grid-cols-2">
-              <PromptCard text={current.prompt} />
-              <AnswerCard text={current.answer} />
+            <div className="grid gap-8 md:grid-cols-2 md:gap-6">
+              <CollisionPair prompt={currentA.prompt} answer={currentA.answer} rotateP={-3} rotateA={2} />
+              <CollisionPair prompt={currentB.prompt} answer={currentB.answer} rotateP={2} rotateA={-3} />
             </div>
 
-            <p className="mt-6 text-xs tracking-[0.3em] text-[#E6E1FF]/40">ready</p>
+            <p className="mt-8 text-xs tracking-[0.3em] text-[#E6E1FF]/40">ready</p>
             <button
               onClick={fluke}
               className="btn-primary font-bubble mt-3 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center"
@@ -328,6 +320,18 @@ function PromptCard({ text, rotate = 0 }) {
     <div className="card-prompt rounded-2xl p-5 text-left" style={{ transform: `rotate(${rotate}deg)` }}>
       <p className="mb-2 text-[10px] font-semibold tracking-[0.3em] text-purple-300">● PROMPT</p>
       <p className="text-lg font-semibold text-[#E6E1FF] md:text-xl">{text}</p>
+    </div>
+  )
+}
+
+function CollisionPair({ prompt, answer, rotateP = 0, rotateA = 0 }) {
+  return (
+    <div className="space-y-3 overflow-hidden">
+      <PromptCard text={prompt} rotate={rotateP} />
+      <div className="py-1 text-center text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">
+        ─── COLLIDES WITH ───
+      </div>
+      <AnswerCard text={answer} rotate={rotateA} />
     </div>
   )
 }
