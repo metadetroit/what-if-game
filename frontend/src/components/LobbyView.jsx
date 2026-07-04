@@ -39,14 +39,6 @@ export default function LobbyView({
           <div className="flex items-center justify-center gap-2">
             <div className="text-3xl font-black text-gradient tracking-[0.2em]">{roomCode}</div>
             <button
-              onClick={() => { navigator.clipboard?.writeText(roomCode); setNotice(noticeFor('Room code copied', 'success', 1200)) }}
-              className="shrink-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm hover:bg-gray-700 transition-colors"
-              title="Copy room code"
-              aria-label="Copy room code"
-            >
-              📋
-            </button>
-            <button
               onClick={() => {
                 const url = `${window.location.origin}?room=${roomCode}`
                 if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
@@ -75,7 +67,7 @@ export default function LobbyView({
               {soundMuted ? "🔇" : "🔊"}
             </button>
           </div>
-          <p className="text-[10px] text-gray-600 mt-1">Tap to copy and share</p>
+          <p className="text-[10px] text-gray-600 mt-1">Tap to share invite link</p>
         </div>
       </div>
       <div className="card flex-1 min-h-0 py-2 px-2 flex flex-col">
