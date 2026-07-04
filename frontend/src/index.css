@@ -499,6 +499,20 @@
     background-clip: text;
     color: transparent;
   }
+  .gradient-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .gradient-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.05em;
+    height: 0.08em;
+    background: linear-gradient(90deg, #f5ecff 0%, #f9a8d4 35%, #fbbf24 70%, #f5ecff 100%);
+    border-radius: 999px;
+  }
   /* Solid primary button with gradient edge/glow for high readability */
   .btn-primary {
     @apply w-full font-bold py-4 px-6 rounded-2xl shadow-lg shadow-black/20 transform transition-all duration-200 active:scale-95;
