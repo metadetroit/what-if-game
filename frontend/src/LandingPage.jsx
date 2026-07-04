@@ -336,6 +336,7 @@ export default function LandingPage({
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Share on X (Twitter)"
+              title="Share on X / Twitter"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
             >
               <IconX />
@@ -345,6 +346,7 @@ export default function LandingPage({
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Share on Facebook"
+              title="Share on Facebook"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
             >
               <IconFacebook />
@@ -358,6 +360,7 @@ export default function LandingPage({
                 })
               }}
               aria-label="Copy share text"
+              title="Copy share link"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
             >
               {copied ? <IconCheck /> : <IconCopy />}
@@ -368,6 +371,7 @@ export default function LandingPage({
                   navigator.share({ title: "Fluke!", text: SHARE_TEXT, url: SHARE_URL }).catch(() => {})
                 }}
                 aria-label="Share via device"
+                title="Share via your device"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
                 <IconShare />
@@ -376,12 +380,14 @@ export default function LandingPage({
           </div>
         )}
         <p className="font-bubble text-lg inline-flex items-baseline gap-2">
-          <span style={{ color: "#c026d3" }}>f</span>
-          <span style={{ color: "#f97316" }}>l</span>
-          <span style={{ color: "#facc15" }}>u</span>
-          <span style={{ color: "#f43f5e" }}>k</span>
-          <span style={{ color: "#a855f7" }}>e</span>
-          <span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span>
+          <span className="inline-flex items-baseline">
+            <span style={{ color: "#c026d3" }}>f</span>
+            <span style={{ color: "#f97316" }}>l</span>
+            <span style={{ color: "#facc15" }}>u</span>
+            <span style={{ color: "#f43f5e" }}>k</span>
+            <span style={{ color: "#a855f7" }}>e</span>
+            <span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span>
+          </span>
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
