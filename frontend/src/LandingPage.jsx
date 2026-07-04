@@ -381,7 +381,7 @@ export default function LandingPage({
         )}
         <p className="font-bubble text-lg inline-flex items-baseline gap-2">
           <span className="inline-flex items-baseline">
-            <span style={{ color: "#c026d3" }}>f</span>
+            <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
             <span style={{ color: "#f43f5e" }}>k</span>
