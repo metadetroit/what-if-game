@@ -3,6 +3,8 @@ import usePWAInstall from "./hooks/usePWAInstall"
 import IOSInstallHelp from "./components/IOSInstallHelp"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
+const SHARE_URL = "https://www.playfluke.com"
+const SHARE_TEXT = "Let's play Fluke! Chaos that connects"
 
 const DECK = [
   { prompt: "What if all the genealogy was found out to be wrong?", answer: "Then here there'd be dragons 🐉!" },
@@ -156,13 +158,12 @@ export default function LandingPage({
 
       <section id="live" className="relative overflow-hidden px-4 py-4 md:py-6">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-1 text-[10px] tracking-[0.4em] text-purple-300">— LIVE CHAOS</p>
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-[#E6E1FF]">Press the button. </span>
             <span className="text-gradient-chaos">See what collides.</span>
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-[#E6E1FF]/60 md:text-base">
-            Real prompts. Real answers. Pulled straight from games people actually played.
+            Pulled straight from games people actually played.
           </p>
 
           <div className="mt-4 rounded-3xl border border-white/10 bg-black/50 p-4 md:p-6">
@@ -183,7 +184,7 @@ export default function LandingPage({
             <p className="mt-3 text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">SHARE</p>
             <div className="mt-2 flex justify-center gap-3">
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Let's play Fluke! Chaos that connects")}&url=${encodeURIComponent(window.location.origin)}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}&url=${encodeURIComponent(SHARE_URL)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Share on X (Twitter)"
@@ -192,7 +193,7 @@ export default function LandingPage({
                 𝕏
               </a>
               <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent("Let's play Fluke! Chaos that connects")}`}
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}&quote=${encodeURIComponent(SHARE_TEXT)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Share on Facebook"
@@ -200,9 +201,18 @@ export default function LandingPage({
               >
                 f
               </a>
+              <a
+                href={`https://www.instagram.com/?url=${encodeURIComponent(SHARE_URL)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Share on Instagram"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              >
+                📷
+              </a>
               <button
                 onClick={() => {
-                  const text = `Let's play Fluke! Chaos that connects — ${window.location.origin}`
+                  const text = `${SHARE_TEXT} — ${SHARE_URL}`
                   navigator.clipboard?.writeText(text).then(() => {
                     setCopied(true)
                     setTimeout(() => setCopied(false), 1500)
