@@ -193,7 +193,7 @@ export default function LandingPage({
             <span className="text-[#E6E1FF]">What if you could be </span>
             <span className="text-gradient-chaos inline-flex">
               {"automatically".split("").map((letter, i) => (
-                <span key={i} className="auto-letter-wave" style={{ animationDelay: `${i * 0.05}s` }}>{letter}</span>
+                <span key={i} className="auto-letter-wave" style={{ animationDelay: `${i * 0.08}s` }}>{letter}</span>
               ))}
             </span>
             <span className="text-gradient-chaos"> hilarious</span>

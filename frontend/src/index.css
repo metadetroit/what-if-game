@@ -667,10 +667,10 @@
 
   @keyframes auto-letter-wave {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    50% { transform: translateY(-3px); }
   }
   .auto-letter-wave {
-    animation: auto-letter-wave 1.2s ease-in-out infinite;
+    animation: auto-letter-wave 2.5s ease-in-out infinite;
     display: inline-block;
   }
 }
