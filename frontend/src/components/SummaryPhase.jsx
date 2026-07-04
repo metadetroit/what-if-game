@@ -54,19 +54,25 @@ export default function SummaryPhase({
         <div className="flex flex-col gap-1">
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Round Complete</p>
           <h2 className="font-bubble text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
-          <div className="mt-1 inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
-            <button
-              onClick={() => setViewMode("paired")}
-              className={`px-3 py-1 font-semibold ${viewMode === "paired" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
-            >
-              🎯 Game Pairings
-            </button>
-            <button
-              onClick={() => setViewMode("actual")}
-              className={`px-3 py-1 border-l border-gray-700 font-semibold ${viewMode === "actual" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
-            >
-              ✍️ Actual Q/A
-            </button>
+          <div className="mt-2 flex justify-center">
+            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-1 text-xs">
+              <button
+                onClick={() => setViewMode("paired")}
+                className={`w-28 sm:w-32 rounded-full px-3 py-1.5 font-semibold text-center transition-colors duration-200 ${
+                  viewMode === "paired" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
+                }`}
+              >
+                Game Pairings
+              </button>
+              <button
+                onClick={() => setViewMode("actual")}
+                className={`w-28 sm:w-32 rounded-full px-3 py-1.5 font-semibold text-center transition-colors duration-200 ${
+                  viewMode === "actual" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
+                }`}
+              >
+                Actual Q/A
+              </button>
+            </div>
           </div>
         </div>
         <div className="summary-header__meta">
