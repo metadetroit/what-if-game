@@ -33,9 +33,16 @@ export default function LandingPage({
   const [dbPairs, setDbPairs] = useState([])
   const [showIOSHelp, setShowIOSHelp] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768)
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
   const { showInstallLink, isIOS, promptInstall } = usePWAInstall()
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 768)
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
 
   useEffect(() => {
     if (fetchedRef.current) return
@@ -59,10 +66,12 @@ export default function LandingPage({
     if (len <= 1) return
     let nextA = Math.floor(Math.random() * len)
     while (nextA === idxA % len) nextA = Math.floor(Math.random() * len)
-    let nextB = Math.floor(Math.random() * len)
-    while (nextB === nextA || nextB === idxB % len) nextB = Math.floor(Math.random() * len)
     setIdxA(nextA)
-    setIdxB(nextB)
+    if (isDesktop) {
+      let nextB = Math.floor(Math.random() * len)
+      while (nextB === nextA || nextB === idxB % len) nextB = Math.floor(Math.random() * len)
+      setIdxB(nextB)
+    }
   }
 
   const scrollToPlay = () => {
@@ -145,38 +154,34 @@ export default function LandingPage({
 
       </section>
 
-      <section id="live" className="relative overflow-hidden px-4 py-12 md:py-16">
+      <section id="live" className="relative overflow-hidden px-4 py-4 md:py-6">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-3 text-[10px] tracking-[0.4em] text-purple-300">— LIVE CHAOS</p>
+          <p className="mb-1 text-[10px] tracking-[0.4em] text-purple-300">— LIVE CHAOS</p>
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-[#E6E1FF]">Press the button. </span>
             <span className="text-gradient-chaos">See what collides.</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[#E6E1FF]/60">
+          <p className="mx-auto mt-2 max-w-md text-sm text-[#E6E1FF]/60 md:text-base">
             Real prompts. Real answers. Pulled straight from games people actually played.
           </p>
 
-          <div className="font-hand mt-8 text-5xl text-yellow-300" style={{ textShadow: "0 0 30px rgba(250,204,21,0.6)" }}>
-            try it
-            <div className="mt-1 text-2xl">↓</div>
-          </div>
-
-          <div className="mt-8 rounded-3xl border border-white/10 bg-black/50 p-6 md:p-10">
-            <div className="grid gap-8 md:grid-cols-2 md:gap-6">
+          <div className="mt-4 rounded-3xl border border-white/10 bg-black/50 p-4 md:p-6">
+            <div className="grid gap-2 md:grid-cols-2 md:gap-4">
               <CollisionPair prompt={currentA.prompt} answer={currentA.answer} rotateP={-3} rotateA={2} />
-              <CollisionPair prompt={currentB.prompt} answer={currentB.answer} rotateP={2} rotateA={-3} />
+              <div className="hidden md:block">
+                <CollisionPair prompt={currentB.prompt} answer={currentB.answer} rotateP={2} rotateA={-3} />
+              </div>
             </div>
 
-            <p className="mt-8 text-xs tracking-[0.3em] text-[#E6E1FF]/40">ready</p>
             <button
               onClick={fluke}
-              className="btn-primary font-bubble mt-3 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center"
+              className="btn-primary font-bubble mt-2 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center"
             >
               ✦ Fluke It! ✦
             </button>
 
-            <p className="mt-6 text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">SHARE</p>
-            <div className="mt-3 flex justify-center gap-3">
+            <p className="mt-3 text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">SHARE</p>
+            <div className="mt-2 flex justify-center gap-3">
               <a
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Let's play Fluke! Chaos that connects")}&url=${encodeURIComponent(window.location.origin)}`}
                 target="_blank"
@@ -367,20 +372,17 @@ export default function LandingPage({
 
 function PromptCard({ text, rotate = 0 }) {
   return (
-    <div className="card-prompt rounded-2xl p-5 text-left" style={{ transform: `rotate(${rotate}deg)` }}>
-      <p className="mb-2 text-[10px] font-semibold tracking-[0.3em] text-purple-300">● PROMPT</p>
-      <p className="text-lg font-semibold text-[#E6E1FF] md:text-xl">{text}</p>
+    <div className="card-prompt rounded-2xl p-3 text-left md:p-5" style={{ transform: `rotate(${rotate}deg)` }}>
+      <p className="mb-1 text-[10px] font-semibold tracking-[0.3em] text-purple-300 md:mb-2">● PROMPT</p>
+      <p className="text-base font-semibold text-[#E6E1FF] md:text-lg">{text}</p>
     </div>
   )
 }
 
 function CollisionPair({ prompt, answer, rotateP = 0, rotateA = 0 }) {
   return (
-    <div className="space-y-3 overflow-hidden">
+    <div className="space-y-0 overflow-hidden md:space-y-1">
       <PromptCard text={prompt} rotate={rotateP} />
-      <div className="py-1 text-center text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">
-        ─── COLLIDES WITH ───
-      </div>
       <AnswerCard text={answer} rotate={rotateA} />
     </div>
   )
@@ -388,9 +390,9 @@ function CollisionPair({ prompt, answer, rotateP = 0, rotateA = 0 }) {
 
 function AnswerCard({ text, rotate = 0 }) {
   return (
-    <div className="card-answer rounded-2xl p-5 text-left" style={{ transform: `rotate(${rotate}deg)` }}>
-      <p className="mb-2 text-[10px] font-semibold tracking-[0.3em] text-rose-500">● ANSWER</p>
-      <p className="font-hand text-2xl leading-snug md:text-3xl">{text}</p>
+    <div className="card-answer rounded-2xl p-3 text-left md:p-5" style={{ transform: `rotate(${rotate}deg)` }}>
+      <p className="mb-1 text-[10px] font-semibold tracking-[0.3em] text-rose-500 md:mb-2">● ANSWER</p>
+      <p className="font-hand text-xl leading-snug md:text-2xl">{text}</p>
     </div>
   )
 }
