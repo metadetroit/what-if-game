@@ -37,7 +37,6 @@ export default function LandingPage({
   const [showIOSHelp, setShowIOSHelp] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768)
-  const [showFloatingPlay, setShowFloatingPlay] = useState(false)
   const [revealedSections, setRevealedSections] = useState(new Set())
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
@@ -114,19 +113,9 @@ export default function LandingPage({
     return () => observer.disconnect()
   }, [])
 
-  useEffect(() => {
-    const container = scrollRef.current
-    if (!container) return
-    const onScroll = () => {
-      setShowFloatingPlay(container.scrollTop > window.innerHeight * 0.7)
-    }
-    container.addEventListener("scroll", onScroll, { passive: true })
-    return () => container.removeEventListener("scroll", onScroll)
-  }, [])
-
   return (
     <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center" style={{ height: '100svh', minHeight: '100svh' }}>
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 pt-10 pb-16 text-center min-h-0 md:min-h-[100svh] md:py-10" style={isDesktop ? { height: '100svh' } : undefined}>
         <picture>
           <source media="(max-width: 768px)" srcSet="/hero-chaos-v3-mobile.png" />
           <img
@@ -201,8 +190,9 @@ export default function LandingPage({
       <section id="live" className={`reveal-section relative overflow-hidden px-4 pt-2 pb-4 md:py-6 ${revealedSections.has("live") ? "revealed" : ""}`}>
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl">
-            <span className="text-[#E6E1FF]">Press the button. </span>
-            <span className="text-gradient-chaos">See what collides.</span>
+            <span className="text-[#E6E1FF]"><span className="italic">What if</span> you <span className="italic">press</span> the button?</span>
+            <br />
+            <span className="text-gradient-chaos">See what collides</span>
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-[#E6E1FF]/60 md:text-base">
             Pulled straight from games people actually played.
@@ -426,15 +416,6 @@ export default function LandingPage({
       </footer>
 
       {showIOSHelp && <IOSInstallHelp onClose={() => setShowIOSHelp(false)} />}
-
-      {showFloatingPlay && (
-        <button
-          onClick={scrollToPlay}
-          className="floating-play-in fixed bottom-5 right-5 z-50 btn-primary rounded-full px-5 py-3 text-sm font-black tracking-wider shadow-lg shadow-fuchsia-900/50 transition-transform duration-150 active:scale-95"
-        >
-          ▶ Play
-        </button>
-      )}
     </div>
   )
 }
