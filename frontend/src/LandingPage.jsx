@@ -362,20 +362,22 @@ export default function LandingPage({
             >
               <IconFacebook />
             </a>
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText(SHARE_URL).then(() => {
-                  setCopied(true)
-                  setTimeout(() => setCopied(false), 1500)
-                })
-              }}
-              aria-label="Copy URL"
-              title="Copy URL"
-              className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
-            >
-              {copied ? <IconCheck /> : <IconCopy />}
-            </button>
-            {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+            {typeof navigator.share !== "function" && (
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(SHARE_URL).then(() => {
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 1500)
+                  })
+                }}
+                aria-label="Copy URL"
+                title="Copy URL"
+                className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              >
+                {copied ? <IconCheck /> : <IconCopy />}
+              </button>
+            )}
+            {typeof navigator.share === "function" && (
               <button
                 onClick={() => {
                   navigator.share({ title: "Fluke!", text: SHARE_TEXT, url: SHARE_URL }).catch(() => {})

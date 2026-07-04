@@ -49,8 +49,8 @@ export default function LobbyView({
                 }
               }}
               className="shrink-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm hover:bg-gray-700 transition-colors"
-              title="Copy invite link"
-              aria-label="Copy invite link"
+              title={typeof navigator !== "undefined" && typeof navigator.share === "function" ? "Share invite link" : "Copy invite link"}
+              aria-label={typeof navigator !== "undefined" && typeof navigator.share === "function" ? "Share invite link" : "Copy invite link"}
             >
               🔗
             </button>
