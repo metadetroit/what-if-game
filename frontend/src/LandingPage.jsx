@@ -191,7 +191,8 @@ export default function LandingPage({
         <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-2 text-center">
           <h2 className="font-bubble text-4xl leading-none md:text-6xl md:leading-none">
             <span className="text-[#E6E1FF]">What if you could be </span>
-            <span className="text-gradient-chaos">automatically hilarious</span>
+            <span className="text-gradient-chaos italic">automatically</span>
+            <span className="text-gradient-chaos"> hilarious</span>
             <span className="text-[#E6E1FF]">?</span>
           </h2>
 
@@ -224,7 +225,7 @@ export default function LandingPage({
       <section id="play" className={`reveal-section relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden px-4 py-4 md:py-6 ${revealedSections.has("play") ? "revealed" : ""}`}>
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center text-center overflow-hidden" style={{ maxHeight: '100%' }}>
           <h2 className="font-bubble text-4xl md:text-6xl heading-pulse">
-            <span className="text-gradient-chaos">Let's get it started</span>
+            <span className="text-gradient-chaos">What if we started?</span>
           </h2>
 
           <div className="mt-3 grid w-full gap-3 overflow-y-auto md:mt-6 md:max-w-4xl md:grid-cols-2 md:items-stretch md:overflow-visible" style={{ maxHeight: '100%' }}>
