@@ -128,7 +128,7 @@ export default function LandingPage({
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
 
         <div className="relative z-10 mx-auto max-w-3xl">
-          <h1 className="font-bubble glow-title text-[28vw] leading-[0.82] md:text-[160px] md:leading-[0.88] drop-shadow-[4px_4px_0px_rgba(20,5,35,0.85)]">
+          <h1 className="font-bubble glow-title hero-logo-text md:text-[160px] md:leading-[0.88] drop-shadow-[4px_4px_0px_rgba(20,5,35,0.85)]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
             <span style={{ color: "#facc15" }}>u</span>
@@ -137,40 +137,40 @@ export default function LandingPage({
             <span style={{ color: "#facc15" }} className="ml-1 md:ml-2 animate-pop-wiggle">!</span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-lg font-black leading-relaxed hero-readable-text md:text-xl">
+          <p className="mx-auto mt-6 max-w-xl font-black leading-relaxed hero-readable-text hero-body-text md:text-xl">
             <span>What if </span>
             <span className="italic">...the possibilities were endless?</span>
           </p>
 
-          <div className="mt-8 max-w-xl mx-auto w-full flex flex-col gap-4">
+          <div className="mobile-fill-mt max-w-xl mx-auto w-full flex flex-col mobile-fill-gap">
             <button
               onClick={() => scrollToSection("play")}
-              className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
+              className="btn-primary w-full rounded-full px-6 mobile-fill-py text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               START GAME
             </button>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               <button
                 onClick={() => setGameState("best-of")}
-                className="hero-mini-pill px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
+                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
               >
                 View Best Of
               </button>
               <button
                 onClick={() => setGameState("help")}
-                className="hero-mini-pill px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
+                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
               >
                 How to Play
               </button>
               <button
                 onClick={() => setGameState("support")}
-                className="hero-mini-pill px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
+                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
               >
                 💜 Support
               </button>
             </div>
           </div>
-          <p className="mt-4 text-center text-base font-bold leading-relaxed hero-readable-text md:mt-6 md:text-lg">
+          <p className="mobile-fill-mt text-center text-base font-bold leading-relaxed hero-readable-text md:mt-6 md:text-lg">
             No signup · No download · No idea what happens next
           </p>
         </div>
@@ -188,15 +188,15 @@ export default function LandingPage({
       </section>
 
       <section id="live" className={`reveal-section relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden px-4 py-4 ${revealedSections.has("live") ? "revealed" : ""}`}>
-        <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-2 text-center">
-          <h2 className="font-bubble text-4xl leading-none md:text-6xl md:leading-none">
+        <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-3 md:gap-2 text-center">
+          <h2 className="font-bubble live-heading-text leading-none md:text-6xl md:leading-none">
             <span className="text-[#E6E1FF]">What if you could be </span>
             <span className="text-gradient-chaos">automatically</span>
             <span className="text-gradient-chaos"> hilarious</span>
             <span className="text-[#E6E1FF]">?</span>
           </h2>
 
-          <div className="rounded-3xl border border-white/10 bg-black/50 p-4 md:p-5">
+          <div className="flex-1 flex flex-col justify-center w-full rounded-3xl border border-white/10 bg-black/50 p-4 mobile-fill-card md:p-5">
             <div className="grid gap-2 md:grid-cols-2 md:gap-4">
               {pairsLoading ? (
                 <SkeletonPair />
@@ -214,7 +214,7 @@ export default function LandingPage({
 
             <button
               onClick={fluke}
-              className="btn-primary font-bubble mt-2 inline-block w-full max-w-xl rounded-full px-8 py-4 text-2xl text-center transition-transform duration-150 active:scale-95"
+              className="btn-primary font-bubble mobile-fill-mt inline-block w-full max-w-xl rounded-full px-8 mobile-fill-py text-2xl text-center transition-transform duration-150 active:scale-95"
             >
               ✦ See more Flukes! ✦
             </button>
@@ -234,7 +234,7 @@ export default function LandingPage({
 
       <section id="play" className={`reveal-section relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden px-4 py-4 md:py-6 ${revealedSections.has("play") ? "revealed" : ""}`}>
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center text-center overflow-hidden" style={{ maxHeight: '100%' }}>
-          <h2 className="font-bubble text-4xl md:text-6xl heading-pulse">
+          <h2 className="font-bubble play-heading-text heading-pulse md:text-6xl">
             <span className="text-gradient-chaos">What if we started?</span>
           </h2>
 
@@ -247,12 +247,12 @@ export default function LandingPage({
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="Your name"
                   aria-label="Your name"
-                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-[#E6E1FF]"
+                  className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={20}
                 />
                 {/* Invisible spacer matching room-code input height so rows align on desktop */}
                 <input className="input-field py-3 text-base font-semibold invisible hidden md:block" tabIndex={-1} aria-hidden="true" readOnly />
-                <div className="flex items-center justify-start gap-3 text-sm text-gray-300">
+                <div className="flex items-center justify-start gap-3 text-base text-gray-300 md:text-sm">
                   <span className="mr-1">Pre-fill "What if..."</span>
                   <button
                     onClick={() => {
@@ -262,15 +262,15 @@ export default function LandingPage({
                     }}
                     aria-pressed={prefillWhatIf}
                     aria-label="Toggle pre-fill What if"
-                    className={"relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
+                    className={"relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 md:w-11 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
                   >
-                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
+                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-6" : "translate-x-0")} />
                   </button>
                 </div>
                 <button
                   onClick={createRoom}
                   disabled={!socket}
-                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold transition-transform duration-150 active:scale-95"
+                  className="btn-primary w-full rounded-full px-5 py-4 text-base font-bold transition-transform duration-150 active:scale-95 md:py-3 md:text-sm"
                 >
                   {socket ? "START NOW" : "..."}
                 </button>
@@ -290,7 +290,7 @@ export default function LandingPage({
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="Your name"
                   aria-label="Your name"
-                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-[#E6E1FF]"
+                  className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={20}
                 />
                 <input
@@ -302,11 +302,11 @@ export default function LandingPage({
                   onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
                   placeholder="4-digit code"
                   aria-label="Room code"
-                  className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-[#E6E1FF]"
+                  className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={4}
                 />
                 <div className="flex items-center justify-start gap-3">
-                  <span className="text-sm text-gray-300 mr-1">Pre-fill "What if..."</span>
+                  <span className="text-base text-gray-300 mr-1 md:text-sm">Pre-fill "What if..."</span>
                   <button
                     onClick={() => {
                       const next = !prefillWhatIf
@@ -315,15 +315,15 @@ export default function LandingPage({
                     }}
                     aria-pressed={prefillWhatIf}
                     aria-label="Toggle pre-fill What if"
-                    className={"relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
+                    className={"relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 md:w-11 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
                   >
-                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-5" : "translate-x-0")} />
+                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-6" : "translate-x-0")} />
                   </button>
                 </div>
                 <button
                   onClick={joinRoom}
                   disabled={!socket}
-                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold transition-transform duration-150 active:scale-95"
+                  className="btn-primary w-full rounded-full px-5 py-4 text-base font-bold transition-transform duration-150 active:scale-95 md:py-3 md:text-sm"
                 >
                   {socket ? "JOIN NOW" : "..."}
                 </button>
@@ -435,7 +435,7 @@ function PromptCard({ text, rotate = 0 }) {
       className="card-prompt card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-4"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <p className="text-base font-semibold text-[#E6E1FF] overflow-hidden line-clamp-3 md:text-lg md:line-clamp-4">{text}</p>
+      <p className="text-lg font-semibold text-[#E6E1FF] overflow-hidden line-clamp-3 md:text-lg md:line-clamp-4">{text}</p>
     </div>
   )
 }
@@ -455,7 +455,7 @@ function AnswerCard({ text, rotate = 0 }) {
       className="card-answer card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-4"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <p className="font-hand text-xl leading-snug overflow-hidden line-clamp-3 md:text-2xl md:line-clamp-4">{text}</p>
+      <p className="font-hand text-2xl leading-snug overflow-hidden line-clamp-3 md:text-2xl md:line-clamp-4">{text}</p>
     </div>
   )
 }
@@ -463,7 +463,7 @@ function AnswerCard({ text, rotate = 0 }) {
 function PanelCard({ title, children }) {
   return (
     <div className="rounded-3xl border border-white/10 bg-black/50 p-6 text-center h-full flex flex-col md:p-8">
-      <h3 className="font-bubble text-2xl text-[#E6E1FF]">{title}</h3>
+      <h3 className="font-bubble mobile-fill-card-title text-[#E6E1FF]">{title}</h3>
       <div className="mt-4 flex flex-col items-center flex-1 md:mt-6">{children}</div>
     </div>
   )

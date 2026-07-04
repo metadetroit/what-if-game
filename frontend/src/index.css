@@ -665,4 +665,34 @@
     animation: scroll-cue 1.8s ease-in-out infinite;
   }
 
+  .hero-logo-text {
+    font-size: clamp(72px, 28vw, 160px);
+    line-height: 0.82;
+  }
+  .hero-body-text {
+    font-size: clamp(18px, 5vw, 24px);
+  }
+  .live-heading-text {
+    font-size: clamp(36px, 8vw, 60px);
+  }
+  .play-heading-text {
+    font-size: clamp(36px, 8vw, 60px);
+  }
+  .mobile-fill-gap {
+    gap: clamp(8px, 2dvh, 20px);
+  }
+  .mobile-fill-mt {
+    margin-top: clamp(8px, 2dvh, 20px);
+  }
+  .mobile-fill-py {
+    padding-top: clamp(12px, 2.5dvh, 20px);
+    padding-bottom: clamp(12px, 2.5dvh, 20px);
+  }
+  .mobile-fill-card {
+    padding: clamp(16px, 3dvh, 24px);
+  }
+  .mobile-fill-card-title {
+    font-size: clamp(20px, 5vw, 28px);
+  }
+
 }
