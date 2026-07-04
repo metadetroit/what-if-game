@@ -217,63 +217,17 @@ export default function LandingPage({
             >
               ✦ See more Flukes! ✦
             </button>
-
-            <p className="mt-3 text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">SHARE</p>
-            <div className="mt-2 flex justify-center gap-3">
-              <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}&url=${encodeURIComponent(SHARE_URL)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Share on X (Twitter)"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
-              >
-                <IconX />
-              </a>
-              <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}&quote=${encodeURIComponent(SHARE_TEXT)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Share on Facebook"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
-              >
-                <IconFacebook />
-              </a>
-              <button
-                onClick={() => {
-                  const text = `${SHARE_TEXT} — ${SHARE_URL}`
-                  navigator.clipboard?.writeText(text).then(() => {
-                    setCopied(true)
-                    setTimeout(() => setCopied(false), 1500)
-                  })
-                }}
-                aria-label="Copy share text"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
-              >
-                {copied ? <IconCheck /> : <IconCopy />}
-              </button>
-              {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-                <button
-                  onClick={() => {
-                    navigator.share({ title: "Fluke!", text: SHARE_TEXT, url: SHARE_URL }).catch(() => {})
-                  }}
-                  aria-label="Share via device"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
-                >
-                  <IconShare />
-                </button>
-              )}
-            </div>
           </div>
         </div>
       </section>
 
-      <section id="play" className={`reveal-section relative overflow-hidden px-4 pt-2 pb-6 md:pt-4 md:pb-16 ${revealedSections.has("play") ? "revealed" : ""}`}>
-        <div className="mx-auto max-w-6xl text-center">
+      <section id="play" className={`reveal-section relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden px-4 py-4 md:py-6 ${revealedSections.has("play") ? "revealed" : ""}`}>
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center text-center overflow-hidden" style={{ maxHeight: '100%' }}>
           <h2 className="font-bubble text-4xl md:text-6xl heading-pulse">
             <span className="text-gradient-chaos">Let's get it started</span>
           </h2>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-2 md:mt-10 md:gap-5 md:max-w-4xl md:mx-auto items-stretch">
+          <div className="mt-3 grid w-full gap-3 overflow-y-auto md:mt-6 md:max-w-4xl md:grid-cols-2 md:items-stretch md:overflow-visible" style={{ maxHeight: '100%' }}>
             <PanelCard title="Start a game (3–15 players)">
               <div className="w-full flex flex-col gap-3 flex-1">
                 <input
@@ -375,8 +329,59 @@ export default function LandingPage({
       </section>
 
       <footer className="border-t border-white/5 px-4 py-6 text-center text-sm text-[#E6E1FF]/50 overflow-hidden md:py-10">
-        <p className="font-bubble text-lg text-[#E6E1FF] inline-flex items-baseline gap-2">
-          fluke!
+        {typeof navigator !== "undefined" && (
+          <div className="flex justify-center gap-3 mb-4">
+            <a
+              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}&url=${encodeURIComponent(SHARE_URL)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Share on X (Twitter)"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+            >
+              <IconX />
+            </a>
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}&quote=${encodeURIComponent(SHARE_TEXT)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Share on Facebook"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+            >
+              <IconFacebook />
+            </a>
+            <button
+              onClick={() => {
+                const text = `${SHARE_TEXT} — ${SHARE_URL}`
+                navigator.clipboard?.writeText(text).then(() => {
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                })
+              }}
+              aria-label="Copy share text"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+            >
+              {copied ? <IconCheck /> : <IconCopy />}
+            </button>
+            {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+              <button
+                onClick={() => {
+                  navigator.share({ title: "Fluke!", text: SHARE_TEXT, url: SHARE_URL }).catch(() => {})
+                }}
+                aria-label="Share via device"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              >
+                <IconShare />
+              </button>
+            )}
+          </div>
+        )}
+        <p className="font-bubble text-lg inline-flex items-baseline gap-2">
+          <span style={{ color: "#c026d3" }}>f</span>
+          <span style={{ color: "#f97316" }}>l</span>
+          <span style={{ color: "#facc15" }}>u</span>
+          <span style={{ color: "#f43f5e" }}>k</span>
+          <span style={{ color: "#a855f7" }}>e</span>
+          <span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span>
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
