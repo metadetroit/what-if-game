@@ -189,34 +189,34 @@ export default function LandingPage({
 
       <section id="live" className={`reveal-section relative overflow-hidden px-4 pt-2 pb-4 md:py-6 ${revealedSections.has("live") ? "revealed" : ""}`}>
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="font-bubble text-4xl md:text-6xl">
-            <span className="text-[#E6E1FF]"><span className="italic">What if</span> you <span className="italic">press</span> the button?</span>
-            <br />
-            <span className="text-gradient-chaos">See what collides</span>
+          <h2 className="font-bubble text-4xl leading-none md:text-6xl md:leading-none">
+            <span className="text-[#E6E1FF]">What if you could be </span>
+            <span className="text-gradient-chaos">automatically hilarious</span>
+            <span className="text-[#E6E1FF]">?</span>
           </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-[#E6E1FF]/60 md:text-base">
-            Pulled straight from games people actually played.
+          <p className="mx-auto mt-2 max-w-md text-sm text-[#E6E1FF]/60 md:text-base whitespace-nowrap">
+            Serendipity does all the work.
           </p>
 
-          <div className="mt-4 rounded-3xl border border-white/10 bg-black/50 p-4 md:p-6">
+          <div className="mt-4 rounded-3xl border border-white/10 bg-black/50 p-4 md:p-5">
             <div className="grid gap-2 md:grid-cols-2 md:gap-4">
               {pairsLoading ? (
                 <SkeletonPair />
               ) : (
-                <CollisionPair key={`a-${idxA}`} prompt={currentA.prompt} answer={currentA.answer} rotateP={-3} rotateA={2} />
+                <CollisionPair key={`a-${idxA}`} prompt={currentA.prompt} answer={currentA.answer} rotateP={-1.5} rotateA={1} />
               )}
               <div className="hidden md:block">
                 {pairsLoading ? (
                   <SkeletonPair />
                 ) : (
-                  <CollisionPair key={`b-${idxB}`} prompt={currentB.prompt} answer={currentB.answer} rotateP={2} rotateA={-3} />
+                  <CollisionPair key={`b-${idxB}`} prompt={currentB.prompt} answer={currentB.answer} rotateP={1} rotateA={-1.5} />
                 )}
               </div>
             </div>
 
             <button
               onClick={fluke}
-              className="btn-primary font-bubble mt-2 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center transition-transform duration-150 active:scale-95"
+              className="btn-primary font-bubble mt-2 inline-block w-full max-w-xl rounded-full px-8 py-4 text-2xl text-center transition-transform duration-150 active:scale-95"
             >
               ✦ Fluke It! ✦
             </button>
@@ -423,11 +423,10 @@ export default function LandingPage({
 function PromptCard({ text, rotate = 0 }) {
   return (
     <div
-      className="card-prompt card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-5"
+      className="card-prompt card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-4"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <p className="mb-1 text-[10px] font-semibold tracking-[0.3em] text-purple-300 md:mb-2">● PROMPT</p>
-      <p className="text-base font-semibold text-[#E6E1FF] md:text-lg">{text}</p>
+      <p className="text-base font-semibold text-[#E6E1FF] overflow-hidden line-clamp-3 md:text-lg md:line-clamp-4">{text}</p>
     </div>
   )
 }
@@ -444,11 +443,10 @@ function CollisionPair({ prompt, answer, rotateP = 0, rotateA = 0 }) {
 function AnswerCard({ text, rotate = 0 }) {
   return (
     <div
-      className="card-answer card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-5"
+      className="card-answer card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-4"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <p className="mb-1 text-[10px] font-semibold tracking-[0.3em] text-rose-500 md:mb-2">● ANSWER</p>
-      <p className="font-hand text-xl leading-snug md:text-2xl">{text}</p>
+      <p className="font-hand text-xl leading-snug overflow-hidden line-clamp-3 md:text-2xl md:line-clamp-4">{text}</p>
     </div>
   )
 }
