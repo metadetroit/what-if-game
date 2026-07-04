@@ -191,7 +191,7 @@ export default function LandingPage({
         <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-2 text-center">
           <h2 className="font-bubble text-4xl leading-none md:text-6xl md:leading-none">
             <span className="text-[#E6E1FF]">What if you could be </span>
-            <span className="text-gradient-chaos italic">automatically</span>
+            <span className="text-gradient-chaos">automatically</span>
             <span className="text-gradient-chaos"> hilarious</span>
             <span className="text-[#E6E1FF]">?</span>
           </h2>
