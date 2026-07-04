@@ -191,7 +191,7 @@ export default function LandingPage({
         <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-3 md:gap-2 text-center">
           <h2 className="font-bubble live-heading-text leading-none md:text-6xl md:leading-none">
             <span className="text-[#E6E1FF]">What if you could be </span>
-            <span className="text-gradient-chaos">automatically</span>
+            <span className="text-gradient-chaos underline underline-offset-4">automatically</span>
             <span className="text-gradient-chaos"> hilarious</span>
             <span className="text-[#E6E1FF]">?</span>
           </h2>
@@ -214,7 +214,7 @@ export default function LandingPage({
 
             <button
               onClick={fluke}
-              className="btn-primary font-bubble mobile-fill-mt inline-block w-full max-w-xl rounded-full px-8 mobile-fill-py text-2xl text-center transition-transform duration-150 active:scale-95"
+              className="btn-primary font-bubble mobile-fill-mt inline-block w-full max-w-xl self-center rounded-full px-8 mobile-fill-py text-2xl text-center transition-transform duration-150 active:scale-95"
             >
               ✦ See more Flukes! ✦
             </button>
