@@ -32,6 +32,7 @@ export default function LandingPage({
   const [bannerSrc, setBannerSrc] = useState("/hero-chaos-v3.png")
   const [dbPairs, setDbPairs] = useState([])
   const [showIOSHelp, setShowIOSHelp] = useState(false)
+  const [copied, setCopied] = useState(false)
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
   const { showInstallLink, isIOS, promptInstall } = usePWAInstall()
@@ -72,6 +73,13 @@ export default function LandingPage({
     const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
     container.scrollTo({ top: target, behavior: isIOS ? "auto" : "smooth" })
   }
+
+  useEffect(() => {
+    if (roomCode && roomCode.length === 4) {
+      const t = setTimeout(scrollToPlay, 100)
+      return () => clearTimeout(t)
+    }
+  }, [roomCode])
 
   return (
     <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
@@ -169,11 +177,48 @@ export default function LandingPage({
 
             <p className="mt-6 text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">SHARE</p>
             <div className="mt-3 flex justify-center gap-3">
-              {["f", "♪", "◎", "𝕏"].map((c) => (
-                <span key={c} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70">
-                  {c}
-                </span>
-              ))}
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Let's play Fluke! Chaos that connects")}&url=${encodeURIComponent(window.location.origin)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Share on X (Twitter)"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              >
+                𝕏
+              </a>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent("Let's play Fluke! Chaos that connects")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Share on Facebook"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              >
+                f
+              </a>
+              <button
+                onClick={() => {
+                  const text = `Let's play Fluke! Chaos that connects — ${window.location.origin}`
+                  navigator.clipboard?.writeText(text).then(() => {
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 1500)
+                  })
+                }}
+                aria-label="Copy share text"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              >
+                {copied ? "✓" : "📋"}
+              </button>
+              {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+                <button
+                  onClick={() => {
+                    navigator.share({ title: "Fluke!", text: "Let's play Fluke! Chaos that connects", url: window.location.origin }).catch(() => {})
+                  }}
+                  aria-label="Share via device"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                >
+                  📤
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -225,6 +270,11 @@ export default function LandingPage({
             </PanelCard>
 
             <PanelCard title="Join a game">
+              {roomCode && roomCode.length === 4 && (
+                <div className="mb-3 text-sm text-purple-300 font-semibold">
+                  Joining room {roomCode} — enter your name
+                </div>
+              )}
               <div className="w-full flex flex-col gap-3 flex-1">
                 <input
                   type="text"

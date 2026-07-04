@@ -240,6 +240,11 @@ function App() {
         setBestOfLoading(false)
         setBestOfData(null)
       }
+      const room = params.get('room')
+      if (room && /^\d{4}$/.test(room)) {
+        setRoomCode(room)
+        history.replaceState(null, '', window.location.pathname)
+      }
     } catch (_) {}
   }, [])
 

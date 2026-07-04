@@ -48,6 +48,22 @@ export default function LobbyView({
             </button>
             <button
               onClick={() => {
+                const url = `${window.location.origin}?room=${roomCode}`
+                if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+                  navigator.share({ title: "Fluke!", text: "Join my Fluke game!", url }).catch(() => {})
+                } else {
+                  navigator.clipboard?.writeText(url)
+                  setNotice(noticeFor('Invite link copied', 'success', 1200))
+                }
+              }}
+              className="shrink-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm hover:bg-gray-700 transition-colors"
+              title="Copy invite link"
+              aria-label="Copy invite link"
+            >
+              🔗
+            </button>
+            <button
+              onClick={() => {
                 const next = !soundMuted
                 writeSoundMuted(next)
                 setSoundMuted(next)
