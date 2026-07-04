@@ -149,14 +149,14 @@ export default function LandingPage({
               </button>
             </div>
           </div>
-          <p className="mt-6 text-center text-base font-bold leading-relaxed hero-readable-text md:text-lg">
+          <p className="mt-4 text-center text-base font-bold leading-relaxed hero-readable-text md:mt-6 md:text-lg">
             No signup · No download · No idea what happens next
           </p>
         </div>
 
       </section>
 
-      <section id="live" className="relative overflow-hidden px-4 py-4 md:py-6">
+      <section id="live" className="relative overflow-hidden px-4 pt-2 pb-4 md:py-6">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-[#E6E1FF]">Press the button. </span>
@@ -239,13 +239,13 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="play" className="relative overflow-hidden px-4 pt-2 pb-12 md:pt-4 md:pb-16">
+      <section id="play" className="relative overflow-hidden px-4 pt-2 pb-6 md:pt-4 md:pb-16">
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl heading-pulse">
             <span className="text-gradient-chaos">Let's get it started</span>
           </h2>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2 md:max-w-4xl md:mx-auto items-stretch">
+          <div className="mt-4 grid gap-3 md:grid-cols-2 md:mt-10 md:gap-5 md:max-w-4xl md:mx-auto items-stretch">
             <PanelCard title="Start a game (3–15 players)">
               <div className="w-full flex flex-col gap-3 flex-1">
                 <input
@@ -346,7 +346,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <footer className="border-t border-white/5 px-4 py-10 text-center text-sm text-[#E6E1FF]/50 overflow-hidden">
+      <footer className="border-t border-white/5 px-4 py-6 text-center text-sm text-[#E6E1FF]/50 overflow-hidden md:py-10">
         <p className="font-bubble text-lg text-[#E6E1FF] inline-flex items-baseline gap-2">
           fluke!
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
@@ -409,9 +409,9 @@ function AnswerCard({ text, rotate = 0 }) {
 
 function PanelCard({ title, children }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/50 p-8 text-center h-full flex flex-col">
+    <div className="rounded-3xl border border-white/10 bg-black/50 p-6 text-center h-full flex flex-col md:p-8">
       <h3 className="font-bubble text-2xl text-[#E6E1FF]">{title}</h3>
-      <div className="mt-6 flex flex-col items-center flex-1">{children}</div>
+      <div className="mt-4 flex flex-col items-center flex-1 md:mt-6">{children}</div>
     </div>
   )
 }
