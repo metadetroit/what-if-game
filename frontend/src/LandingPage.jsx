@@ -33,9 +33,12 @@ export default function LandingPage({
   const [idxB, setIdxB] = useState(1)
   const [bannerSrc, setBannerSrc] = useState("/hero-chaos-v3.png")
   const [dbPairs, setDbPairs] = useState([])
+  const [pairsLoading, setPairsLoading] = useState(true)
   const [showIOSHelp, setShowIOSHelp] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768)
+  const [showFloatingPlay, setShowFloatingPlay] = useState(false)
+  const [revealedSections, setRevealedSections] = useState(new Set())
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
   const { showInstallLink, isIOS, promptInstall } = usePWAInstall()
@@ -57,6 +60,7 @@ export default function LandingPage({
         }
       })
       .catch(() => {})
+      .finally(() => setPairsLoading(false))
   }, [])
 
   const combinedDeck = [...DECK, ...dbPairs]
@@ -92,6 +96,34 @@ export default function LandingPage({
     }
   }, [roomCode])
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setRevealedSections((prev) => new Set(prev).add(entry.target.id))
+          }
+        })
+      },
+      { threshold: 0.1 }
+    )
+    ;["live", "play"].forEach((id) => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    const onScroll = () => {
+      setShowFloatingPlay(container.scrollTop > window.innerHeight * 0.7)
+    }
+    container.addEventListener("scroll", onScroll, { passive: true })
+    return () => container.removeEventListener("scroll", onScroll)
+  }, [])
+
   return (
     <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
       <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center" style={{ height: '100svh', minHeight: '100svh' }}>
@@ -124,7 +156,7 @@ export default function LandingPage({
           <div className="mt-8 max-w-xl mx-auto w-full flex flex-col gap-4">
             <button
               onClick={scrollToPlay}
-              className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
+              className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               START GAME
             </button>
@@ -154,9 +186,19 @@ export default function LandingPage({
           </p>
         </div>
 
+        <button
+          onClick={scrollToPlay}
+          aria-label="Scroll to play"
+          className="scroll-cue absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-[#E6E1FF]/50 hover:text-[#E6E1FF] transition-colors"
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
       </section>
 
-      <section id="live" className="relative overflow-hidden px-4 pt-2 pb-4 md:py-6">
+      <section id="live" className={`reveal-section relative overflow-hidden px-4 pt-2 pb-4 md:py-6 ${revealedSections.has("live") ? "revealed" : ""}`}>
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl">
             <span className="text-[#E6E1FF]">Press the button. </span>
@@ -168,15 +210,23 @@ export default function LandingPage({
 
           <div className="mt-4 rounded-3xl border border-white/10 bg-black/50 p-4 md:p-6">
             <div className="grid gap-2 md:grid-cols-2 md:gap-4">
-              <CollisionPair prompt={currentA.prompt} answer={currentA.answer} rotateP={-3} rotateA={2} />
+              {pairsLoading ? (
+                <SkeletonPair />
+              ) : (
+                <CollisionPair key={`a-${idxA}`} prompt={currentA.prompt} answer={currentA.answer} rotateP={-3} rotateA={2} />
+              )}
               <div className="hidden md:block">
-                <CollisionPair prompt={currentB.prompt} answer={currentB.answer} rotateP={2} rotateA={-3} />
+                {pairsLoading ? (
+                  <SkeletonPair />
+                ) : (
+                  <CollisionPair key={`b-${idxB}`} prompt={currentB.prompt} answer={currentB.answer} rotateP={2} rotateA={-3} />
+                )}
               </div>
             </div>
 
             <button
               onClick={fluke}
-              className="btn-primary font-bubble mt-2 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center"
+              className="btn-primary font-bubble mt-2 inline-block w-full max-w-xl rounded-full px-8 py-5 text-2xl text-center transition-transform duration-150 active:scale-95"
             >
               ✦ Fluke It! ✦
             </button>
@@ -188,27 +238,27 @@ export default function LandingPage({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Share on X (Twitter)"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
-                𝕏
+                <IconX />
               </a>
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}&quote=${encodeURIComponent(SHARE_TEXT)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Share on Facebook"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
-                f
+                <IconFacebook />
               </a>
               <a
-                href={`https://www.instagram.com/?url=${encodeURIComponent(SHARE_URL)}`}
+                href="https://www.instagram.com/playfluke/"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Share on Instagram"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                aria-label="Visit Fluke on Instagram"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
-                📷
+                <IconInstagram />
               </a>
               <button
                 onClick={() => {
@@ -219,19 +269,19 @@ export default function LandingPage({
                   })
                 }}
                 aria-label="Copy share text"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
-                {copied ? "✓" : "📋"}
+                {copied ? <IconCheck /> : <IconCopy />}
               </button>
               {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
                 <button
                   onClick={() => {
-                    navigator.share({ title: "Fluke!", text: "Let's play Fluke! Chaos that connects", url: window.location.origin }).catch(() => {})
+                    navigator.share({ title: "Fluke!", text: SHARE_TEXT, url: SHARE_URL }).catch(() => {})
                   }}
                   aria-label="Share via device"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
                 >
-                  📤
+                  <IconShare />
                 </button>
               )}
             </div>
@@ -239,7 +289,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section id="play" className="relative overflow-hidden px-4 pt-2 pb-6 md:pt-4 md:pb-16">
+      <section id="play" className={`reveal-section relative overflow-hidden px-4 pt-2 pb-6 md:pt-4 md:pb-16 ${revealedSections.has("play") ? "revealed" : ""}`}>
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="font-bubble text-4xl md:text-6xl heading-pulse">
             <span className="text-gradient-chaos">Let's get it started</span>
@@ -257,8 +307,8 @@ export default function LandingPage({
                   className="input-field py-3 text-base font-semibold placeholder:text-gray-500 text-[#E6E1FF]"
                   maxLength={20}
                 />
-                {/* Spacer matching room-code field height so rows align on desktop */}
-                <div className="hidden md:block" style={{ height: '54px' }} />
+                {/* Invisible spacer matching room-code input height so rows align on desktop */}
+                <input className="input-field py-3 text-base font-semibold invisible hidden md:block" tabIndex={-1} aria-hidden="true" readOnly />
                 <div className="flex items-center justify-start gap-3 text-sm text-gray-300">
                   <span className="mr-1">Pre-fill "What if..."</span>
                   <button
@@ -277,7 +327,7 @@ export default function LandingPage({
                 <button
                   onClick={createRoom}
                   disabled={!socket}
-                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold"
+                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold transition-transform duration-150 active:scale-95"
                 >
                   {socket ? "START NOW" : "..."}
                 </button>
@@ -330,7 +380,7 @@ export default function LandingPage({
                 <button
                   onClick={joinRoom}
                   disabled={!socket}
-                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold"
+                  className="btn-primary w-full rounded-full px-5 py-3 text-sm font-bold transition-transform duration-150 active:scale-95"
                 >
                   {socket ? "JOIN NOW" : "..."}
                 </button>
@@ -376,13 +426,25 @@ export default function LandingPage({
       </footer>
 
       {showIOSHelp && <IOSInstallHelp onClose={() => setShowIOSHelp(false)} />}
+
+      {showFloatingPlay && (
+        <button
+          onClick={scrollToPlay}
+          className="floating-play-in fixed bottom-5 right-5 z-50 btn-primary rounded-full px-5 py-3 text-sm font-black tracking-wider shadow-lg shadow-fuchsia-900/50 transition-transform duration-150 active:scale-95"
+        >
+          ▶ Play
+        </button>
+      )}
     </div>
   )
 }
 
 function PromptCard({ text, rotate = 0 }) {
   return (
-    <div className="card-prompt rounded-2xl p-3 text-left md:p-5" style={{ transform: `rotate(${rotate}deg)` }}>
+    <div
+      className="card-prompt card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-5"
+      style={{ transform: `rotate(${rotate}deg)` }}
+    >
       <p className="mb-1 text-[10px] font-semibold tracking-[0.3em] text-purple-300 md:mb-2">● PROMPT</p>
       <p className="text-base font-semibold text-[#E6E1FF] md:text-lg">{text}</p>
     </div>
@@ -400,7 +462,10 @@ function CollisionPair({ prompt, answer, rotateP = 0, rotateA = 0 }) {
 
 function AnswerCard({ text, rotate = 0 }) {
   return (
-    <div className="card-answer rounded-2xl p-3 text-left md:p-5" style={{ transform: `rotate(${rotate}deg)` }}>
+    <div
+      className="card-answer card-shuffle-in rounded-2xl p-3 text-left transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 md:p-5"
+      style={{ transform: `rotate(${rotate}deg)` }}
+    >
       <p className="mb-1 text-[10px] font-semibold tracking-[0.3em] text-rose-500 md:mb-2">● ANSWER</p>
       <p className="font-hand text-xl leading-snug md:text-2xl">{text}</p>
     </div>
@@ -413,5 +478,67 @@ function PanelCard({ title, children }) {
       <h3 className="font-bubble text-2xl text-[#E6E1FF]">{title}</h3>
       <div className="mt-4 flex flex-col items-center flex-1 md:mt-6">{children}</div>
     </div>
+  )
+}
+
+function SkeletonPair() {
+  return (
+    <div className="space-y-0 overflow-hidden md:space-y-1">
+      <div className="skeleton-shimmer rounded-2xl p-3 md:p-5" style={{ minHeight: 80 }} />
+      <div className="skeleton-shimmer rounded-2xl p-3 md:p-5" style={{ minHeight: 80 }} />
+    </div>
+  )
+}
+
+function IconX() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  )
+}
+
+function IconFacebook() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  )
+}
+
+function IconInstagram() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  )
+}
+
+function IconCopy() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  )
+}
+
+function IconCheck() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+function IconShare() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <polyline points="16 6 12 2 8 6" />
+      <line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
   )
 }

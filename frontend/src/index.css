@@ -628,4 +628,48 @@
     0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0)); }
     50% { transform: scale(1.03); filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.35)); }
   }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes card-shuffle-in {
+    0% { opacity: 0; transform: translateY(8px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card-shuffle-in {
+    animation: card-shuffle-in 0.3s ease-out;
+  }
+
+  .reveal-section {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+  .reveal-section.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @keyframes scroll-cue {
+    0%, 100% { transform: translateY(0); opacity: 0.5; }
+    50% { transform: translateY(8px); opacity: 1; }
+  }
+  .scroll-cue {
+    animation: scroll-cue 1.8s ease-in-out infinite;
+  }
+
+  @keyframes floating-play-in {
+    0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .floating-play-in {
+    animation: floating-play-in 0.3s ease-out;
+  }
 }
