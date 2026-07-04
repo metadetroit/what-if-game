@@ -115,7 +115,7 @@ export default function LandingPage({
 
   return (
     <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 pt-10 pb-16 text-center min-h-0 md:min-h-[100svh] md:py-10" style={isDesktop ? { height: '100svh' } : undefined}>
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center min-h-[100svh]" style={{ height: '100svh' }}>
         <picture>
           <source media="(max-width: 768px)" srcSet="/hero-chaos-v3-mobile.png" />
           <img
@@ -187,18 +187,15 @@ export default function LandingPage({
 
       </section>
 
-      <section id="live" className={`reveal-section relative overflow-hidden px-4 pt-2 pb-4 md:py-6 ${revealedSections.has("live") ? "revealed" : ""}`}>
-        <div className="mx-auto max-w-4xl text-center">
+      <section id="live" className={`reveal-section relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden px-4 py-4 ${revealedSections.has("live") ? "revealed" : ""}`}>
+        <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-2 text-center">
           <h2 className="font-bubble text-4xl leading-none md:text-6xl md:leading-none">
             <span className="text-[#E6E1FF]">What if you could be </span>
             <span className="text-gradient-chaos">automatically hilarious</span>
             <span className="text-[#E6E1FF]">?</span>
           </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-[#E6E1FF]/60 md:text-base whitespace-nowrap">
-            Serendipity does all the work.
-          </p>
 
-          <div className="mt-4 rounded-3xl border border-white/10 bg-black/50 p-4 md:p-5">
+          <div className="rounded-3xl border border-white/10 bg-black/50 p-4 md:p-5">
             <div className="grid gap-2 md:grid-cols-2 md:gap-4">
               {pairsLoading ? (
                 <SkeletonPair />
@@ -218,7 +215,7 @@ export default function LandingPage({
               onClick={fluke}
               className="btn-primary font-bubble mt-2 inline-block w-full max-w-xl rounded-full px-8 py-4 text-2xl text-center transition-transform duration-150 active:scale-95"
             >
-              ✦ Fluke It! ✦
+              ✦ See more Flukes! ✦
             </button>
 
             <p className="mt-3 text-[10px] tracking-[0.4em] text-[#E6E1FF]/40">SHARE</p>
@@ -240,15 +237,6 @@ export default function LandingPage({
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
                 <IconFacebook />
-              </a>
-              <a
-                href="https://www.instagram.com/playfluke/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Visit Fluke on Instagram"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
-              >
-                <IconInstagram />
               </a>
               <button
                 onClick={() => {
