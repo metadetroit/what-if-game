@@ -79,9 +79,9 @@ export default function LandingPage({
     }
   }
 
-  const scrollToPlay = () => {
+  const scrollToSection = (id) => {
     const container = scrollRef.current
-    const section = document.getElementById("play")
+    const section = document.getElementById(id)
     if (!container || !section) return
     const target = Math.max(section.offsetTop - 12, 0)
     const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
@@ -90,7 +90,7 @@ export default function LandingPage({
 
   useEffect(() => {
     if (roomCode && roomCode.length === 4) {
-      const t = setTimeout(scrollToPlay, 100)
+      const t = setTimeout(() => scrollToSection("play"), 100)
       return () => clearTimeout(t)
     }
   }, [roomCode])
@@ -144,7 +144,7 @@ export default function LandingPage({
 
           <div className="mt-8 max-w-xl mx-auto w-full flex flex-col gap-4">
             <button
-              onClick={scrollToPlay}
+              onClick={() => scrollToSection("play")}
               className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               START GAME
@@ -176,8 +176,8 @@ export default function LandingPage({
         </div>
 
         <button
-          onClick={scrollToPlay}
-          aria-label="Scroll to play"
+          onClick={() => scrollToSection("live")}
+          aria-label="Scroll to game examples"
           className="scroll-cue absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-[#E6E1FF]/50 hover:text-[#E6E1FF] transition-colors"
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -220,6 +220,16 @@ export default function LandingPage({
             </button>
           </div>
         </div>
+
+        <button
+          onClick={() => scrollToSection("play")}
+          aria-label="Scroll to start game"
+          className="scroll-cue absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-[#E6E1FF]/50 hover:text-[#E6E1FF] transition-colors"
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
       </section>
 
       <section id="play" className={`reveal-section relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden px-4 py-4 md:py-6 ${revealedSections.has("play") ? "revealed" : ""}`}>
