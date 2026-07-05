@@ -9,7 +9,7 @@ export function draftKey(roomCode, phase) {
 }
 
 const SESSION_KEY = "gameSession"
-const SESSION_TTL_MS = 1000 * 60 * 3
+const SESSION_TTL_MS = 1000 * 60 * 60
 
 export function loadSession() {
   try {

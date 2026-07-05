@@ -95,6 +95,7 @@ function App() {
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [showDisconnectOverlay, setShowDisconnectOverlay] = useState(false)
   const [disconnectOverlayDeadline, setDisconnectOverlayDeadline] = useState(null)
+  const [connectionStatus, setConnectionStatus] = useState("connected")
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -111,6 +112,7 @@ function App() {
   const disconnectNoticeTimerRef = useRef(null)
   const prefillWhatIfRef = useRef(getPrefillWhatIf())
   const skipNextCountdownRef = useRef(false)
+  const wakeLockNoticeShownRef = useRef(false)
 
   const reconnectTrapRef = useFocusTrap(!!reconnectPrompt)
   const kickTrapRef = useFocusTrap(!!kickConfirm)
@@ -456,7 +458,8 @@ function App() {
       setKickConfirm,
       setError,
       setReactions,
-      setCurrentTurn
+      setCurrentTurn,
+      setConnectionStatus
     },
     helpers: { applySummaryData, playSound },
     voteState: { summaryPairVoteId }
@@ -471,25 +474,36 @@ function App() {
       return
     }
     let cancelled = false
-    navigator.wakeLock.request("screen").then(lock => {
-      if (cancelled) { lock.release(); return }
-      wakeLockRef.current = lock
-      lock.addEventListener("release", () => { if (!cancelled) wakeLockRef.current = null })
-    }).catch(() => {})
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && activePhases.includes(gameStateRef.current) && !wakeLockRef.current) {
-        navigator.wakeLock.request("screen").then(lock => {
-          if (cancelled) { lock.release(); return }
-          wakeLockRef.current = lock
-          lock.addEventListener("release", () => { if (!cancelled) wakeLockRef.current = null })
-        }).catch(() => {})
-      }
+    const requestWakeLock = () => {
+      if (cancelled || document.visibilityState !== "visible" || !activePhases.includes(gameStateRef.current)) return
+      navigator.wakeLock.request("screen").then(lock => {
+        if (cancelled) { lock.release(); return }
+        wakeLockRef.current = lock
+        lock.addEventListener("release", () => {
+          if (!cancelled) {
+            wakeLockRef.current = null
+            // The browser may release the lock automatically (e.g. screen dim).
+            // Re-acquire if we are still in an active phase and visible.
+            requestWakeLock()
+          }
+        })
+      }).catch(() => {
+        if (!cancelled && !wakeLockNoticeShownRef.current) {
+          wakeLockNoticeShownRef.current = true
+          setNotice(noticeFor("Screen may dim while you play. Tap the screen to keep it awake.", "info", 4000))
+        }
+      })
     }
+    const onVisible = () => {
+      if (document.visibilityState === "visible") requestWakeLock()
+    }
+    requestWakeLock()
     document.addEventListener("visibilitychange", onVisible)
     return () => {
       cancelled = true
       document.removeEventListener("visibilitychange", onVisible)
       if (wakeLockRef.current) { wakeLockRef.current.release(); wakeLockRef.current = null }
+      wakeLockNoticeShownRef.current = false
     }
   }, [gameState])
 
@@ -839,8 +853,11 @@ function App() {
                   saveSession({ roomCode: code, playerName: name })
                   setPlayerName(name)
                   setRoomCode(code)
-                  reconnectAttemptedRef.current = true
-                  socketRef.current?.emit("reconnect-player", { roomCode: code, playerName: name })
+                  if (socketRef.current?.connected) {
+                    socketRef.current.emit("reconnect-player", { roomCode: code, playerName: name })
+                  } else {
+                    socketRef.current?.connect()
+                  }
                 }}
                 className="btn-primary py-3 text-base w-full"
               >
@@ -888,11 +905,15 @@ function App() {
                   <div className="space-y-3">
                     <button
                       onClick={() => {
-                        socketRef.current?.emit("reconnect-player", {
-                          roomCode: reconnectPrompt.roomCode,
-                          playerName: reconnectPrompt.playerName
-                        })
-                        setReconnectPrompt(null)
+                        if (socketRef.current?.connected) {
+                          socketRef.current.emit("reconnect-player", {
+                            roomCode: reconnectPrompt.roomCode,
+                            playerName: reconnectPrompt.playerName
+                          })
+                          setReconnectPrompt(null)
+                        } else {
+                          socketRef.current?.connect()
+                        }
                       }}
                       className="btn-primary py-3 text-base w-full"
                     >
@@ -1122,6 +1143,14 @@ function App() {
             </div>
             <p className="text-xs text-gray-500 mt-3">Refresh if the timer runs out.</p>
           </div>
+        </div>
+      )}
+      {gameState !== "welcome" && gameState !== "best-of" && gameState !== "help" && gameState !== "support" && (
+        <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-900/80 border border-gray-700 text-xs font-medium backdrop-blur-sm">
+          <span className={"w-2 h-2 rounded-full " + (connectionStatus === "connected" ? "bg-green-500" : connectionStatus === "reconnecting" ? "bg-yellow-400 animate-pulse" : "bg-red-500")} />
+          <span className={connectionStatus === "connected" ? "text-green-400" : connectionStatus === "reconnecting" ? "text-yellow-400" : "text-red-400"}>
+            {connectionStatus === "connected" ? "Online" : connectionStatus === "reconnecting" ? "Reconnecting…" : "Offline"}
+          </span>
         </div>
       )}
       {showBackToTop && (

@@ -246,7 +246,7 @@ const io = new Server(server, {
     origin: corsOrigin,
     methods: ["GET", "POST"]
   },
-  pingTimeout: 60000,
+  pingTimeout: 120000,
   pingInterval: 25000
 });
 
@@ -1710,19 +1710,31 @@ io.on('connection', (socket) => {
 
     console.log(`[ABANDON] ${player.name} abandoned game in room ${roomCode}`);
 
-    // Mark as inactive (not permanently removed, so replay check detects missing players)
-    player.isActive = false;
-    player.disconnectedAt = Date.now();
-
+    const wasHost = game.host === socket.id;
+    removePlayerFromGame(roomCode, socket.id);
     socket.leave(roomCode);
     socket.roomCode = null;
 
-    const activePlayers = game.players.filter(p => p.isActive);
-    io.to(roomCode).emit('player-left', { players: activePlayers, hostId: game.host });
-
-    if (activePlayers.length === 0) {
+    if (game.players.length === 0) {
       delete games[roomCode];
+      return;
     }
+
+    // Transfer host if the abandoning player was the host
+    if (wasHost) {
+      const hostChanged = ensureHost(roomCode);
+      if (hostChanged) {
+        const newHost = game.players.find(p => p.isHost);
+        if (newHost) {
+          io.to(roomCode).emit('host-changed', { hostId: newHost.id, hostName: newHost.name });
+        }
+      }
+    }
+
+    // If the game is still in an active phase, disband if too few players remain
+    if (disbandIfBelowMinimum(roomCode)) return;
+
+    io.to(roomCode).emit('player-left', { players: game.players.filter(p => p.isActive), hostId: game.host });
   });
 
   // Player leaves room voluntarily (Play Again)
@@ -2145,7 +2157,8 @@ io.on('connection', (socket) => {
     console.log(`[RECONNECT] ${playerName} reconnected to room ${roomCode} successfully`);
   });
 
-  // Handle disconnect: lobby = immediate removal, in-game = 180s grace
+  // Handle disconnect: lobby and in-game use a 180s reconnect grace window;
+  // ended phase removes silently.
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     lastVoteTime.delete(socket.id);
@@ -2162,24 +2175,51 @@ io.on('connection', (socket) => {
 
     const wasHost = game.host === socket.id;
 
-    // Lobby disconnect: remove immediately, no grace period.
+    // Lobby disconnect: now uses the same 180-second grace period as active
+    // phases so hosts and players can reconnect after a brief mobile drop.
+    // Inactive players are still filtered out when the game starts.
     if (game.phase === 'lobby') {
-      console.log(`Disconnect (lobby) - removing ${player.name} immediately`);
-      removePlayerFromGame(roomCode, socket.id);
-      if (game.players.length === 0) {
-        delete games[roomCode];
-        return;
-      }
-      if (wasHost) {
-        const hostChanged = ensureHost(roomCode);
-        if (hostChanged) {
-          const newHost = game.players.find(p => p.isHost);
-          if (newHost) {
-            io.to(roomCode).emit('host-changed', { hostId: newHost.id, hostName: newHost.name });
+      console.log(`Disconnect (lobby) - ${player.name} marked inactive, 180s grace`);
+      player.isActive = false;
+      player.disconnectedAt = Date.now();
+
+      // Keep the original host as host while they are in the grace period; if they
+      // are permanently removed later, the grace timeout will transfer host.
+      io.to(roomCode).emit('player-disconnected', {
+        players: game.players.filter(p => p.isActive),
+        disconnectedPlayer: player.name,
+        gracePeriod: 180
+      });
+
+      player.reconnectTimeout = setTimeout(() => {
+        const stillThere = games[roomCode];
+        if (!stillThere) return;
+        const stillDisconnected = stillThere.players.find(p => p.name === player.name && !p.isActive);
+        if (!stillDisconnected) {
+          console.log(`[grace-timeout] ${player.name} no longer matches a disconnected player - skipping`);
+          return;
+        }
+        console.log(`[grace-timeout] Permanently removing ${stillDisconnected.name} from lobby`);
+        removePlayerFromGame(roomCode, stillDisconnected.id);
+
+        if (stillThere.players.length === 0) {
+          delete games[roomCode];
+          return;
+        }
+
+        // Transfer host if the original host was the one removed
+        if (wasHost) {
+          const hostChanged = ensureHost(roomCode);
+          if (hostChanged) {
+            const newHost = stillThere.players.find(p => p.isHost);
+            if (newHost) {
+              io.to(roomCode).emit('host-changed', { hostId: newHost.id, hostName: newHost.name });
+            }
           }
         }
-      }
-      io.to(roomCode).emit('player-left', game.players.filter(p => p.isActive));
+
+        io.to(roomCode).emit('player-left', { players: stillThere.players.filter(p => p.isActive), hostId: stillThere.host });
+      }, 180000);
       return;
     }
 
@@ -2283,7 +2323,7 @@ io.on('connection', (socket) => {
           setTimeout(() => startNextReading(roomCode), 300);
         }
       }
-    }, 1000);
+    }, 2000);
 
     // Set 180-second grace timeout for permanent removal
     player.reconnectTimeout = setTimeout(() => {

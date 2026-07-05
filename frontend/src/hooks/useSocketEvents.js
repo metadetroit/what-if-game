@@ -69,7 +69,8 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     setKickConfirm,
     setError,
     setReactions,
-    setCurrentTurn
+    setCurrentTurn,
+    setConnectionStatus
   } = actions
 
   const { applySummaryData, playSound } = helpers
@@ -101,6 +102,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     socketRef.current = newSocket
 
     newSocket.on("connect", () => {
+      setConnectionStatus("connected")
       const activeGameplay = ACTIVE_GAMEPLAY.includes(gameStateRef.current)
       setShowDisconnectOverlay(false)
       setDisconnectOverlayDeadline(null)
@@ -122,7 +124,12 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       }
     })
 
+    newSocket.on("reconnecting", () => {
+      setConnectionStatus("reconnecting")
+    })
+
     newSocket.on("disconnect", () => {
+      setConnectionStatus("disconnected")
       reconnectAttemptedRef.current = false
       const activeGameplay = ACTIVE_GAMEPLAY.includes(gameStateRef.current)
       if (activeGameplay) {
@@ -136,20 +143,31 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     const handleBeforeUnload = () => touchSession()
     window.addEventListener("beforeunload", handleBeforeUnload)
 
+    let revalidateTimer = null
     const revalidatePresence = () => {
-      const state = gameStateRef.current
-      if (state === "welcome" || state === "reconnect-failed") return
-      const session = loadSession()
-      if (!session) return
-      if (socketRef.current?.connected) {
-        socketRef.current.emit("check-presence", { roomCode: session.roomCode, playerName: session.playerName })
-      } else {
-        reconnectAttemptedRef.current = false
-      }
+      if (revalidateTimer) return
+      revalidateTimer = setTimeout(() => {
+        revalidateTimer = null
+        const state = gameStateRef.current
+        if (state === "welcome" || state === "reconnect-failed") return
+        const session = loadSession()
+        if (!session) return
+        if (socketRef.current?.connected) {
+          socketRef.current.emit("check-presence", { roomCode: session.roomCode, playerName: session.playerName })
+        } else {
+          reconnectAttemptedRef.current = false
+        }
+      }, 200)
     }
 
     const handleVisibilityChange = () => {
       if (document.visibilityState !== "visible") return
+      // If the socket is disconnected, force a connection attempt immediately.
+      // The connect handler will then run the reconnect logic automatically.
+      if (socketRef.current && !socketRef.current.connected) {
+        reconnectAttemptedRef.current = false
+        socketRef.current.connect()
+      }
       revalidatePresence()
     }
     document.addEventListener("visibilitychange", handleVisibilityChange)
@@ -537,7 +555,9 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       const session = loadSession()
       if (!session) return
       try {
-        reconnectAttemptedRef.current = true
+        // Let the connect handler own the reconnectAttemptedRef flag.
+        // If the socket is already connected, this emits immediately; if not,
+        // the next connect event will retry automatically.
         newSocket.emit("reconnect-player", { roomCode: session.roomCode, playerName: session.playerName })
       } catch (e) {}
     })
@@ -560,9 +580,10 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       window.removeEventListener("beforeunload", handleBeforeUnload)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("pageshow", handlePageShow)
+      if (revalidateTimer) clearTimeout(revalidateTimer)
       newSocket.close()
     }
-  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef, setCurrentTurn, setReactions])
+  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef, setCurrentTurn, setReactions, setConnectionStatus])
 
   return { handleVote }
 }
