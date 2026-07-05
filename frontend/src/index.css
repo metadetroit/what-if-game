@@ -409,16 +409,16 @@
   }
 
   .game-container--active .card {
-    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-lg shadow-black/20 p-3 md:p-4;
+    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-lg shadow-black/20;
   }
 
   .game-container--active .input-field {
-    @apply rounded-2xl border-white/10 bg-black/25 px-4 py-3 text-[15px] text-white placeholder:text-white/35 focus:border-fuchsia-400 focus:ring-fuchsia-400/20;
+    @apply rounded-2xl border-white/10 bg-black/25 px-4 text-white placeholder:text-white/35 focus:border-fuchsia-400 focus:ring-fuchsia-400/20;
   }
 
   .game-container--active .btn-primary,
   .game-container--active .btn-secondary {
-    @apply rounded-2xl py-3 text-sm md:text-base;
+    @apply rounded-2xl;
   }
 
   .game-container--active .phase-banner {
@@ -431,10 +431,6 @@
 
   .game-container--active .phase-banner strong {
     @apply text-xs md:text-sm text-white;
-  }
-
-  .game-container--active textarea.input-field {
-    @apply h-24 md:h-28;
   }
 
   .waiting-panel--compact {
@@ -707,6 +703,31 @@
   }
   .mobile-fill-card-title {
     font-size: clamp(20px, 5vw, 28px);
+  }
+  .active-heading-text {
+    font-size: clamp(20px, 6vw, 28px);
+  }
+  .active-body-text {
+    font-size: clamp(16px, 4.5vw, 18px);
+  }
+  .active-input-text {
+    font-size: clamp(17px, 4.5vw, 20px);
+  }
+  .active-fill-gap {
+    gap: clamp(6px, 1.5dvh, 12px);
+  }
+  .active-fill-mt {
+    margin-top: clamp(6px, 1.5dvh, 12px);
+  }
+  .active-fill-py {
+    padding-top: clamp(12px, 2.5dvh, 18px);
+    padding-bottom: clamp(12px, 2.5dvh, 18px);
+  }
+  .active-textarea-height {
+    height: clamp(120px, 22dvh, 180px);
+  }
+  .active-card-padding {
+    padding: clamp(12px, 2dvh, 16px);
   }
 
 }

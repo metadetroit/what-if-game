@@ -35,78 +35,78 @@ export default function PerformancePhase({
       )}
       {currentTurn ? (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="phase-banner mb-2">
+          <div className="phase-banner active-fill-mt">
             <span>Phase 3</span>
-            <strong>Performance Time</strong>
+            <strong className="active-heading-text">Performance Time</strong>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             <div className="mb-1">
               {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
               <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-xl shadow-green-900/50">
-                <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ QUESTION</span>
-                <p className="text-green-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
+                <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ QUESTION</span>
+                <p className="text-green-100 active-body-text mt-1">Read aloud, then tap Done</p>
               </div>
             )}
             {!currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
               <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                <span className="font-bubble text-base md:text-lg font-bold text-gray-400">WAITING</span>
-                <p className="text-gray-500 text-xs md:text-sm mt-1">{currentTurn.answerReader.name} is reading the answer</p>
+                <span className="font-bubble active-heading-text font-bold text-gray-400">WAITING</span>
+                <p className="text-gray-500 active-body-text mt-1">{currentTurn.answerReader.name} is reading the answer</p>
               </div>
             )}
             {currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
               <div>
                 <div className="text-center mb-2">
-                  <span className="inline-flex items-center gap-1.5 text-xs text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30">
+                  <span className="inline-flex items-center gap-1.5 active-body-text text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30">
                     <span className="text-base">🎤</span>
                     <span className="font-medium">{currentTurn.questionReader.name}</span> is reading the question to you
                   </span>
                 </div>
                 <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                  <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">GET READY</span>
-                  <p className="text-purple-100 text-xs md:text-sm mt-1">You're reading the answer next</p>
+                  <span className="font-bubble active-heading-text font-black text-white tracking-wider">GET READY</span>
+                  <p className="text-purple-100 active-body-text mt-1">You're reading the answer next</p>
                 </div>
               </div>
             )}
             {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
               <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-xl shadow-purple-900/50">
-                <span className="font-bubble text-xl md:text-2xl font-black text-white tracking-wider">READ ANSWER</span>
-                <p className="text-purple-100 text-xs md:text-sm mt-1">Read aloud, then tap Done</p>
+                <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ ANSWER</span>
+                <p className="text-purple-100 active-body-text mt-1">Read aloud, then tap Done</p>
               </div>
             )}
             {socket?.id !== currentTurn.questionReader.id && socket?.id !== currentTurn.answerReader.id && (
               <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
-                <p className="text-gray-300 text-base md:text-lg">
-                  <span className="text-green-400 font-bold text-lg md:text-xl">{currentTurn.questionReader.name}</span>
+                <p className="text-gray-300 active-body-text">
+                  <span className="text-green-400 font-bold active-heading-text">{currentTurn.questionReader.name}</span>
                   <span className="text-gray-500 mx-3">→</span>
-                  <span className="text-purple-400 font-bold text-lg md:text-xl">{currentTurn.answerReader.name}</span>
+                  <span className="text-purple-400 font-bold active-heading-text">{currentTurn.answerReader.name}</span>
                 </p>
-                <p className="text-gray-500 text-sm md:text-base mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
+                <p className="text-gray-500 active-body-text mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
               </div>
             )}
           </div>
           {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-            <div className="card bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl mb-2 py-3 px-4 overflow-y-auto max-h-[40vh] md:max-h-[35vh]">
-              <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">
-                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+            <div className="card active-card-padding bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-2xl active-fill-mt overflow-y-auto max-h-[40vh] md:max-h-[35vh]">
+              <p className="text-center active-body-text font-bold text-white leading-relaxed">
+                <span className="text-white/50 active-heading-text mx-1">"</span>
                 {currentTurn.question}
-                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+                <span className="text-white/50 active-heading-text mx-1">"</span>
               </p>
             </div>
           )}
           {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && currentTurn.answer && (
-            <div className="card bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl mb-2 py-3 px-4 overflow-y-auto max-h-[40vh] md:max-h-[35vh]">
-              <p className="text-center text-lg md:text-xl font-bold text-white leading-relaxed">
-                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+            <div className="card active-card-padding bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-2xl active-fill-mt overflow-y-auto max-h-[40vh] md:max-h-[35vh]">
+              <p className="text-center active-body-text font-bold text-white leading-relaxed">
+                <span className="text-white/50 active-heading-text mx-1">"</span>
                 {currentTurn.answer}
-                <span className="text-white/50 text-xl md:text-2xl mx-1">"</span>
+                <span className="text-white/50 active-heading-text mx-1">"</span>
               </p>
             </div>
           )}
           {!hasRead && currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-            <button onClick={completeReading} className="btn-primary mb-2 bg-green-600 hover:bg-green-700 text-base py-3">Done Reading →</button>
+            <button onClick={completeReading} className="btn-primary active-fill-mt bg-green-600 hover:bg-green-700 active-fill-py active-input-text">Done Reading →</button>
           )}
           {!hasRead && !currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
-            <button onClick={completeReading} className="btn-primary mb-2 bg-purple-600 hover:bg-purple-700 text-base py-3">Done Reading →</button>
+            <button onClick={completeReading} className="btn-primary active-fill-mt bg-purple-600 hover:bg-purple-700 active-fill-py active-input-text">Done Reading →</button>
           )}
           </div>
           <div className="shrink-0 pt-2 border-t border-gray-800">
@@ -149,7 +149,7 @@ export default function PerformancePhase({
                           setMyReactions(prev => new Set(prev).add(currentContent.dbId))
                         }}
                         disabled={!canReact}
-                        className={`text-xl bg-gray-800 border border-gray-700 rounded-full w-9 h-9 flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none relative ${canReact ? 'hover:bg-gray-700' : 'opacity-30 cursor-not-allowed'}`}
+                        className={`text-xl bg-gray-800 border border-gray-700 rounded-full w-10 h-10 md:w-9 md:h-9 flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none relative ${canReact ? 'hover:bg-gray-700' : 'opacity-30 cursor-not-allowed'}`}
                         aria-label={`React with ${emoji}${count > 0 ? ` (${count})` : ''}`}
                         title={`React with ${emoji}${count > 0 ? ` — ${count} reaction${count === 1 ? '' : 's'}` : ''}`}
                       >
@@ -164,7 +164,7 @@ export default function PerformancePhase({
               )
             })()}
             {isHost && (
-              <button onClick={() => setForceConfirm(true)} className="w-full text-xs text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-1">
+              <button onClick={() => setForceConfirm(true)} className="w-full active-body-text text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-1 md:text-xs">
                 ⚡ Skip Current Turn
               </button>
             )}
@@ -173,8 +173,8 @@ export default function PerformancePhase({
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <div className="text-6xl mb-4">🎭</div>
-          <h3 className="font-bubble text-2xl font-bold text-white mb-2">Get Ready!</h3>
-          <p className="text-gray-400 text-base">Reading round starting soon...</p>
+          <h3 className="font-bubble active-heading-text font-bold text-white mb-2">Get Ready!</h3>
+          <p className="text-gray-400 active-body-text">Reading round starting soon...</p>
         </div>
       )}
     </div>
