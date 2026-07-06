@@ -278,11 +278,6 @@ export default function LandingPage({
             </PanelCard>
 
             <PanelCard title="Join a game">
-              {roomCode && roomCode.length === 4 && (
-                <div className="mb-3 text-sm text-purple-300 font-semibold">
-                  Joining room {roomCode} — enter your name
-                </div>
-              )}
               <div className="w-full flex flex-col gap-3 flex-1">
                 <input
                   type="text"
