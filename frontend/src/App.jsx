@@ -83,9 +83,9 @@ function App() {
   const [votersCount, setVotersCount] = useState(0)
   const [hideGameConfirm, setHideGameConfirm] = useState(false) // Confirmation for hiding game from best of
   const [bestOfSort, setBestOfSort] = useState(() => sessionStorage.getItem('bestOfSort') || 'votes')
-  const [bestOfLimit, setBestOfLimit] = useState(20)
+  const [bestOfLimit, setBestOfLimit] = useState(50)
   const [bestOfOffset, setBestOfOffset] = useState(0)
-  const [bestOfHasMore, setBestOfHasMore] = useState(true)
+  const [bestOfHasMore, setBestOfHasMore] = useState(false)
   const [bestOfLoading, setBestOfLoading] = useState(false)
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('adminKey') || '')
   const [bestOfViewMode, setBestOfViewMode] = useState('approved') // 'approved' | 'pending'
@@ -199,7 +199,7 @@ function App() {
           return [...prev, ...deduped]
         })
       }
-      setBestOfHasMore(Array.isArray(data) ? data.length === limit : false)
+      setBestOfHasMore(false)
     } catch (error) {
       console.error('Failed to fetch best of data:', error)
       setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
@@ -258,9 +258,9 @@ function App() {
   const handleApproveSFW = useCallback(async (id, index) => {
     // Optimistic UI update
     if (bestOfViewMode === 'pending') {
-      setPendingData(prev => prev.filter((_, i) => i !== index))
+      setPendingData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
     } else {
-      setBestOfData(prev => prev.filter((_, i) => i !== index))
+      setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
     }
 
     try {
@@ -299,9 +299,9 @@ function App() {
   const handleApproveNSFW = useCallback(async (id, index) => {
     // Optimistic UI update
     if (bestOfViewMode === 'pending') {
-      setPendingData(prev => prev.filter((_, i) => i !== index))
+      setPendingData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
     } else {
-      setBestOfData(prev => prev.filter((_, i) => i !== index))
+      setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
     }
 
     try {
@@ -503,8 +503,8 @@ function App() {
 
   const handleDeleteBestOf = async (type, id, index) => {
     try {
-      const response = await fetch(`${SOCKET_URL}/api/delete-best-of`, {
-        method: 'POST',
+      const response = await fetch(`${SOCKET_URL}/api/admin/delete-pair`, {
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ type, id })
       })
@@ -516,8 +516,13 @@ function App() {
       }
       const result = await response.json()
       if (result.success) {
-        setBestOfData(prev => prev.filter((_, i) => i !== index))
-        setNotice(noticeFor('Item deleted from Best Of', 'success', 2000))
+        if (bestOfViewMode === 'pending') {
+          setPendingData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
+          setNotice(noticeFor('Item deleted from Pending', 'success', 2000))
+        } else {
+          setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
+          setNotice(noticeFor('Item deleted from Best Of', 'success', 2000))
+        }
       } else {
         setNotice(noticeFor('Failed to delete item', 'warn', 3000))
       }

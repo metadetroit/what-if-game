@@ -15,7 +15,9 @@ function BestOfView({
   onApproveSFW,
   onApproveNSFW,
   viewMode = "approved", // "approved" | "pending"
-  onViewModeChange
+  onViewModeChange,
+  contentFilter = "all",
+  onContentFilterChange
 }) {
   const renderContent = () => {
     if (bestOfData === null) {
@@ -30,7 +32,11 @@ function BestOfView({
       return (
         <div className="text-center py-8">
           <p className="text-gray-500 text-sm">
-            {viewMode === "pending" ? "No pending items to review." : "No content yet. Play some games to see the best content here!"}
+            {viewMode === "pending"
+              ? "No pending items to review."
+              : contentFilter !== "all"
+                ? "No content matches this filter."
+                : "No content yet. Play some games to see the best content here!"}
           </p>
         </div>
       )
@@ -138,6 +144,28 @@ function BestOfView({
         <h1 className="font-bubble text-2xl font-extrabold text-gradient-chaos mb-1">Best Of</h1>
         <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
         <div className="mt-2 flex items-center gap-2">
+          {onContentFilterChange && (
+            <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
+              <button
+                onClick={() => onContentFilterChange("all")}
+                className={`px-3 py-1 ${contentFilter === "all" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+              >
+                Show All
+              </button>
+              <button
+                onClick={() => onContentFilterChange("nsfw")}
+                className={`px-3 py-1 border-l border-gray-700 ${contentFilter === "nsfw" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+              >
+                Only NSFW
+              </button>
+              <button
+                onClick={() => onContentFilterChange("sfw")}
+                className={`px-3 py-1 border-l border-gray-700 ${contentFilter === "sfw" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+              >
+                Only SFW
+              </button>
+            </div>
+          )}
           {adminKey && (
             <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
               <button

@@ -45,10 +45,11 @@ app.get('/api/health', (req, res) => {
 // API: Get best of content
 app.get('/api/best-of', async (req, res) => {
   const db = getDb();
-  const limit = parseInt(req.query.limit) || 20;
+  const limit = Math.min(parseInt(req.query.limit) || 50, 50);
   const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
   const sort = (req.query.sort || 'votes').toLowerCase(); // 'votes' | 'newest'
   const offset = parseInt(req.query.offset) || 0;
+  const pairVoteThreshold = sort === 'newest' ? 1 : 2;
 
   let results = [];
 
@@ -114,13 +115,13 @@ app.get('/api/best-of', async (req, res) => {
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
             AND (qp.hidden IS NULL OR qp.hidden = 0)
             AND qp.is_approved = 1
             AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
       ORDER BY ${orderByPairs}
       LIMIT ? OFFSET ?
-    `, [limit, offset]);
+    `, [pairVoteThreshold, limit, offset]);
     
     if (pairs.length > 0) {
       pairs[0].values.forEach(row => {
@@ -151,10 +152,11 @@ app.get('/api/best-of', async (req, res) => {
 // Uncut Best Of endpoint - returns all approved content (SFW + NSFW)
 app.get('/api/best-of-uncut', async (req, res) => {
   const db = getDb();
-  const limit = parseInt(req.query.limit) || 20;
+  const limit = Math.min(parseInt(req.query.limit) || 50, 50);
   const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
   const sort = (req.query.sort || 'votes').toLowerCase(); // 'votes' | 'newest'
   const offset = parseInt(req.query.offset) || 0;
+  const pairVoteThreshold = sort === 'newest' ? 1 : 2;
 
   let results = [];
 
@@ -168,12 +170,12 @@ app.get('/api/best-of-uncut', async (req, res) => {
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
             AND (qp.hidden IS NULL OR qp.hidden = 0)
             AND qp.is_approved = 1
       ORDER BY ${orderByPairs}
       LIMIT ? OFFSET ?
-    `, [limit, offset]);
+    `, [pairVoteThreshold, limit, offset]);
 
     if (pairs.length > 0) {
       pairs[0].values.forEach(row => {
@@ -304,7 +306,7 @@ app.delete('/api/admin/delete-pair', async (req, res) => {
   const db = getDb();
   try {
     await db.run("DELETE FROM qa_pairs WHERE id = ?", [id]);
-    res.json({ success: true });
+    return res.status(200).json({ success: true });
   } catch (e) {
     console.error('[delete-pair] Error:', e.message);
     res.status(500).json({ success: false, error: e.message });
@@ -331,6 +333,10 @@ app.get('/api/admin/pending', async (req, res) => {
       JOIN games g ON qp.game_id = g.id
       WHERE qp.is_approved = 0
             AND (qp.hidden IS NULL OR qp.hidden = 0)
+            AND (q.hidden IS NULL OR q.hidden = 0)
+            AND (a.hidden IS NULL OR a.hidden = 0)
+            AND q.text IS NOT NULL AND TRIM(q.text) <> ''
+            AND a.text IS NOT NULL AND TRIM(a.text) <> ''
       ORDER BY g.created_at DESC
       LIMIT ? OFFSET ?
     `, [limit, offset]);
@@ -373,6 +379,7 @@ app.get('/api/random-pairs', async (req, res) => {
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
       WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
+            AND qp.vote_count >= 1
             AND (qp.hidden IS NULL OR qp.hidden = 0)
             AND (q.hidden IS NULL OR q.hidden = 0)
             AND (a.hidden IS NULL OR a.hidden = 0)

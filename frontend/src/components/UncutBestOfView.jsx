@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import BestOfView from "./BestOfView"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
@@ -6,11 +6,12 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 function UncutBestOfView({ onBack }) {
   const [bestOfData, setBestOfData] = useState(null)
   const [bestOfSort, setBestOfSort] = useState(() => sessionStorage.getItem('uncutBestOfSort') || 'votes')
-  const [bestOfLimit, setBestOfLimit] = useState(20)
+  const [bestOfLimit, setBestOfLimit] = useState(50)
   const [bestOfOffset, setBestOfOffset] = useState(0)
-  const [bestOfHasMore, setBestOfHasMore] = useState(true)
+  const [bestOfHasMore, setBestOfHasMore] = useState(false)
   const [bestOfLoading, setBestOfLoading] = useState(false)
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('adminKey') || '')
+  const [contentFilter, setContentFilter] = useState('all')
 
   const bestOfSentinelRef = useRef(null)
   const bestOfScrollRef = useRef(null)
@@ -35,7 +36,7 @@ function UncutBestOfView({ onBack }) {
         })
       }
 
-      setBestOfHasMore(Array.isArray(data) ? data.length === limit : false)
+      setBestOfHasMore(false)
     } catch (error) {
       console.error('Failed to fetch uncut best-of data:', error)
     } finally {
@@ -61,25 +62,32 @@ function UncutBestOfView({ onBack }) {
   }, [])
 
   const handleDeleteItem = async (type, id, index) => {
+    let effectiveAdminKey = adminKey
     if (!adminKey) {
       const key = prompt('Enter admin key to delete:')
       if (!key) return
       setAdminKey(key)
       sessionStorage.setItem('adminKey', key)
+      effectiveAdminKey = key
     }
 
     try {
-      const response = await fetch(`${SOCKET_URL}/api/delete-best-of`, {
-        method: 'POST',
+      const response = await fetch(`${SOCKET_URL}/api/admin/delete-pair`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey
+          'x-admin-key': effectiveAdminKey
         },
         body: JSON.stringify({ type, id })
       })
 
       if (response.ok) {
-        setBestOfData(prev => prev.filter((_, i) => i !== index))
+        const result = await response.json()
+        if (result.success) {
+          setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
+        } else {
+          alert('Failed to delete item')
+        }
       } else {
         alert('Failed to delete item')
       }
@@ -90,22 +98,24 @@ function UncutBestOfView({ onBack }) {
   }
 
   const handleApproveSFW = async (id, index) => {
+    let effectiveAdminKey = adminKey
     if (!adminKey) {
       const key = prompt('Enter admin key:')
       if (!key) return
       setAdminKey(key)
       sessionStorage.setItem('adminKey', key)
+      effectiveAdminKey = key
     }
 
     // Optimistic UI update
-    setBestOfData(prev => prev.filter((_, i) => i !== index))
+    setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
 
     try {
       const response = await fetch(`${SOCKET_URL}/api/admin/approve-sfw`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey
+          'x-admin-key': effectiveAdminKey
         },
         body: JSON.stringify({ id })
       })
@@ -124,22 +134,24 @@ function UncutBestOfView({ onBack }) {
   }
 
   const handleApproveNSFW = async (id, index) => {
+    let effectiveAdminKey = adminKey
     if (!adminKey) {
       const key = prompt('Enter admin key:')
       if (!key) return
       setAdminKey(key)
       sessionStorage.setItem('adminKey', key)
+      effectiveAdminKey = key
     }
 
     // Optimistic UI update
-    setBestOfData(prev => prev.filter((_, i) => i !== index))
+    setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
 
     try {
       const response = await fetch(`${SOCKET_URL}/api/admin/approve-nsfw`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey
+          'x-admin-key': effectiveAdminKey
         },
         body: JSON.stringify({ id })
       })
@@ -169,6 +181,17 @@ function UncutBestOfView({ onBack }) {
       }
     }
   }, [adminKey])
+
+  const filteredBestOfData = useMemo(() => {
+    if (!Array.isArray(bestOfData)) return bestOfData
+    if (contentFilter === 'nsfw') {
+      return bestOfData.filter(item => item.is_nsfw)
+    }
+    if (contentFilter === 'sfw') {
+      return bestOfData.filter(item => !item.is_nsfw)
+    }
+    return bestOfData
+  }, [bestOfData, contentFilter])
 
   // Initial fetch
   useEffect(() => {
@@ -203,7 +226,7 @@ function UncutBestOfView({ onBack }) {
     <BestOfView
       bestOfScrollRef={bestOfScrollRef}
       bestOfSentinelRef={bestOfSentinelRef}
-      bestOfData={bestOfData}
+      bestOfData={filteredBestOfData}
       bestOfSort={bestOfSort}
       bestOfLoading={bestOfLoading}
       adminKey={adminKey}
@@ -215,6 +238,8 @@ function UncutBestOfView({ onBack }) {
       onApproveSFW={handleApproveSFW}
       onApproveNSFW={handleApproveNSFW}
       viewMode="approved"
+      contentFilter={contentFilter}
+      onContentFilterChange={setContentFilter}
     />
   )
 }
