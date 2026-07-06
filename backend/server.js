@@ -107,14 +107,17 @@ app.get('/api/best-of', async (req, res) => {
   if (!type || type === 'qa_pairs') {
     const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
     const pairs = await db.exec(`
-      SELECT qp.id, q.text as question_text, a.text as answer_text, 
+      SELECT qp.id, q.text as question_text, a.text as answer_text,
              q.author_name as question_author, a.author_name as answer_author,
              qp.vote_count, g.created_at, qp.anonymous
       FROM qa_pairs qp
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0 AND (qp.hidden IS NULL OR qp.hidden = 0)
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
+            AND (qp.hidden IS NULL OR qp.hidden = 0)
+            AND qp.is_approved = 1
+            AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
       ORDER BY ${orderByPairs}
       LIMIT ? OFFSET ?
     `, [limit, offset]);
@@ -131,6 +134,60 @@ app.get('/api/best-of', async (req, res) => {
           answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
           vote_count: row[5],
           game_date: row[6]
+        });
+      });
+    }
+  }
+
+  // Sort by vote count if mixed types
+  if (!type) {
+    results.sort((a, b) => b.vote_count - a.vote_count);
+    results = results.slice(0, limit);
+  }
+
+  res.json(results);
+});
+
+// Uncut Best Of endpoint - returns all approved content (SFW + NSFW)
+app.get('/api/best-of-uncut', async (req, res) => {
+  const db = getDb();
+  const limit = parseInt(req.query.limit) || 20;
+  const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
+  const sort = (req.query.sort || 'votes').toLowerCase(); // 'votes' | 'newest'
+  const offset = parseInt(req.query.offset) || 0;
+
+  let results = [];
+
+  if (!type || type === 'qa_pairs') {
+    const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
+    const pairs = await db.exec(`
+      SELECT qp.id, q.text as question_text, a.text as answer_text,
+             q.author_name as question_author, a.author_name as answer_author,
+             qp.vote_count, g.created_at, qp.anonymous, qp.is_nsfw
+      FROM qa_pairs qp
+      JOIN questions q ON qp.question_id = q.id
+      JOIN answers a ON qp.answer_id = a.id
+      JOIN games g ON qp.game_id = g.id
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
+            AND (qp.hidden IS NULL OR qp.hidden = 0)
+            AND qp.is_approved = 1
+      ORDER BY ${orderByPairs}
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
+
+    if (pairs.length > 0) {
+      pairs[0].values.forEach(row => {
+        const isAnon = row[7] === 1 || row[7] === true;
+        results.push({
+          type: 'qa_pair',
+          id: row[0],
+          question: row[1],
+          answer: row[2],
+          question_author: isAnon ? '???' : (row[3] || 'Unknown'),
+          answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
+          vote_count: row[5],
+          game_date: row[6],
+          is_nsfw: row[8] === 1 || row[8] === true
         });
       });
     }
@@ -208,6 +265,8 @@ app.get('/api/random-pairs', async (req, res) => {
             AND (qp.hidden IS NULL OR qp.hidden = 0)
             AND (q.hidden IS NULL OR q.hidden = 0)
             AND (a.hidden IS NULL OR a.hidden = 0)
+            AND qp.is_approved = 1
+            AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
       ORDER BY RANDOM()
       LIMIT ?
     `, [count]);

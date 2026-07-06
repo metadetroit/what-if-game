@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import LandingPage from "./LandingPage"
 import BestOfView from "./components/BestOfView"
+import UncutBestOfView from "./components/UncutBestOfView"
+import AgeGate from "./components/AgeGate"
 import HelpPage from "./components/HelpPage"
 import SupportPage from "./components/SupportPage"
 import LobbyView from "./components/LobbyView"
@@ -96,6 +98,7 @@ function App() {
   const [showDisconnectOverlay, setShowDisconnectOverlay] = useState(false)
   const [disconnectOverlayDeadline, setDisconnectOverlayDeadline] = useState(null)
   const [connectionStatus, setConnectionStatus] = useState("connected")
+  const [ageGatePassed, setAgeGatePassed] = useState(false)
 
   // Refs survive remounts/state-update batches
   const reconnectAttemptedRef = useRef(false)
@@ -246,6 +249,10 @@ function App() {
       if (room && /^\d{4}$/.test(room)) {
         setRoomCode(room)
         history.replaceState(null, '', window.location.pathname)
+      }
+      // Handle /fword route
+      if (window.location.pathname === '/fword') {
+        setGameState('fword')
       }
     } catch (_) {}
   }, [])
@@ -885,6 +892,14 @@ function App() {
             onCopyLink={handleCopyBestOfLink}
             onDeleteItem={handleDeleteBestOf}
           />
+        )
+
+      case "fword":
+        return (
+          <>
+            {!ageGatePassed && <AgeGate onConfirm={() => setAgeGatePassed(true)} />}
+            {ageGatePassed && <UncutBestOfView onBack={() => setGameState("welcome")} />}
+          </>
         )
 
       case "welcome":

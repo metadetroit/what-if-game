@@ -17,7 +17,7 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
         </button>
       </div>
 
-      <div className="card flex-1 min-h-0 overflow-y-auto py-2.5 md:py-3 px-3 md:px-4">
+      <div className="card flex-1 min-h-0 overflow-y-auto py-2.5 md:py-3 px-4 md:px-6">
         <div className="flex gap-1.5 md:gap-2 mb-3 md:mb-4 overflow-x-auto">
           {HELP_TABS.map(tab => (
             <button
@@ -30,7 +30,7 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
           ))}
         </div>
 
-        <div className="text-sm text-gray-300 space-y-3 md:space-y-4">
+        <div className="font-sans text-base md:text-lg text-gray-300 space-y-4 md:space-y-5">
           {helpTab === "how-to-play" && (
             <div className="space-y-3 md:space-y-4">
               <div>
@@ -38,9 +38,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                   <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                     <span className="text-lg md:text-xl">🎲</span>
                   </div>
-                  <h3 className="font-bubble text-base md:text-lg font-bold text-white">How Fluke Works</h3>
+                  <h3 className="font-bubble text-lg md:text-xl font-bold text-white">How Fluke Works</h3>
                 </div>
-                <ol className="list-decimal list-inside space-y-1.5 md:space-y-2 text-sm text-gray-300">
+                <ol className="list-decimal list-inside space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>Everyone writes a “What if…” question.</li>
                   <li>Prompts are shuffled.</li>
                   <li>Each player answers someone else’s prompt.</li>
@@ -51,8 +51,8 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
               </div>
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-sm font-bold text-indigo-400 mb-1.5 md:mb-2">Player Tips</h4>
-                <ul className="space-y-1 text-sm text-gray-300">
+                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Player Tips</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>• Keep prompts short and specific.</li>
                   <li>• One strong idea beats three weak ones.</li>
                   <li>• Read loudly and commit to the bit.</li>
@@ -62,9 +62,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
               </div>
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-sm font-bold text-indigo-400 mb-1.5 md:mb-2">Host Controls</h4>
-                <p className="text-[11px] md:text-xs text-gray-500 mb-2">(Only the host sees these)</p>
-                <ul className="space-y-1 text-sm text-gray-300">
+                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Host Controls</h4>
+                <p className="text-sm md:text-base text-gray-500 mb-2">(Only the host sees these)</p>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>• <strong>Anonymous Results</strong> - Hide names in the summary.</li>
                   <li>• <strong>No Self-Reading</strong> - Reduce self-assigned content.</li>
                   <li>• <strong>Force Advance</strong> - Move on when the room is ready.</li>
@@ -80,7 +80,7 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
                   <span className="text-lg md:text-xl">❓</span>
                 </div>
-                <h3 className="font-bubble text-base md:text-lg font-bold text-white">Frequently Asked Questions</h3>
+                <h3 className="font-bubble text-lg md:text-xl font-bold text-white">Frequently Asked Questions</h3>
               </div>
 
               {[
@@ -129,9 +129,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                   answer: "Top pairing is the most-voted combo. Most-adored writer comes from ❤️ + 😂."
                 }
               ].map(item => (
-                <div className="bg-gray-800/50 rounded-lg p-2.5 md:p-3" key={item.question}>
-                  <h4 className="text-sm font-bold text-indigo-400 mb-1">{item.question}</h4>
-                  <p className="text-[13px] md:text-sm text-gray-300 leading-relaxed">{item.answer}</p>
+                <div className="bg-gray-800/50 rounded-lg p-3 md:p-4" key={item.question}>
+                  <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2">{item.question}</h4>
+                  <p className="text-base md:text-lg text-gray-300 leading-relaxed">{item.answer}</p>
                 </div>
               ))}
             </div>
@@ -143,13 +143,13 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
                   <span className="text-lg md:text-xl">💡</span>
                 </div>
-                <h3 className="font-bubble text-base md:text-lg font-bold text-white">Tips & Tricks</h3>
+                <h3 className="font-bubble text-lg md:text-xl font-bold text-white">Tips & Tricks</h3>
               </div>
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-sm font-bold text-indigo-400 mb-1.5 md:mb-2">Writing Good Questions 🖊️</h4>
-                <ul className="space-y-1 text-sm text-gray-300">
-                  <li>• Start with a clear “What if”.</li>
+                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Writing Good Questions 🖊️</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+                  <li>• Start with a clear "What if".</li>
                   <li>• Leave room for a funny answer.</li>
                   <li>• One strong idea usually beats many small ones.</li>
                   <li>• Skip inside jokes unless everyone will get them.</li>
@@ -157,8 +157,8 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
               </div>
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-sm font-bold text-indigo-400 mb-1.5 md:mb-2">Writing Good Answers 💡</h4>
-                <ul className="space-y-1 text-sm text-gray-300">
+                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Writing Good Answers 💡</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>• Make it easy to read aloud.</li>
                   <li>• Be specific; details beat vague punchlines.</li>
                   <li>• Give the reader something fun to say.</li>
@@ -167,8 +167,8 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
               </div>
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-sm font-bold text-indigo-400 mb-1.5 md:mb-2">Performing 🎭</h4>
-                <ul className="space-y-1 text-sm text-gray-300">
+                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Performing 🎭</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>• Read both parts clearly.</li>
                   <li>• Commit to the bit.</li>
                   <li>• Pause before the punchline.</li>
@@ -177,8 +177,8 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
               </div>
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-sm font-bold text-indigo-400 mb-1.5 md:mb-2">Hosting 🎮</h4>
-                <ul className="space-y-1 text-sm text-gray-300">
+                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Hosting 🎮</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>• Set expectations early.</li>
                   <li>• Use anonymity intentionally.</li>
                   <li>• Force advance only when needed.</li>
@@ -187,8 +187,8 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
               </div>
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-sm font-bold text-indigo-400 mb-1.5 md:mb-2">Winning the Room 🌟</h4>
-                <ul className="space-y-1 text-sm text-gray-300">
+                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Winning the Room 🌟</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>• Vote for the pairing you want remembered.</li>
                   <li>• Send ❤️ and 😂 to reward good writing.</li>
                   <li>• Use ❓ for delicious chaos.</li>
@@ -204,25 +204,25 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
                   <span className="text-lg md:text-xl">📖</span>
                 </div>
-                <h3 className="text-base font-bold text-white">About Fluke</h3>
+                <h3 className="text-lg md:text-xl font-bold text-white">About Fluke</h3>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4 space-y-2 md:space-y-3">
-                <p className="text-sm text-gray-300 leading-relaxed">
+              <div className="border-t border-gray-700 pt-4 md:pt-5 space-y-3 md:space-y-4">
+                <p className="text-base md:text-lg text-gray-300 leading-relaxed">
                   Fluke is a browser-based party game built around “What if…?” prompts.
                 </p>
-                <p className="text-sm text-gray-300 leading-relaxed">
+                <p className="text-base md:text-lg text-gray-300 leading-relaxed">
                   You write a question, answer someone else’s, and read the mashups aloud together.
                 </p>
-                <p className="text-sm text-gray-300 leading-relaxed">
+                <p className="text-base md:text-lg text-gray-300 leading-relaxed">
                   It works best when people move quickly, commit to the bit, and lean into the chaos.
                 </p>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4 space-y-2 md:space-y-3">
+              <div className="border-t border-gray-700 pt-4 md:pt-5 space-y-3 md:space-y-4">
                 <button
                   onClick={onOpenSupport}
-                  className="btn-primary w-full py-2.5 md:py-3 text-sm"
+                  className="btn-primary w-full py-3 md:py-3.5 text-base md:text-lg"
                 >
                   Support this project →
                 </button>

@@ -48,6 +48,8 @@ async function main() {
                 AND (qp.hidden IS NULL OR qp.hidden = 0)
                 AND (q.hidden IS NULL OR q.hidden = 0)
                 AND (a.hidden IS NULL OR a.hidden = 0)
+                AND qp.is_approved = 1
+                AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
                 AND g.created_at >= ?
           ORDER BY qp.vote_count DESC
           LIMIT ?`,

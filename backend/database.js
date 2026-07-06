@@ -120,6 +120,14 @@ async function initDatabase() {
     await client.execute("ALTER TABLE answers ADD COLUMN hidden BOOLEAN DEFAULT 0");
   } catch (e) { /* already exists */ }
 
+  // Add approval and NSFW flags to qa_pairs for content curation
+  try {
+    await client.execute("ALTER TABLE qa_pairs ADD COLUMN is_approved BOOLEAN DEFAULT 0");
+  } catch (e) { /* already exists */ }
+  try {
+    await client.execute("ALTER TABLE qa_pairs ADD COLUMN is_nsfw BOOLEAN DEFAULT 0");
+  } catch (e) { /* already exists */ }
+
   const db = new DbWrapper();
   return db;
 }
