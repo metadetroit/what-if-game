@@ -910,8 +910,7 @@ io.on('connection', (socket) => {
       socket.emit('error', 'Game is transitioning, please wait');
       return;
     }
-    
-    game.isTransitioning = true;
+
     player.hasSubmittedAnswer = true;
     
     try {
@@ -953,6 +952,7 @@ io.on('connection', (socket) => {
       if (allSubmitted) {
         if (game.phase === 'answering') {
           console.log('All active players submitted! Starting performance phase...');
+          game.isTransitioning = true;
           await preparePerformancePhase(roomCode);
           // isTransitioning cleared inside preparePerformancePhase
         } else {
