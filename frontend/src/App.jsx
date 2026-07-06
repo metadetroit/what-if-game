@@ -1080,6 +1080,7 @@ function App() {
             helpTab={helpTab}
             onTabChange={setHelpTab}
             onBack={() => setGameState("welcome")}
+            onOpenSupport={() => setGameState("support")}
           />
         )
 

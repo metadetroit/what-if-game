@@ -3,29 +3,29 @@ import React from "react"
 function SupportPage({ onBack }) {
   return (
     <div className="game-container py-2">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-bubble text-xl font-bold text-gradient-chaos">Support the Project</h2>
+      <div className="flex items-center justify-between mb-2 md:mb-3">
+        <h2 className="font-bubble text-lg md:text-xl font-bold text-gradient-chaos">Support the Project</h2>
         <button onClick={onBack} className="flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors">
           ← Back
         </button>
       </div>
 
-      <div className="card flex-1 min-h-0 overflow-y-auto py-3 px-4 space-y-4">
-        <div className="text-center mb-4">
-          <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
-            <span className="text-xl">🎁</span>
+      <div className="card flex-1 min-h-0 overflow-y-auto py-2.5 md:py-3 px-3 md:px-4 space-y-3 md:space-y-4">
+        <div className="text-center mb-3 md:mb-4">
+          <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
+            <span className="text-lg md:text-xl">🎁</span>
           </div>
-          <h3 className="font-bubble text-lg font-bold text-white">Value for Value</h3>
+          <h3 className="font-bubble text-base md:text-lg font-bold text-white">Value for Value</h3>
         </div>
 
         <p className="text-sm text-gray-300 leading-relaxed">
           If Fluke gave you a good laugh, a memorable night, or a reason to reconnect with friends, consider returning some of that value back. This game is free to play, but it is not free to build, host, and improve.
         </p>
 
-        <div className="border-t border-gray-700 pt-4 space-y-4">
+        <div className="border-t border-gray-700 pt-3 md:pt-4 space-y-3 md:space-y-4">
           <div>
-            <h4 className="text-sm font-bold text-pink-400 mb-2">Send a Tip</h4>
-            <p className="text-sm text-gray-300 leading-relaxed mb-3">
+            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Send a Tip</h4>
+            <p className="text-sm text-gray-300 leading-relaxed mb-2 md:mb-3">
               A small donation helps cover server costs and keeps the game online. No amount is too small.
             </p>
 
@@ -58,14 +58,14 @@ function SupportPage({ onBack }) {
               </div>
             </div>
 
-            <div className="md:hidden flex flex-col gap-3">
+            <div className="md:hidden flex flex-col gap-2.5">
               <div className="flex flex-col items-center gap-2">
                 <img
                   src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://cash.app/$playfluke"
                   alt="Cash App QR code for $playfluke"
-                  className="w-44 h-44 rounded-lg bg-white p-2"
+                  className="w-40 h-40 rounded-lg bg-white p-2"
                 />
-                <p className="text-xs font-semibold text-gray-300 text-center max-w-[12rem] leading-relaxed">
+                <p className="text-xs font-semibold text-gray-300 text-center max-w-[11rem] leading-relaxed">
                   Scan with your phone camera to open Cash App instantly.
                 </p>
               </div>
@@ -86,9 +86,9 @@ function SupportPage({ onBack }) {
             </div>
           </div>
 
-          <div className="border-t border-gray-700 pt-4">
-            <h4 className="text-sm font-bold text-pink-400 mb-2">Beta Test & Feedback</h4>
-            <p className="text-sm text-gray-300 leading-relaxed mb-3">
+          <div className="border-t border-gray-700 pt-3 md:pt-4">
+            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Beta Test & Feedback</h4>
+            <p className="text-sm text-gray-300 leading-relaxed mb-2 md:mb-3">
               Spotted a bug? Have an idea? Want to test new features before they go live? Your feedback shapes what Fluke becomes next.
             </p>
             <a href="mailto:hello@playfluke.com" className="text-sm text-indigo-300 hover:text-indigo-200 underline">
@@ -96,15 +96,15 @@ function SupportPage({ onBack }) {
             </a>
           </div>
 
-          <div className="border-t border-gray-700 pt-4">
-            <h4 className="text-sm font-bold text-pink-400 mb-2">Share the Game</h4>
+          <div className="border-t border-gray-700 pt-3 md:pt-4">
+            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Share the Game</h4>
             <p className="text-sm text-gray-300 leading-relaxed">
               The easiest way to support Fluke is to bring more people into the room. Share the link, teach a friend, or bring it to your next group hangout.
             </p>
           </div>
 
-          <div className="border-t border-gray-700 pt-4">
-            <h4 className="text-sm font-bold text-pink-400 mb-2">Thank You</h4>
+          <div className="border-t border-gray-700 pt-3 md:pt-4">
+            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Thank You</h4>
             <p className="text-sm text-gray-300 leading-relaxed">
               However you choose to give back — donation, bug report, or another round — it matters. Thanks for being part of this.
             </p>
@@ -112,7 +112,7 @@ function SupportPage({ onBack }) {
         </div>
       </div>
 
-      <button onClick={onBack} className="btn-secondary py-3 text-sm w-full mt-3">
+      <button onClick={onBack} className="btn-secondary py-2.5 md:py-3 text-sm w-full mt-3">
         Back to Main Screen
       </button>
     </div>
