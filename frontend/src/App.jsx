@@ -1146,7 +1146,7 @@ function App() {
         </div>
       )}
       {gameState !== "welcome" && gameState !== "best-of" && gameState !== "help" && gameState !== "support" && (
-        <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-900/80 border border-gray-700 text-xs font-medium backdrop-blur-sm">
+        <div className="fixed bottom-2 left-2 z-40 flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-900/80 border border-gray-700 text-xs font-medium backdrop-blur-sm">
           <span className={"w-2 h-2 rounded-full " + (connectionStatus === "connected" ? "bg-green-500" : connectionStatus === "reconnecting" ? "bg-yellow-400 animate-pulse" : "bg-red-500")} />
           <span className={connectionStatus === "connected" ? "text-green-400" : connectionStatus === "reconnecting" ? "text-yellow-400" : "text-red-400"}>
             {connectionStatus === "connected" ? "Online" : connectionStatus === "reconnecting" ? "Reconnecting…" : "Offline"}

@@ -408,6 +408,13 @@
     @apply justify-between gap-2 py-1 pb-2 md:gap-3;
   }
 
+  .game-container--keyboard-aware {
+    overflow-y: auto;
+    height: auto;
+    min-height: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+
   .game-container--active .card {
     @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-lg shadow-black/20;
   }

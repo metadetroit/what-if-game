@@ -261,6 +261,10 @@ const MAX_RECENT_CODES = 100;
 const lastVoteTime = new Map();
 const VOTE_RATE_LIMIT_MS = 500;
 
+// Connection rate limiter: 3s cooldown per IP on create-room / join-room
+const connectionRateLimits = new Map();
+const CONNECTION_COOLDOWN_MS = 3000;
+
 function generateRoomCode() {
   const existingCodes = new Set(Object.keys(games));
   for (let attempt = 0; attempt < 50; attempt++) {
@@ -438,6 +442,16 @@ io.on('connection', (socket) => {
 
   // Create new game room
   socket.on('create-room', async (playerName, callback) => {
+    // Connection rate limit: 3s cooldown per IP
+    const clientIp = socket.handshake.address || socket.id;
+    const nowConn = Date.now();
+    const lastConn = connectionRateLimits.get(clientIp) || 0;
+    if (nowConn - lastConn < CONNECTION_COOLDOWN_MS) {
+      callback({ success: false, error: 'Please wait before trying to create or join a room again' });
+      return;
+    }
+    connectionRateLimits.set(clientIp, nowConn);
+
     if (typeof playerName !== 'string' || !playerName.trim()) {
       callback({ success: false, error: 'Name cannot be empty' });
       return;
@@ -447,7 +461,7 @@ io.on('connection', (socket) => {
     
     const game = {
       host: socket.id,
-      players: [{ id: socket.id, name: cleanName, isHost: true, isActive: true }],
+      players: [{ id: socket.id, name: cleanName, isHost: true, isActive: true, hasSubmittedQuestion: false, hasSubmittedAnswer: false }],
       phase: 'lobby',
       questions: {},
       answers: {},
@@ -480,6 +494,16 @@ io.on('connection', (socket) => {
 
   // Join existing room
   socket.on('join-room', (roomCode, playerName, callback) => {
+    // Connection rate limit: 3s cooldown per IP
+    const clientIp = socket.handshake.address || socket.id;
+    const nowConn = Date.now();
+    const lastConn = connectionRateLimits.get(clientIp) || 0;
+    if (nowConn - lastConn < CONNECTION_COOLDOWN_MS) {
+      callback({ success: false, error: 'Please wait before trying to create or join a room again' });
+      return;
+    }
+    connectionRateLimits.set(clientIp, nowConn);
+
     if (typeof playerName !== 'string' || !playerName.trim()) {
       callback({ success: false, error: 'Name cannot be empty' });
       return;
@@ -511,7 +535,7 @@ io.on('connection', (socket) => {
     console.log(`JOIN-ROOM: Adding ${cleanName} with socket ${socket.id} to room ${roomCode}`);
     console.log(`JOIN-ROOM: Players before:`, game.players.map(p => ({ name: p.name, id: p.id, isActive: p.isActive })));
     
-    game.players.push({ id: socket.id, name: cleanName, isHost: false, isActive: true });
+    game.players.push({ id: socket.id, name: cleanName, isHost: false, isActive: true, hasSubmittedQuestion: false, hasSubmittedAnswer: false });
     socket.join(roomCode);
     socket.roomCode = roomCode;
     
@@ -544,6 +568,13 @@ io.on('connection', (socket) => {
     // Store noSelfReading setting for use in performance phase
     game.noSelfReading = noSelfReading;
     console.log(`Room ${roomCode}: No Self-Reading ${noSelfReading ? 'ON' : 'OFF'}`);
+
+    // Reset per-round submission flags and transition guard
+    for (const p of activePlayers) {
+      p.hasSubmittedQuestion = false;
+      p.hasSubmittedAnswer = false;
+    }
+    game.isTransitioning = false;
     
     // CRITICAL FIX: Remove any disconnected players from lobby before starting
     game.players = activePlayers;
@@ -558,6 +589,12 @@ io.on('connection', (socket) => {
     const game = games[roomCode];
 
     if (!game || game.host !== socket.id) return;
+
+    if (game.phase !== 'lobby') {
+      console.log(`[toggle-anonymous] Rejected: not in lobby (phase: ${game.phase})`);
+      socket.emit('error', 'Anonymous mode can only be changed in the lobby');
+      return;
+    }
 
     game.anonymousMode = !game.anonymousMode;
 
@@ -607,6 +644,18 @@ io.on('connection', (socket) => {
     }
 
     const player = game.players.find(p => p.id === socket.id);
+    if (!player) {
+      console.log(`submit-question rejected: player not found in game ${roomCode}`);
+      socket.emit('error', 'You are not in this game');
+      return;
+    }
+    if (player.hasSubmittedQuestion) {
+      console.log(`submit-question rejected: duplicate submission from ${player.name}`);
+      socket.emit('error', 'You already submitted a question this round');
+      return;
+    }
+    player.hasSubmittedQuestion = true;
+
     console.log('submit-question: player found:', !!player, 'player name:', player?.name);
     game.questions[socket.id] = {
       text: question,
@@ -739,6 +788,12 @@ io.on('connection', (socket) => {
       
       game.phase = 'answering';
       console.log(`[distributeQuestions] Game phase set to 'answering'`);
+
+      // Reset answer submission flags and transition guard for the new phase
+      for (const p of activePlayers) {
+        p.hasSubmittedAnswer = false;
+      }
+      game.isTransitioning = false;
       
       // Send each player their assigned question
       let sentCount = 0;
@@ -814,12 +869,21 @@ io.on('connection', (socket) => {
 
     if (!game || game.phase !== 'answering') {
       console.log(`Submit-answer rejected: game=${!!game}, phase=${game?.phase}`);
+      socket.emit('error', 'Game is not in the answering phase');
       return;
     }
     
     const player = game.players.find(p => p.id === socket.id);
     if (!player) {
       console.log(`Submit-answer rejected: Player not found with socket ID ${socket.id}`);
+      socket.emit('error', 'You are not in this game');
+      return;
+    }
+    
+    // Duplicate submission guard
+    if (player.hasSubmittedAnswer) {
+      console.log(`Submit-answer rejected: duplicate answer from ${player.name}`);
+      socket.emit('error', 'You already submitted an answer this round');
       return;
     }
     
@@ -840,52 +904,74 @@ io.on('connection', (socket) => {
       return;
     }
     
-    game.answers[socket.id] = {
-      text: answer,
-      question: assignedQuestion,
-      authorId: socket.id,
-      authorName: player.name || 'Unknown'
-    };
-
-    // Save answer to database
-    const db = getDb();
-    await db.run("INSERT INTO answers (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
-      [game.dbGameId, answer, socket.id, player.name || 'Unknown', 0, game.currentRoundAnonymousMode ? 1 : 0]);
-    const answerIdResult = await db.exec("SELECT last_insert_rowid() as id");
-    const answerId = answerIdResult[0].values[0][0];
-    game.answers[socket.id].dbId = answerId;
-
-    // Track first submitter
-    if (!game.firstAnswerSubmitter) {
-      game.firstAnswerSubmitter = player.name || 'Unknown';
+    // Synchronous transition guard
+    if (game.isTransitioning) {
+      console.log(`Submit-answer rejected: transition in progress for room ${roomCode}`);
+      socket.emit('error', 'Game is transitioning, please wait');
+      return;
     }
+    
+    game.isTransitioning = true;
+    player.hasSubmittedAnswer = true;
+    
+    try {
+      game.answers[socket.id] = {
+        text: answer,
+        question: assignedQuestion,
+        authorId: socket.id,
+        authorName: player.name || 'Unknown'
+      };
 
-    // Track last submitter (always update to latest)
-    game.lastAnswerSubmitter = player.name || 'Unknown';
+      // Save answer to database
+      const db = getDb();
+      await db.run("INSERT INTO answers (game_id, text, author_id, author_name, vote_count, anonymous) VALUES (?, ?, ?, ?, ?, ?)", 
+        [game.dbGameId, answer, socket.id, player.name || 'Unknown', 0, game.currentRoundAnonymousMode ? 1 : 0]);
+      const answerIdResult = await db.exec("SELECT last_insert_rowid() as id");
+      const answerId = answerIdResult[0].values[0][0];
+      game.answers[socket.id].dbId = answerId;
 
-    socket.emit('answer-submitted');
+      // Track first submitter
+      if (!game.firstAnswerSubmitter) {
+        game.firstAnswerSubmitter = player.name || 'Unknown';
+      }
 
-    // Check if all ACTIVE players submitted answers
-    const activePlayers = game.players.filter(p => p.isActive);
-    const missingAnswers = activePlayers.filter(p => !game.answers[p.id]).map(p => ({ name: p.name, id: p.id }));
-    console.log(`Answer check: ${activePlayers.length - missingAnswers.length}/${activePlayers.length} submitted (active players only)`);
-    console.log('Active players:', activePlayers.map(p => ({ name: p.name, id: p.id, hasAnswer: !!game.answers[p.id] })));
-    if (missingAnswers.length > 0) {
-      console.log('Missing answers from:', missingAnswers);
-    }
+      // Track last submitter (always update to latest)
+      game.lastAnswerSubmitter = player.name || 'Unknown';
 
-    const allSubmitted = missingAnswers.length === 0;
-    if (allSubmitted) {
-      console.log('All active players submitted! Starting performance phase...');
-      preparePerformancePhase(roomCode);
-    } else {
-      io.to(roomCode).emit('progress-update', {
-        submitted: Object.keys(game.answers).length,
-        total: activePlayers.length,
-        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] })),
-        firstSubmitter: game.firstAnswerSubmitter,
-        lastQuestionSubmitter: game.lastQuestionSubmitter
-      });
+      socket.emit('answer-submitted');
+
+      // Check if all ACTIVE players submitted answers
+      const activePlayers = game.players.filter(p => p.isActive);
+      const missingAnswers = activePlayers.filter(p => !game.answers[p.id]).map(p => ({ name: p.name, id: p.id }));
+      console.log(`Answer check: ${activePlayers.length - missingAnswers.length}/${activePlayers.length} submitted (active players only)`);
+      console.log('Active players:', activePlayers.map(p => ({ name: p.name, id: p.id, hasAnswer: !!game.answers[p.id] })));
+      if (missingAnswers.length > 0) {
+        console.log('Missing answers from:', missingAnswers);
+      }
+
+      const allSubmitted = missingAnswers.length === 0;
+      if (allSubmitted) {
+        if (game.phase === 'answering') {
+          console.log('All active players submitted! Starting performance phase...');
+          await preparePerformancePhase(roomCode);
+          // isTransitioning cleared inside preparePerformancePhase
+        } else {
+          console.log('All active players submitted, but phase is no longer answering; transition already handled.');
+          game.isTransitioning = false;
+        }
+      } else {
+        io.to(roomCode).emit('progress-update', {
+          submitted: Object.keys(game.answers).length,
+          total: activePlayers.length,
+          playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] })),
+          firstSubmitter: game.firstAnswerSubmitter,
+          lastQuestionSubmitter: game.lastQuestionSubmitter
+        });
+      }
+    } catch (err) {
+      console.error(`[submit-answer] Error processing answer from ${player.name}:`, err.message);
+      game.isTransitioning = false;
+      socket.emit('error', 'Failed to submit answer');
     }
   });
 
@@ -1154,6 +1240,8 @@ io.on('connection', (socket) => {
       totalRounds: playerIds.length * 2,
       message: 'Get ready to read!'
     });
+
+    game.isTransitioning = false;
     
     // Start the chain
     setTimeout(() => {
@@ -1336,15 +1424,19 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // One reaction per player per content
+    // One reaction per player per content (use stable player.name, not socket.id)
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player) return;
+    const stableId = player.name;
+
     if (!game.playerReactions[targetId]) game.playerReactions[targetId] = new Set();
-    if (game.playerReactions[targetId].has(socket.id)) {
+    if (game.playerReactions[targetId].has(stableId)) {
       socket.emit('error', 'You already reacted to this');
       return;
     }
 
     // Record reaction
-    game.playerReactions[targetId].add(socket.id);
+    game.playerReactions[targetId].add(stableId);
     if (!game.reactions[targetId]) game.reactions[targetId] = {};
     game.reactions[targetId][emoji] = (game.reactions[targetId][emoji] || 0) + 1;
 
@@ -1376,6 +1468,14 @@ io.on('connection', (socket) => {
       return
     }
 
+    // Resolve stable player identity (player.name) for vote tracking
+    const voter = game.players.find(p => p.id === socket.id);
+    if (!voter) {
+      socket.emit('vote-submitted', { success: false, message: 'You are not in this game' });
+      return;
+    }
+    const stableVoterId = voter.name;
+
     // Rate limit votes per socket
     const now = Date.now();
     const last = lastVoteTime.get(socket.id) || 0;
@@ -1400,7 +1500,7 @@ io.on('connection', (socket) => {
     // Toggle behavior: if already voted on this exact item, unvote it
     const existingVote = await db.exec(
       "SELECT id FROM votes WHERE game_id = ? AND player_id = ? AND vote_type = ? AND target_id = ?",
-      [game.dbGameId, socket.id, type, targetId]
+      [game.dbGameId, stableVoterId, type, targetId]
     );
     if (existingVote.length > 0 && existingVote[0].values.length > 0) {
       const voteId = existingVote[0].values[0][0];
@@ -1419,7 +1519,7 @@ io.on('connection', (socket) => {
     if (type === 'qa_pair') {
       const otherVote = await db.exec(
         "SELECT id FROM votes WHERE game_id = ? AND player_id = ? AND vote_type = ? LIMIT 1",
-        [game.dbGameId, socket.id, type]
+        [game.dbGameId, stableVoterId, type]
       );
       if (otherVote.length > 0 && otherVote[0].values.length > 0) {
         socket.emit('vote-submitted', { success: false, message: 'Already voted for another pairing. Click your vote to undo first.' });
@@ -1428,7 +1528,7 @@ io.on('connection', (socket) => {
     }
 
     // Insert new vote and increment count
-    await db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)", [game.dbGameId, socket.id, type, targetId]);
+    await db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)", [game.dbGameId, stableVoterId, type, targetId]);
     await db.run(`UPDATE ${tableName} SET vote_count = vote_count + 1 WHERE id = ?`, [targetId]);
 
     const result = await db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
@@ -1498,6 +1598,13 @@ io.on('connection', (socket) => {
     game.lastQuestionSubmitter = prevLastQuestionSubmitter; // carry for the nudge
     game.lastAnswerSubmitter = null;
 
+    // Reset per-round submission flags and transition guard
+    for (const p of game.players) {
+      p.hasSubmittedQuestion = false;
+      p.hasSubmittedAnswer = false;
+    }
+    game.isTransitioning = false;
+
     // Clear the previous round's vote rows for this game so players aren't
     // blocked from voting again in the replayed round. The denormalized
     // vote_count totals on questions/answers/qa_pairs are preserved, so the
@@ -1545,6 +1652,24 @@ io.on('connection', (socket) => {
       }
       // Permanently remove non-submitters and notify them
       const toKick = activePlayers.filter(p => !game.questions[p.id]);
+      const toKickNames = new Set(toKick.map(p => p.name));
+      const remainingActiveCount = game.players.filter(p => !toKickNames.has(p.name) && p.isActive).length;
+      if (remainingActiveCount < 2) {
+        console.log(`[FORCE-PROGRESS] Aborting kick: only ${remainingActiveCount} active players would remain`);
+        io.to(roomCode).emit('game-disbanded', {
+          message: 'Not enough players remaining to continue. Returning to the new game screen.'
+        });
+        for (const p of game.players) {
+          const s = io.sockets.sockets.get(p.id);
+          if (s) {
+            s.leave(roomCode);
+            s.roomCode = null;
+          }
+          if (p.reconnectTimeout) clearTimeout(p.reconnectTimeout);
+        }
+        delete games[roomCode];
+        return;
+      }
       for (const p of toKick) {
         console.log(`[FORCE-PROGRESS] Kicking non-submitter ${p.name} (${p.id}) from game`);
         const kickedSocket = io.sockets.sockets.get(p.id);
@@ -1570,6 +1695,24 @@ io.on('connection', (socket) => {
         return;
       }
       const toKick = activePlayers.filter(p => !game.answers[p.id]);
+      const toKickNames = new Set(toKick.map(p => p.name));
+      const remainingActiveCount = game.players.filter(p => !toKickNames.has(p.name) && p.isActive).length;
+      if (remainingActiveCount < 2) {
+        console.log(`[FORCE-PROGRESS] Aborting kick: only ${remainingActiveCount} active players would remain`);
+        io.to(roomCode).emit('game-disbanded', {
+          message: 'Not enough players remaining to continue. Returning to the new game screen.'
+        });
+        for (const p of game.players) {
+          const s = io.sockets.sockets.get(p.id);
+          if (s) {
+            s.leave(roomCode);
+            s.roomCode = null;
+          }
+          if (p.reconnectTimeout) clearTimeout(p.reconnectTimeout);
+        }
+        delete games[roomCode];
+        return;
+      }
       for (const p of toKick) {
         console.log(`[FORCE-PROGRESS] Kicking non-answerer ${p.name} (${p.id}) from game`);
         const kickedSocket = io.sockets.sockets.get(p.id);
@@ -1867,6 +2010,10 @@ io.on('connection', (socket) => {
     player.isActive = true;
     player.disconnectedAt = null;
     player.reconnectTimeout = null;
+
+    // Restore submission flags based on migrated state
+    player.hasSubmittedQuestion = !!game.questions[socket.id];
+    player.hasSubmittedAnswer = !!game.answers[socket.id];
     
     // If this player was the host (check both player.isHost and game.host comparison), update game.host to new socket ID and player.isHost
     if (player.isHost || game.host === oldSocketId) {
@@ -1931,11 +2078,13 @@ io.on('connection', (socket) => {
     }
     
     // 7. Migrate this player's reaction records so the new socket id is authoritative.
+    // Since playerReactions now uses stable player.name, the player's name doesn't
+    // change on reconnect. We only need to clean up any legacy socket.id entries.
     if (game.playerReactions) {
       for (const reactors of Object.values(game.playerReactions)) {
         if (reactors.has(oldSocketId)) {
           reactors.delete(oldSocketId);
-          reactors.add(socket.id);
+          reactors.add(player.name);
         }
       }
     }
@@ -2000,7 +2149,7 @@ io.on('connection', (socket) => {
     const reactedContentIds = [];
     if (game.playerReactions) {
       for (const [contentDbId, reactors] of Object.entries(game.playerReactions)) {
-        if (reactors.has(socket.id)) reactedContentIds.push(contentDbId);
+        if (reactors.has(player.name)) reactedContentIds.push(contentDbId);
       }
     }
 
@@ -2034,7 +2183,7 @@ io.on('connection', (socket) => {
       reconnectData.lastAnswerSubmitter = game.lastAnswerSubmitter || null;
 
       // Restore this player's existing votes so the frontend can show vote state
-      const voteRows = await db.exec("SELECT vote_type, target_id FROM votes WHERE game_id = ? AND player_id = ?", [game.dbGameId, socket.id]);
+      const voteRows = await db.exec("SELECT vote_type, target_id FROM votes WHERE game_id = ? AND player_id = ?", [game.dbGameId, player.name]);
       const userVotes = {};
       if (voteRows.length > 0 && voteRows[0].values.length > 0) {
         for (const row of voteRows[0].values) {

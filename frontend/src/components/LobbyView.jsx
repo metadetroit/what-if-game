@@ -82,7 +82,7 @@ export default function LobbyView({
               <span className={"text-sm truncate leading-tight " + (player.id === socket?.id ? "text-indigo-300 font-semibold" : "text-white")}>{player.name}{player.id === socket?.id && " (you)"}</span>
               {player.isHost && (<span className="ml-auto text-[9px] bg-indigo-900/50 text-indigo-400 px-1.5 py-0.5 rounded font-semibold">HOST</span>)}
               {isHost && player.id !== socket?.id && (
-                <button onClick={() => setKickConfirm({ id: player.id, name: player.name })} className="ml-1 text-[10px] text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-red-900/30 transition-colors" title="Kick player" aria-label={`Kick ${player.name}`}>✕</button>
+                <button onClick={() => setKickConfirm({ id: player.id, name: player.name })} className="ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-red-400 hover:text-red-300 rounded hover:bg-red-900/30 transition-colors" title="Kick player" aria-label={`Kick ${player.name}`}>✕</button>
               )}
             </div>
           ))}
