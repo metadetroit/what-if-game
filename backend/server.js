@@ -248,6 +248,117 @@ app.post('/api/delete-best-of', async (req, res) => {
   }
 });
 
+// API: Approve pair as SFW (admin only)
+app.post('/api/admin/approve-sfw', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ success: false, error: 'id required' });
+  }
+
+  const db = getDb();
+  try {
+    await db.run("UPDATE qa_pairs SET is_approved = 1, is_nsfw = 0 WHERE id = ?", [id]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[approve-sfw] Error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// API: Approve pair as NSFW (admin only)
+app.post('/api/admin/approve-nsfw', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ success: false, error: 'id required' });
+  }
+
+  const db = getDb();
+  try {
+    await db.run("UPDATE qa_pairs SET is_approved = 1, is_nsfw = 1 WHERE id = ?", [id]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[approve-nsfw] Error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// API: Delete pair permanently (admin only)
+app.delete('/api/admin/delete-pair', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ success: false, error: 'id required' });
+  }
+
+  const db = getDb();
+  try {
+    await db.run("DELETE FROM qa_pairs WHERE id = ?", [id]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[delete-pair] Error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// API: Get pending pairs for moderation (admin only)
+app.get('/api/admin/pending', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
+  const db = getDb();
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = parseInt(req.query.offset) || 0;
+
+  try {
+    const pairs = await db.exec(`
+      SELECT qp.id, q.text as question_text, a.text as answer_text,
+             q.author_name as question_author, a.author_name as answer_author,
+             qp.vote_count, g.created_at, qp.anonymous
+      FROM qa_pairs qp
+      JOIN questions q ON qp.question_id = q.id
+      JOIN answers a ON qp.answer_id = a.id
+      JOIN games g ON qp.game_id = g.id
+      WHERE qp.is_approved = 0
+            AND (qp.hidden IS NULL OR qp.hidden = 0)
+      ORDER BY g.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
+
+    const results = [];
+    if (pairs.length > 0 && pairs[0].values.length > 0) {
+      pairs[0].values.forEach(row => {
+        const isAnon = row[6] === 1 || row[6] === true;
+        results.push({
+          type: 'qa_pair',
+          id: row[0],
+          question: row[1],
+          answer: row[2],
+          question_author: isAnon ? '???' : (row[3] || 'Unknown'),
+          answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
+          vote_count: row[5],
+          game_date: row[7]
+        });
+      });
+    }
+
+    res.json(results);
+  } catch (e) {
+    console.error('[pending] Error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // API: Get random best-of pairs for front page examples and Fluke It button
 app.get('/api/random-pairs', async (req, res) => {
   const db = getDb();

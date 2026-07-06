@@ -88,6 +88,9 @@ function App() {
   const [bestOfHasMore, setBestOfHasMore] = useState(true)
   const [bestOfLoading, setBestOfLoading] = useState(false)
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('adminKey') || '')
+  const [bestOfViewMode, setBestOfViewMode] = useState('approved') // 'approved' | 'pending'
+  const [pendingData, setPendingData] = useState(null)
+  const [pendingLoading, setPendingLoading] = useState(false)
   const scrollBestOfIdRef = useRef(null)
   const wakeLockRef = useRef(null)
   const bestOfSentinelRef = useRef(null)
@@ -203,6 +206,33 @@ function App() {
     } finally { setBestOfLoading(false) }
   }
 
+  const fetchPendingData = async (opts = {}) => {
+    try {
+      if (pendingLoading && !opts.force) return
+      setPendingLoading(true)
+      const limit = opts.limit || 50
+      const offset = opts.offset || 0
+      const url = `${SOCKET_URL}/api/admin/pending?limit=${limit}&offset=${offset}`
+      const response = await fetch(url, {
+        headers: { 'x-admin-key': adminKey }
+      })
+      const data = await response.json()
+
+      if (offset === 0) {
+        setPendingData(data)
+      } else {
+        setPendingData(prev => {
+          if (!Array.isArray(prev)) return data
+          const seen = new Set(prev.map(i => `${i.type}:${i.id}`))
+          const deduped = data.filter(i => !seen.has(`${i.type}:${i.id}`))
+          return [...prev, ...deduped]
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending data:', error)
+    } finally { setPendingLoading(false) }
+  }
+
   const handleBestOfSortChange = useCallback((sort) => {
     sessionStorage.setItem('bestOfSort', sort)
     setBestOfSort(sort)
@@ -215,6 +245,7 @@ function App() {
     if (adminKey) {
       sessionStorage.removeItem('adminKey')
       setAdminKey('')
+      setBestOfViewMode('approved')
       return
     }
     const key = window.prompt('Enter admin key:')
@@ -223,6 +254,99 @@ function App() {
       setAdminKey(key)
     }
   }, [adminKey])
+
+  const handleApproveSFW = useCallback(async (id, index) => {
+    // Optimistic UI update
+    if (bestOfViewMode === 'pending') {
+      setPendingData(prev => prev.filter((_, i) => i !== index))
+    } else {
+      setBestOfData(prev => prev.filter((_, i) => i !== index))
+    }
+
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/admin/approve-sfw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': adminKey
+        },
+        body: JSON.stringify({ id })
+      })
+
+      if (!response.ok) {
+        // Revert on error
+        if (bestOfViewMode === 'pending') {
+          fetchPendingData({ force: true })
+        } else {
+          fetchBestOfData({ force: true })
+        }
+        setNotice(noticeFor('Failed to approve as SFW', 'warn', 3000))
+      } else {
+        setNotice(noticeFor('Approved as SFW', 'success', 2000))
+      }
+    } catch (error) {
+      console.error('Failed to approve as SFW:', error)
+      // Revert on error
+      if (bestOfViewMode === 'pending') {
+        fetchPendingData({ force: true })
+      } else {
+        fetchBestOfData({ force: true })
+      }
+      setNotice(noticeFor('Failed to approve as SFW', 'warn', 3000))
+    }
+  }, [adminKey, bestOfViewMode])
+
+  const handleApproveNSFW = useCallback(async (id, index) => {
+    // Optimistic UI update
+    if (bestOfViewMode === 'pending') {
+      setPendingData(prev => prev.filter((_, i) => i !== index))
+    } else {
+      setBestOfData(prev => prev.filter((_, i) => i !== index))
+    }
+
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/admin/approve-nsfw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': adminKey
+        },
+        body: JSON.stringify({ id })
+      })
+
+      if (!response.ok) {
+        // Revert on error
+        if (bestOfViewMode === 'pending') {
+          fetchPendingData({ force: true })
+        } else {
+          fetchBestOfData({ force: true })
+        }
+        setNotice(noticeFor('Failed to approve as NSFW', 'warn', 3000))
+      } else {
+        setNotice(noticeFor('Approved as NSFW', 'success', 2000))
+      }
+    } catch (error) {
+      console.error('Failed to approve as NSFW:', error)
+      // Revert on error
+      if (bestOfViewMode === 'pending') {
+        fetchPendingData({ force: true })
+      } else {
+        fetchBestOfData({ force: true })
+      }
+      setNotice(noticeFor('Failed to approve as NSFW', 'warn', 3000))
+    }
+  }, [adminKey, bestOfViewMode])
+
+  const handleViewModeChange = useCallback((mode) => {
+    setBestOfViewMode(mode)
+    if (mode === 'pending') {
+      setPendingData(null)
+      fetchPendingData({ force: true })
+    } else {
+      setBestOfData(null)
+      fetchBestOfData({ force: true })
+    }
+  }, [])
 
   const handleCopyBestOfLink = useCallback((pairId) => {
     if (!pairId) return
@@ -286,10 +410,14 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (gameState === 'best-of' && bestOfData === null && !bestOfLoading) {
-      fetchBestOfData({ sort: 'votes', offset: 0, force: true })
+    if (gameState === 'best-of') {
+      if (bestOfViewMode === 'pending' && pendingData === null && !pendingLoading && adminKey) {
+        fetchPendingData({ force: true })
+      } else if (bestOfViewMode === 'approved' && bestOfData === null && !bestOfLoading) {
+        fetchBestOfData({ sort: 'votes', offset: 0, force: true })
+      }
     }
-  }, [gameState, bestOfData, bestOfLoading])
+  }, [gameState, bestOfData, bestOfLoading, pendingData, pendingLoading, bestOfViewMode, adminKey])
 
   useEffect(() => {
     if (Array.isArray(bestOfData) && scrollBestOfIdRef.current) {
@@ -882,15 +1010,19 @@ function App() {
           <BestOfView
             bestOfScrollRef={bestOfScrollRef}
             bestOfSentinelRef={bestOfSentinelRef}
-            bestOfData={bestOfData}
+            bestOfData={bestOfViewMode === 'pending' ? pendingData : bestOfData}
             bestOfSort={bestOfSort}
-            bestOfLoading={bestOfLoading}
+            bestOfLoading={bestOfViewMode === 'pending' ? pendingLoading : bestOfLoading}
             adminKey={adminKey}
             onBack={() => setGameState("welcome")}
             onSortChange={handleBestOfSortChange}
             onToggleAdmin={handleAdminToggle}
             onCopyLink={handleCopyBestOfLink}
             onDeleteItem={handleDeleteBestOf}
+            onApproveSFW={handleApproveSFW}
+            onApproveNSFW={handleApproveNSFW}
+            viewMode={bestOfViewMode}
+            onViewModeChange={handleViewModeChange}
           />
         )
 

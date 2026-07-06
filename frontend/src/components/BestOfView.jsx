@@ -11,7 +11,11 @@ function BestOfView({
   onSortChange,
   onToggleAdmin,
   onCopyLink,
-  onDeleteItem
+  onDeleteItem,
+  onApproveSFW,
+  onApproveNSFW,
+  viewMode = "approved", // "approved" | "pending"
+  onViewModeChange
 }) {
   const renderContent = () => {
     if (bestOfData === null) {
@@ -25,7 +29,9 @@ function BestOfView({
     if (bestOfData.length === 0) {
       return (
         <div className="text-center py-8">
-          <p className="text-gray-500 text-sm">No content yet. Play some games to see the best content here!</p>
+          <p className="text-gray-500 text-sm">
+            {viewMode === "pending" ? "No pending items to review." : "No content yet. Play some games to see the best content here!"}
+          </p>
         </div>
       )
     }
@@ -48,14 +54,55 @@ function BestOfView({
                       🔗 Copy link
                     </button>
                     {adminKey && (
-                      <button
-                        onClick={() => onDeleteItem(item.type, item.id, index)}
-                        className="text-[10px] text-red-400 hover:text-red-300 underline"
-                        title="Delete this item"
-                        aria-label="Delete this item"
-                      >
-                        🗑 Delete
-                      </button>
+                      <>
+                        {viewMode === "pending" ? (
+                          <>
+                            <button
+                              onClick={() => onApproveSFW(item.id, index)}
+                              className="text-[10px] text-green-400 hover:text-green-300 underline"
+                              title="Approve as SFW"
+                              aria-label="Approve as SFW"
+                            >
+                              ✓ SFW
+                            </button>
+                            <button
+                              onClick={() => onApproveNSFW(item.id, index)}
+                              className="text-[10px] text-orange-400 hover:text-orange-300 underline"
+                              title="Approve as NSFW"
+                              aria-label="Approve as NSFW"
+                            >
+                              ✓ NSFW
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => onApproveSFW(item.id, index)}
+                              className="text-[10px] text-green-400 hover:text-green-300 underline"
+                              title="Mark as SFW"
+                              aria-label="Mark as SFW"
+                            >
+                              ✓ SFW
+                            </button>
+                            <button
+                              onClick={() => onApproveNSFW(item.id, index)}
+                              className="text-[10px] text-orange-400 hover:text-orange-300 underline"
+                              title="Mark as NSFW"
+                              aria-label="Mark as NSFW"
+                            >
+                              ✓ NSFW
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => onDeleteItem(item.type, item.id, index)}
+                          className="text-[10px] text-red-400 hover:text-red-300 underline"
+                          title="Delete this item"
+                          aria-label="Delete this item"
+                        >
+                          🗑 Delete
+                        </button>
+                      </>
                     )}
                     <span className="text-xs text-gray-400">🏆 {item.vote_count}</span>
                   </div>
@@ -91,20 +138,38 @@ function BestOfView({
         <h1 className="font-bubble text-2xl font-extrabold text-gradient-chaos mb-1">Best Of</h1>
         <p className="text-gray-500 text-[10px] mt-1">Top-voted game pairings from all games</p>
         <div className="mt-2 flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
-            <button
-              onClick={() => onSortChange("votes")}
-              className={`px-3 py-1 ${bestOfSort === "votes" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
-            >
-              Most votes
-            </button>
-            <button
-              onClick={() => onSortChange("newest")}
-              className={`px-3 py-1 border-l border-gray-700 ${bestOfSort === "newest" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
-            >
-              Newest
-            </button>
-          </div>
+          {adminKey && (
+            <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
+              <button
+                onClick={() => onViewModeChange && onViewModeChange("approved")}
+                className={`px-3 py-1 ${viewMode === "approved" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+              >
+                Approved
+              </button>
+              <button
+                onClick={() => onViewModeChange && onViewModeChange("pending")}
+                className={`px-3 py-1 border-l border-gray-700 ${viewMode === "pending" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+              >
+                Pending
+              </button>
+            </div>
+          )}
+          {viewMode === "approved" && (
+            <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-[10px]">
+              <button
+                onClick={() => onSortChange("votes")}
+                className={`px-3 py-1 ${bestOfSort === "votes" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+              >
+                Most votes
+              </button>
+              <button
+                onClick={() => onSortChange("newest")}
+                className={`px-3 py-1 border-l border-gray-700 ${bestOfSort === "newest" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+              >
+                Newest
+              </button>
+            </div>
+          )}
           <button
             onClick={onToggleAdmin}
             className={`text-[10px] px-2 py-1 rounded-lg border ${adminKey ? "border-amber-500/50 text-amber-400 bg-amber-500/10" : "border-gray-700 text-gray-500 hover:text-gray-300"}`}

@@ -6,15 +6,6 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 const SHARE_URL = "https://www.playfluke.com"
 const SHARE_TEXT = "Let's play Fluke! Chaos that connects"
 
-const DECK = [
-  { prompt: "What if all the genealogy was found out to be wrong?", answer: "Then here there'd be dragons 🐉!" },
-  { prompt: "What if everyday were like a dothraki wedding (you know, from game of thrones)?", answer: "It would be like Where's Waldo? (but Waldo is a fugitive from the law)" },
-  { prompt: "What if you poured your heart out to people on the internet that were only voices in your ear?", answer: "I would be friends with them" },
-  { prompt: "What if giraffes and dolphins weren't deviants?", answer: "Impossible. They're FEDs" },
-  { prompt: "What if Bourbon was caffeinated?", answer: "I would eventually learn that these voices were just AI bots and develop a severe case of anti-social behavior disorder" },
-  { prompt: "What if god was one of us?", answer: "It would be like a messed up sesame street but slightly less messed up (and less heartful)" },
-]
-
 export default function LandingPage({
   playerName,
   setPlayerName,
@@ -62,12 +53,11 @@ export default function LandingPage({
       .finally(() => setPairsLoading(false))
   }, [])
 
-  const combinedDeck = [...DECK, ...dbPairs]
-  const currentA = combinedDeck[idxA % combinedDeck.length]
-  const currentB = combinedDeck[idxB % combinedDeck.length]
+  const currentA = dbPairs[idxA % dbPairs.length] || null
+  const currentB = dbPairs[idxB % dbPairs.length] || null
 
   const fluke = () => {
-    const len = combinedDeck.length
+    const len = dbPairs.length
     if (len <= 1) return
     let nextA = Math.floor(Math.random() * len)
     while (nextA === idxA % len) nextA = Math.floor(Math.random() * len)
@@ -197,27 +187,35 @@ export default function LandingPage({
           </h2>
 
           <div className="flex-1 flex flex-col justify-center w-full rounded-3xl border border-white/10 bg-black/50 p-4 mobile-fill-card md:p-5">
-            <div className="grid gap-2 md:grid-cols-2 md:gap-4">
-              {pairsLoading ? (
-                <SkeletonPair />
-              ) : (
-                <CollisionPair key={`a-${idxA}`} prompt={currentA.prompt} answer={currentA.answer} rotateP={-1.5} rotateA={1} />
-              )}
-              <div className="hidden md:block">
-                {pairsLoading ? (
-                  <SkeletonPair />
-                ) : (
-                  <CollisionPair key={`b-${idxB}`} prompt={currentB.prompt} answer={currentB.answer} rotateP={1} rotateA={-1.5} />
-                )}
-              </div>
-            </div>
+            {dbPairs.length > 0 ? (
+              <>
+                <div className="grid gap-2 md:grid-cols-2 md:gap-4">
+                  {pairsLoading ? (
+                    <SkeletonPair />
+                  ) : (
+                    <CollisionPair key={`a-${idxA}`} prompt={currentA.prompt} answer={currentA.answer} rotateP={-1.5} rotateA={1} />
+                  )}
+                  <div className="hidden md:block">
+                    {pairsLoading ? (
+                      <SkeletonPair />
+                    ) : (
+                      <CollisionPair key={`b-${idxB}`} prompt={currentB.prompt} answer={currentB.answer} rotateP={1} rotateA={-1.5} />
+                    )}
+                  </div>
+                </div>
 
-            <button
-              onClick={fluke}
-              className="btn-primary font-bubble mobile-fill-mt inline-block w-full max-w-xl self-center rounded-full px-8 mobile-fill-py text-2xl text-center transition-transform duration-150 active:scale-95"
-            >
-              ✦ See more Flukes! ✦
-            </button>
+                <button
+                  onClick={fluke}
+                  className="btn-primary font-bubble mobile-fill-mt inline-block w-full max-w-xl self-center rounded-full px-8 mobile-fill-py text-2xl text-center transition-transform duration-150 active:scale-95"
+                >
+                  ✦ See more Flukes! ✦
+                </button>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-400 text-lg">No examples yet. Play some games to see the best content here!</p>
+              </div>
+            )}
           </div>
         </div>
 

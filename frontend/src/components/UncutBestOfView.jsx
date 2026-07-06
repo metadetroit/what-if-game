@@ -89,6 +89,74 @@ function UncutBestOfView({ onBack }) {
     }
   }
 
+  const handleApproveSFW = async (id, index) => {
+    if (!adminKey) {
+      const key = prompt('Enter admin key:')
+      if (!key) return
+      setAdminKey(key)
+      sessionStorage.setItem('adminKey', key)
+    }
+
+    // Optimistic UI update
+    setBestOfData(prev => prev.filter((_, i) => i !== index))
+
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/admin/approve-sfw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': adminKey
+        },
+        body: JSON.stringify({ id })
+      })
+
+      if (!response.ok) {
+        fetchBestOfData({ force: true })
+        alert('Failed to approve as SFW')
+      } else {
+        alert('Approved as SFW')
+      }
+    } catch (error) {
+      console.error('Failed to approve as SFW:', error)
+      fetchBestOfData({ force: true })
+      alert('Failed to approve as SFW')
+    }
+  }
+
+  const handleApproveNSFW = async (id, index) => {
+    if (!adminKey) {
+      const key = prompt('Enter admin key:')
+      if (!key) return
+      setAdminKey(key)
+      sessionStorage.setItem('adminKey', key)
+    }
+
+    // Optimistic UI update
+    setBestOfData(prev => prev.filter((_, i) => i !== index))
+
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/admin/approve-nsfw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': adminKey
+        },
+        body: JSON.stringify({ id })
+      })
+
+      if (!response.ok) {
+        fetchBestOfData({ force: true })
+        alert('Failed to approve as NSFW')
+      } else {
+        alert('Approved as NSFW')
+      }
+    } catch (error) {
+      console.error('Failed to approve as NSFW:', error)
+      fetchBestOfData({ force: true })
+      alert('Failed to approve as NSFW')
+    }
+  }
+
   const handleToggleAdmin = useCallback(() => {
     if (adminKey) {
       setAdminKey('')
@@ -144,6 +212,9 @@ function UncutBestOfView({ onBack }) {
       onToggleAdmin={handleToggleAdmin}
       onCopyLink={handleCopyLink}
       onDeleteItem={handleDeleteItem}
+      onApproveSFW={handleApproveSFW}
+      onApproveNSFW={handleApproveNSFW}
+      viewMode="approved"
     />
   )
 }
