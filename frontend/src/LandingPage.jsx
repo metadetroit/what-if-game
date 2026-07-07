@@ -241,6 +241,7 @@ export default function LandingPage({
               <div className="w-full flex flex-col gap-3 flex-1">
                 <input
                   type="text"
+                  autoComplete="off"
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="Your name"
@@ -279,6 +280,7 @@ export default function LandingPage({
               <div className="w-full flex flex-col gap-3 flex-1">
                 <input
                   type="text"
+                  autoComplete="off"
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="Your name"
@@ -290,6 +292,7 @@ export default function LandingPage({
                   type="text"
                   inputMode="numeric"
                   enterKeyHint="done"
+                  autoComplete="off"
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}

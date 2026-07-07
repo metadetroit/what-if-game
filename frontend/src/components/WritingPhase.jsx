@@ -48,7 +48,7 @@ export default function WritingPhase({
             <p className="active-body-text text-indigo-400 leading-tight">Must begin with "What if..."</p>
           </div>
           <label htmlFor="question-input" className="sr-only">Your question</label>
-          <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoCapitalize="sentences" aria-label="Your question" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug md:h-28" maxLength={300} />
+          <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoComplete="off" autoCapitalize="sentences" aria-label="Your question" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug md:h-28" maxLength={300} />
           <div className="flex items-center justify-between active-fill-mt">
             <span className="active-body-text text-gray-500">{question.length}/300</span>
             {question && !question.toLowerCase().startsWith("what if") && (<span className="active-body-text text-red-500 font-semibold">Must start with "What if"</span>)}

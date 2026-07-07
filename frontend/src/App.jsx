@@ -675,12 +675,7 @@ function App() {
             requestWakeLock()
           }
         })
-      }).catch(() => {
-        if (!cancelled && !wakeLockNoticeShownRef.current) {
-          wakeLockNoticeShownRef.current = true
-          setNotice(noticeFor("Screen may dim while you play. Tap the screen to keep it awake.", "info", 4000))
-        }
-      })
+      }).catch(() => {})
     }
     const onVisible = () => {
       if (document.visibilityState === "visible") requestWakeLock()

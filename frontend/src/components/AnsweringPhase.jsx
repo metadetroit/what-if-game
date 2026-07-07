@@ -41,7 +41,7 @@ export default function AnsweringPhase({
             <p className="active-body-text font-bold text-white leading-snug text-center">{assignedQuestion}</p>
           </div>
           <label htmlFor="answer-input" className="sr-only">Your answer</label>
-          <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoCapitalize="sentences" aria-label="Your answer" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug md:h-28" maxLength={400} />
+          <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoComplete="off" autoCapitalize="sentences" aria-label="Your answer" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug md:h-28" maxLength={400} />
           <div className="flex justify-between items-center active-fill-mt">
             <span className="active-body-text text-gray-500">{answer.length}/400 characters</span>
           </div>
