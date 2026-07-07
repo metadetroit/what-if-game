@@ -319,6 +319,26 @@ app.delete('/api/admin/delete-pair', async (req, res) => {
   }
 });
 
+app.post('/api/admin/reject-factual', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ success: false, error: 'id required' });
+  }
+
+  const db = getDb();
+  try {
+    await db.run("UPDATE qa_pairs SET hidden = 1 WHERE id = ?", [id]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[reject-factual] Error:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // API: Get pending pairs for moderation (admin only)
 app.get('/api/admin/pending', async (req, res) => {
   if (req.headers['x-admin-key'] !== ADMIN_KEY) {
@@ -343,6 +363,22 @@ app.get('/api/admin/pending', async (req, res) => {
             AND (a.hidden IS NULL OR a.hidden = 0)
             AND q.text IS NOT NULL AND TRIM(q.text) <> ''
             AND a.text IS NOT NULL AND TRIM(a.text) <> ''
+            AND LENGTH(TRIM(q.text)) >= 10
+            AND LOWER(q.text) NOT LIKE 'what %'
+            AND LOWER(q.text) NOT LIKE 'how %'
+            AND LOWER(q.text) NOT LIKE 'who %'
+            AND LOWER(q.text) NOT LIKE 'why %'
+            AND LOWER(q.text) NOT LIKE 'when %'
+            AND LOWER(q.text) NOT LIKE 'is %'
+            AND LOWER(q.text) NOT LIKE 'are %'
+            AND LOWER(q.text) NOT LIKE 'can %'
+            AND LOWER(q.text) NOT LIKE 'do %'
+            AND (
+              (q.text NOT LIKE '%?%' AND a.text NOT LIKE '%?%')
+              OR LOWER(q.text || ' ' || a.text) LIKE '%would you rather%'
+              OR LOWER(q.text || ' ' || a.text) LIKE '%would you %'
+              OR LOWER(q.text || ' ' || a.text) LIKE '% rather%'
+            )
       ORDER BY g.created_at DESC
       LIMIT ? OFFSET ?
     `, [limit, offset]);

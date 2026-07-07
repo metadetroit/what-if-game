@@ -554,6 +554,32 @@ function App() {
     }
   }
 
+  const handleRejectFactual = async (id, index) => {
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/admin/reject-factual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ id })
+      })
+      if (response.status === 403) {
+        sessionStorage.removeItem('adminKey')
+        setAdminKey('')
+        setNotice(noticeFor('Admin key invalid', 'warn', 3000))
+        return
+      }
+      const result = await response.json()
+      if (result.success) {
+        setPendingData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
+        setNotice(noticeFor('Rejected as factual', 'success', 2000))
+      } else {
+        setNotice(noticeFor('Failed to reject as factual', 'warn', 3000))
+      }
+    } catch (error) {
+      console.error('Failed to reject as factual:', error)
+      setNotice(noticeFor('Failed to reject as factual', 'warn', 3000))
+    }
+  }
+
   const applySummaryData = useCallback((summary, fallbackAnon = false) => {
     setGameSummary(summary)
     if (Array.isArray(summary) && summary.length > 0) {
@@ -1048,6 +1074,7 @@ function App() {
             onDeleteItem={handleDeleteBestOf}
             onApproveSFW={handleApproveSFW}
             onApproveNSFW={handleApproveNSFW}
+            onRejectFactual={handleRejectFactual}
             viewMode={bestOfViewMode}
             onViewModeChange={handleViewModeChange}
           />

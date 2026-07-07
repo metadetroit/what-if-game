@@ -14,6 +14,7 @@ function BestOfView({
   onDeleteItem,
   onApproveSFW,
   onApproveNSFW,
+  onRejectFactual,
   viewMode = "approved", // "approved" | "pending"
   onViewModeChange,
   contentFilter = "all",
@@ -79,6 +80,16 @@ function BestOfView({
                             >
                               ✓ NSFW
                             </button>
+                            {onRejectFactual && (
+                              <button
+                                onClick={() => onRejectFactual(item.id, index)}
+                                className="text-[10px] text-gray-400 hover:text-gray-300 underline"
+                                title="Reject as factual Q&A"
+                                aria-label="Reject as factual Q&A"
+                              >
+                                ✕ Factual
+                              </button>
+                            )}
                           </>
                         ) : (
                           <>
