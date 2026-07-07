@@ -60,7 +60,7 @@ app.get('/api/best-of', async (req, res) => {
         SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
         FROM questions q
         JOIN games g ON q.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND q.vote_count > 0 AND (q.hidden IS NULL OR q.hidden = 0)
+        WHERE g.hidden_from_best_of = 0 AND q.vote_count >= 2 AND (q.hidden IS NULL OR q.hidden = 0)
         ORDER BY ${orderByQuestions}
         LIMIT ? OFFSET ?
       `, [limit, offset]);
@@ -86,7 +86,7 @@ app.get('/api/best-of', async (req, res) => {
         SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
         FROM answers a
         JOIN games g ON a.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND a.vote_count > 0 AND (a.hidden IS NULL OR a.hidden = 0)
+        WHERE g.hidden_from_best_of = 0 AND a.vote_count >= 2 AND (a.hidden IS NULL OR a.hidden = 0)
         ORDER BY ${orderByAnswers}
         LIMIT ? OFFSET ?
       `, [limit, offset]);
@@ -116,13 +116,13 @@ app.get('/api/best-of', async (req, res) => {
         JOIN questions q ON qp.question_id = q.id
         JOIN answers a ON qp.answer_id = a.id
         JOIN games g ON qp.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
+        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 2
               AND (qp.hidden IS NULL OR qp.hidden = 0)
               AND qp.is_approved = 1
               AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
         ORDER BY ${orderByPairs}
         LIMIT ? OFFSET ?
-      `, [pairVoteThreshold, limit, offset]);
+      `, [limit, offset]);
 
       if (pairs.length > 0) {
         pairs[0].values.forEach(row => {
@@ -174,12 +174,12 @@ app.get('/api/best-of-uncut', async (req, res) => {
         JOIN questions q ON qp.question_id = q.id
         JOIN answers a ON qp.answer_id = a.id
         JOIN games g ON qp.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
+        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 2
               AND (qp.hidden IS NULL OR qp.hidden = 0)
               AND qp.is_approved = 1
         ORDER BY ${orderByPairs}
         LIMIT ? OFFSET ?
-      `, [pairVoteThreshold, limit, offset]);
+      `, [limit, offset]);
 
       if (pairs.length > 0) {
         pairs[0].values.forEach(row => {
@@ -358,27 +358,13 @@ app.get('/api/admin/pending', async (req, res) => {
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
       WHERE qp.is_approved = 0
+            AND qp.vote_count >= 1
             AND (qp.hidden IS NULL OR qp.hidden = 0)
             AND (q.hidden IS NULL OR q.hidden = 0)
             AND (a.hidden IS NULL OR a.hidden = 0)
             AND q.text IS NOT NULL AND TRIM(q.text) <> ''
             AND a.text IS NOT NULL AND TRIM(a.text) <> ''
             AND LENGTH(TRIM(q.text)) >= 10
-            AND LOWER(q.text) NOT LIKE 'what %'
-            AND LOWER(q.text) NOT LIKE 'how %'
-            AND LOWER(q.text) NOT LIKE 'who %'
-            AND LOWER(q.text) NOT LIKE 'why %'
-            AND LOWER(q.text) NOT LIKE 'when %'
-            AND LOWER(q.text) NOT LIKE 'is %'
-            AND LOWER(q.text) NOT LIKE 'are %'
-            AND LOWER(q.text) NOT LIKE 'can %'
-            AND LOWER(q.text) NOT LIKE 'do %'
-            AND (
-              (q.text NOT LIKE '%?%' AND a.text NOT LIKE '%?%')
-              OR LOWER(q.text || ' ' || a.text) LIKE '%would you rather%'
-              OR LOWER(q.text || ' ' || a.text) LIKE '%would you %'
-              OR LOWER(q.text || ' ' || a.text) LIKE '% rather%'
-            )
       ORDER BY g.created_at DESC
       LIMIT ? OFFSET ?
     `, [limit, offset]);
@@ -420,8 +406,7 @@ app.get('/api/random-pairs', async (req, res) => {
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count > 0
-            AND qp.vote_count >= 1
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 2
             AND (qp.hidden IS NULL OR qp.hidden = 0)
             AND (q.hidden IS NULL OR q.hidden = 0)
             AND (a.hidden IS NULL OR a.hidden = 0)
