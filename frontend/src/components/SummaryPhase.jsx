@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { noticeFor } from "../utils/gameUtils"
+import Countdown from "./Countdown"
 
 export default function SummaryPhase({
   hideGameConfirm,
@@ -32,9 +33,13 @@ export default function SummaryPhase({
   disbandGame,
   adminKey,
   handleAbandonGame,
-  setNotice
+  setNotice,
+  tournament,
+  authorReveals,
+  playerName
 }) {
   const [viewMode, setViewMode] = useState("paired")
+  const [voteConfirm, setVoteConfirm] = useState(null) // { pairDbId, question } when confirming a vote
 
   return (
     <div className="game-container game-container--summary py-4">
@@ -52,8 +57,14 @@ export default function SummaryPhase({
       )}
       <div className="summary-header card">
         <div className="flex flex-col gap-1">
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Round Complete</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
           <h2 className="font-bubble text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
+          {tournament && tournament.votingDeadlineAt && (
+            <div className="mt-1 flex items-center justify-center gap-2 text-sm text-gray-400">
+              <span>Time to vote:</span>
+              <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="font-bold text-lg" />
+            </div>
+          )}
           <div className="mt-2 flex justify-center">
             <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-1 text-xs">
               <button
@@ -101,9 +112,11 @@ export default function SummaryPhase({
           <div className="summary-grid">
             {gameSummary.map((pair, i) => {
               const maskNames = typeof summaryAnonymousMode === 'boolean' ? summaryAnonymousMode : anonymousMode
-              const questionAuthor = maskNames ? '???' : (pair.questionAuthorName || 'Unknown')
-              const pairedAuthor = maskNames ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')
-              const actualAuthor = maskNames ? '???' : (pair.actualAnswerAuthorName || 'Unknown')
+              const isTournamentVoting = tournament && tournament.enabled
+              const reveal = isTournamentVoting ? authorReveals[pair.pairDbId] : null
+              const questionAuthor = reveal ? reveal.qAuthor : (maskNames ? '???' : (pair.questionAuthorName || 'Unknown'))
+              const pairedAuthor = reveal ? reveal.aAuthor : (maskNames ? '???' : (pair.pairedAnswerAuthorName || 'Unknown'))
+              const actualAuthor = reveal ? reveal.aAuthor : (maskNames ? '???' : (pair.actualAnswerAuthorName || 'Unknown'))
               const pairKey = pair.pairDbId || `${pair.question}-${i}`
               const voteCount = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
               const hasPairId = Boolean(pair.pairDbId)
@@ -165,7 +178,13 @@ export default function SummaryPhase({
                         )}
                         {hasPairId ? (
                           <button
-                            onClick={() => handleVote('qa_pair', pair.pairDbId)}
+                            onClick={() => {
+                              if (isTournamentVoting && !userVotedForPair) {
+                                setVoteConfirm({ pairDbId: pair.pairDbId, question: pair.question })
+                              } else {
+                                handleVote('qa_pair', pair.pairDbId)
+                              }
+                            }}
                             className={`summary-vote-btn ${
                               userVotedForPair ? 'summary-vote-btn--active' : ''
                             } ${voteDisabled ? 'summary-vote-btn--disabled' : ''}`}
@@ -317,51 +336,104 @@ export default function SummaryPhase({
         </div>
       )}
 
+      {voteConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="vote-confirm-title">
+          <div className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-xs w-full text-center">
+            <p id="vote-confirm-title" className="text-lg font-bold text-white mb-2">Lock in vote?</p>
+            <p className="text-sm text-gray-400 mb-1">You're voting for:</p>
+            <p className="text-sm text-indigo-300 font-medium mb-4 line-clamp-2">{voteConfirm.question}</p>
+            <p className="text-[10px] text-gray-500 mb-4">Authors will be revealed after you lock in.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setVoteConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
+              <button
+                onClick={() => {
+                  handleVote('qa_pair', voteConfirm.pairDbId)
+                  setVoteConfirm(null)
+                }}
+                className="btn-primary flex-1 py-2 text-sm"
+              >
+                Lock In
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isHost ? (
         <div className="summary-actions">
-          <div className="summary-actions__toggles">
-            <div className="summary-toggle card">
-              <div>
-                <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                <p className="text-[11px] text-gray-400">Hide names in next game's summary + Best Of.</p>
+          {tournament && tournament.enabled ? (
+            <>
+              <div className="summary-actions__cta">
+                <button
+                  onClick={() => socketRef.current?.emit("finish-voting")}
+                  className="btn-primary py-3 text-base"
+                >
+                  ⚡ Finish Voting & Tally
+                </button>
+                <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
+                  🏠 Abandon Tournament
+                </button>
               </div>
-              <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
-                <span />
-              </button>
-            </div>
-            <div className="summary-toggle card">
-              <div>
-                <p className="text-xs text-white font-semibold">No Self-Reading</p>
-                <p className="text-[11px] text-gray-400">Players won't read their own content next round.</p>
+            </>
+          ) : (
+            <>
+              <div className="summary-actions__toggles">
+                <div className="summary-toggle card">
+                  <div>
+                    <p className="text-xs text-white font-semibold">Anonymous Results</p>
+                    <p className="text-[11px] text-gray-400">Hide names in next game's summary + Best Of.</p>
+                  </div>
+                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
+                    <span />
+                  </button>
+                </div>
+                <div className="summary-toggle card">
+                  <div>
+                    <p className="text-xs text-white font-semibold">No Self-Reading</p>
+                    <p className="text-[11px] text-gray-400">Players won't read their own content next round.</p>
+                  </div>
+                  <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
+                    <span />
+                  </button>
+                </div>
+                <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
+                  🔄 Replay (same players)
+                </button>
               </div>
-              <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
-                <span />
-              </button>
-            </div>
-            <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
-              🔄 Replay (same players)
-            </button>
-          </div>
-          <div className="summary-actions__cta">
-            <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
-              🏠 New game (change number of players)
-            </button>
-            {adminKey && (
-              <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
-                🚫 Hide from Best Of
-              </button>
-            )}
-          </div>
+              <div className="summary-actions__cta">
+                <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
+                  🏠 New game (change number of players)
+                </button>
+                {adminKey && (
+                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
+                    🚫 Hide from Best Of
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="summary-actions">
-          <div className="card text-center py-5 px-6">
-            <p className="text-sm text-gray-200 mb-1">Please wait for the host to start a new round</p>
-            <p className="text-xs text-gray-500 mb-5">Your screen will automatically refresh</p>
-            <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs">
-              Abandon game (exit to main screen)
-            </button>
-          </div>
+          {tournament && tournament.enabled ? (
+            <div className="card text-center py-5 px-6">
+              <p className="text-sm text-gray-200 mb-1">Waiting for votes or timer…</p>
+              {tournament.votingDeadlineAt && (
+                <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="text-lg font-bold text-indigo-300" />
+              )}
+              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs mt-3">
+                Abandon game (exit to main screen)
+              </button>
+            </div>
+          ) : (
+            <div className="card text-center py-5 px-6">
+              <p className="text-sm text-gray-200 mb-1">Please wait for the host to start a new round</p>
+              <p className="text-xs text-gray-500 mb-5">Your screen will automatically refresh</p>
+              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs">
+                Abandon game (exit to main screen)
+              </button>
+            </div>
+          )}
         </div>
       )}
       {gameSummary && gameSummary.length > 0 && (

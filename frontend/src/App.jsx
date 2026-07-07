@@ -10,6 +10,8 @@ import WritingPhase from "./components/WritingPhase"
 import AnsweringPhase from "./components/AnsweringPhase"
 import PerformancePhase from "./components/PerformancePhase"
 import SummaryPhase from "./components/SummaryPhase"
+import ScoreboardView from "./components/ScoreboardView"
+import TournamentCompleteView from "./components/TournamentCompleteView"
 import {
   noticeFor,
   loadSession,
@@ -53,6 +55,11 @@ function App() {
   const [gameSummary, setGameSummary] = useState(null)
   const [anonymousMode, setAnonymousMode] = useState(false)
   const [noSelfReading, setNoSelfReading] = useState(false)
+  const [tournamentConfig, setTournamentConfig] = useState({ enabled: false, targetRounds: 3, votingTimerSeconds: 60, speedScoringEnabled: false })
+  const [tournament, setTournament] = useState(null) // server-side tournament state { enabled, currentRound, targetRounds, votingDeadlineAt, serverNow }
+  const [scoreboardData, setScoreboardData] = useState(null)
+  const [tournamentCompleteData, setTournamentCompleteData] = useState(null)
+  const [authorReveals, setAuthorReveals] = useState({}) // { pairDbId: { qAuthor, aAuthor } } revealed after voting in tournament
   const [reconnectInfo, setReconnectInfo] = useState(null)
   const [playerStatuses, setPlayerStatuses] = useState([])
   const [forceConfirm, setForceConfirm] = useState(false)
@@ -647,7 +654,11 @@ function App() {
       setError,
       setReactions,
       setCurrentTurn,
-      setConnectionStatus
+      setConnectionStatus,
+      setTournament,
+      setScoreboardData,
+      setTournamentCompleteData,
+      setAuthorReveals
     },
     helpers: { applySummaryData, playSound },
     voteState: { summaryPairVoteId }
@@ -656,7 +667,7 @@ function App() {
   // Screen Wake Lock: keep the screen on during active game phases so the phone
   // doesn't blank and drop the connection mid-round.
   useEffect(() => {
-    const activePhases = ["writing", "answering", "performing"]
+    const activePhases = ["writing", "answering", "performing", "ended", "scoreboard", "tournament_complete"]
     if (!activePhases.includes(gameState) || !("wakeLock" in navigator)) {
       if (wakeLockRef.current) { wakeLockRef.current.release(); wakeLockRef.current = null }
       return
@@ -727,7 +738,7 @@ function App() {
     })
   }, [socket, playerName, roomCode])
 
-  const startGame = useCallback(() => { socket.emit("start-game", { noSelfReading }) }, [socket, noSelfReading])
+  const startGame = useCallback(() => { socket.emit("start-game", { noSelfReading, tournament: tournamentConfig.enabled ? tournamentConfig : null }) }, [socket, noSelfReading, tournamentConfig])
 
   const canForceAdvance = isHost && submitted && (progress.total === 0 || progress.submitted < progress.total)
 
@@ -1168,6 +1179,8 @@ function App() {
             writeSoundMuted={writeSoundMuted}
             setNotice={setNotice}
             socketRef={socketRef}
+            tournamentConfig={tournamentConfig}
+            setTournamentConfig={setTournamentConfig}
           />
         )
 
@@ -1188,6 +1201,7 @@ function App() {
             forceConfirmTrapRef={forceConfirmTrapRef}
             forceProgress={forceProgress}
             renderWaitingPanel={renderWaitingPanel}
+            speedScoringEnabled={!!tournament?.speedScoringEnabled}
           />
         )
 
@@ -1208,6 +1222,7 @@ function App() {
             forceConfirmTrapRef={forceConfirmTrapRef}
             forceProgress={forceProgress}
             renderWaitingPanel={renderWaitingPanel}
+            speedScoringEnabled={!!tournament?.speedScoringEnabled}
           />
         )
 
@@ -1267,6 +1282,31 @@ function App() {
             adminKey={adminKey}
             handleAbandonGame={handleAbandonGame}
             setNotice={setNotice}
+            tournament={tournament}
+            authorReveals={authorReveals}
+            playerName={playerName}
+          />
+        )
+
+      case "scoreboard":
+        return (
+          <ScoreboardView
+            scoreboardData={scoreboardData}
+            isHost={isHost}
+            socketRef={socketRef}
+            playerName={playerName}
+            setNotice={setNotice}
+          />
+        )
+
+      case "tournament_complete":
+        return (
+          <TournamentCompleteView
+            tournamentCompleteData={tournamentCompleteData}
+            isHost={isHost}
+            socketRef={socketRef}
+            disbandGame={disbandGame}
+            playerName={playerName}
           />
         )
 

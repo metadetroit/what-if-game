@@ -11,7 +11,7 @@ import {
   waitingForLabel
 } from "../utils/gameUtils"
 
-const ACTIVE_GAMEPLAY = ['lobby', 'writing', 'answering', 'performing']
+const ACTIVE_GAMEPLAY = ['lobby', 'writing', 'answering', 'performing', 'ended', 'scoreboard', 'tournament_complete']
 
 export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }) {
   const {
@@ -70,7 +70,11 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     setError,
     setReactions,
     setCurrentTurn,
-    setConnectionStatus
+    setConnectionStatus,
+    setTournament,
+    setScoreboardData,
+    setTournamentCompleteData,
+    setAuthorReveals
   } = actions
 
   const { applySummaryData, playSound } = helpers
@@ -214,6 +218,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       if (prefill) saveDraft(roomCodeRef.current, "writing", "What if")
       playSound("chime")
       if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode)
+      if (data.tournament) setTournament(data.tournament)
     })
 
     newSocket.on("progress-update", (data) => {
@@ -299,6 +304,9 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
         if (pendingVote?.type === 'qa_pair') {
           setSummaryPairVoteId(isVoted ? data.targetId : null)
         }
+        if (data.authorReveal && isVoted) {
+          setAuthorReveals(prev => ({ ...prev, [data.targetId]: data.authorReveal }))
+        }
         setNotice(noticeFor(isVoted ? 'Vote saved' : 'Vote removed', 'success', 1200))
       } else {
         setNotice(noticeFor(data.message || 'Vote failed', 'warn', 2000))
@@ -323,6 +331,9 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
           lastQuestionSubmitter: data.lastQuestionSubmitter,
           lastAnswerSubmitter: data.lastAnswerSubmitter
         })
+      }
+      if (data.tournament) {
+        setTournament(data.tournament)
       }
     })
 
@@ -349,6 +360,48 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setSummaryVotes({})
       setSummaryPairVoteId(null)
       setMostAdoredWriter(null)
+      if (data?.tournament) {
+        setTournament({ enabled: true, currentRound: data.tournament.currentRound, targetRounds: data.tournament.targetRounds })
+      }
+    })
+
+    newSocket.on("scoreboard", (data) => {
+      setGameState("scoreboard")
+      setScoreboardData(data)
+      setTournament({
+        enabled: true,
+        currentRound: data.currentRound,
+        targetRounds: data.targetRounds
+      })
+    })
+
+    newSocket.on("tournament-complete", (data) => {
+      setGameState("tournament_complete")
+      setTournamentCompleteData(data)
+    })
+
+    newSocket.on("tournament-reset", (data) => {
+      setGameState("lobby")
+      setTournamentCompleteData(null)
+      setScoreboardData(null)
+      setTournament(data?.tournament || null)
+      setSubmitted(false)
+      setQuestion("")
+      setAnswer("")
+      setAssignedQuestion("")
+      applySummaryData(null, false)
+      setProgress({ submitted: 0, total: 0 })
+      setPlayerStatuses([])
+      setPerformanceVotes({})
+      setUserVotes({})
+      setSummaryVotes({})
+      setSummaryPairVoteId(null)
+      setMostAdoredWriter(null)
+      setRoundHistory([])
+    })
+
+    newSocket.on("promotion-queued", (data) => {
+      setNotice(noticeFor(`${data.playerName} will join next round`, "info", 2500))
     })
 
     newSocket.on("game-disbanded", (data) => {
@@ -544,6 +597,13 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
         if (data.summaryVotes) setSummaryVotes(data.summaryVotes)
         if (data.summaryPairVoteId) setSummaryPairVoteId(data.summaryPairVoteId)
         if (Array.isArray(data.roundHistory)) setRoundHistory(data.roundHistory)
+        if (data.tournament) setTournament(data.tournament)
+        if (data.scoreboardData) setScoreboardData(data.scoreboardData)
+        if (data.tournamentCompleteData) setTournamentCompleteData(data.tournamentCompleteData)
+        // Map server 'voting' phase to frontend 'ended' gameState (SummaryPhase handles voting UI)
+        if (data.phase === 'voting') {
+          setGameState('ended')
+        }
         setReactions([])
         if (ACTIVE_GAMEPLAY.includes(data.phase)) {
           setNotice(noticeFor("Reconnected", "success", 2000))
@@ -583,7 +643,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       if (revalidateTimer) clearTimeout(revalidateTimer)
       newSocket.close()
     }
-  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef, setCurrentTurn, setReactions, setConnectionStatus])
+  }, [socketUrl, setSocket, socketRef, gameStateRef, setShowDisconnectOverlay, setDisconnectOverlayDeadline, setNotice, setReconnectPrompt, setPlayers, setHostId, setIsHost, setGameState, setSubmitted, setFirstSubmitter, setCurrentContent, setMyReactions, setReactionCounts, setProgress, setQuestion, setAnonymousMode, setPlayerStatuses, setAssignedQuestion, setShowLastSubmitterIndicator, setAnswer, setGameStats, setForceConfirm, setLastQuestionSubmitter, setPerformanceVotes, setSummaryVotes, setSummaryPairVoteId, setMostAdoredWriter, setGameAwards, setUserVotes, setRoundHistory, setVotersCount, setRoomCode, setPlayerName, setHasRead, setKickConfirm, setError, playersRef, setCurrentTurn, setReactions, setConnectionStatus, setTournament, setScoreboardData, setTournamentCompleteData, setAuthorReveals])
 
   return { handleVote }
 }

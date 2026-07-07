@@ -17,7 +17,9 @@ export default function LobbyView({
   setSoundMuted,
   writeSoundMuted,
   setNotice,
-  socketRef
+  socketRef,
+  tournamentConfig,
+  setTournamentConfig
 }) {
   return (
     <div className="game-container game-container--active py-2">
@@ -81,6 +83,10 @@ export default function LobbyView({
               <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">{index + 1}</div>
               <span className={"text-sm truncate leading-tight " + (player.id === socket?.id ? "text-indigo-300 font-semibold" : "text-white")}>{player.name}{player.id === socket?.id && " (you)"}</span>
               {player.isHost && (<span className="ml-auto text-[9px] bg-indigo-900/50 text-indigo-400 px-1.5 py-0.5 rounded font-semibold">HOST</span>)}
+              {player.role === 'spectator' && (<span className="ml-auto text-[9px] bg-amber-900/50 text-amber-400 px-1.5 py-0.5 rounded font-semibold">SPECTATOR</span>)}
+              {isHost && player.role === 'spectator' && (
+                <button onClick={() => socketRef.current?.emit("promote-player", { playerName: player.name })} className="ml-1 text-[10px] bg-emerald-800/50 text-emerald-300 px-2 py-0.5 rounded font-semibold hover:bg-emerald-700/50 transition-colors" title="Promote to player next round">↑ Promote</button>
+              )}
               {isHost && player.id !== socket?.id && (
                 <button onClick={() => setKickConfirm({ id: player.id, name: player.name })} className="ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-red-400 hover:text-red-300 rounded hover:bg-red-900/30 transition-colors" title="Kick player" aria-label={`Kick ${player.name}`}>✕</button>
               )}
@@ -112,6 +118,77 @@ export default function LobbyView({
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {isHost && (
+        <div className="card py-2 px-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-white font-medium leading-tight">Tournament Mode</p>
+              <p className="text-[9px] text-gray-500 leading-tight">Multi-round scoring with leaderboard</p>
+            </div>
+            <button
+              onClick={() => setTournamentConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
+              aria-pressed={tournamentConfig.enabled}
+              aria-label="Toggle tournament mode"
+              className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 ml-2 " + (tournamentConfig.enabled ? "bg-indigo-600" : "bg-gray-600")}
+            >
+              <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (tournamentConfig.enabled ? "translate-x-5" : "translate-x-0.5")} />
+            </button>
+          </div>
+          {tournamentConfig.enabled && (
+            <div className="mt-2 space-y-2">
+              <div>
+                <p className="text-[9px] text-gray-500 mb-1">Rounds</p>
+                <div className="inline-flex rounded-full border border-gray-700 bg-gray-800/60 p-1 text-xs">
+                  {[3, 5, 7].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setTournamentConfig(prev => ({ ...prev, targetRounds: n }))}
+                      className={"rounded-full px-3 py-1.5 font-semibold transition-colors duration-200 " + (tournamentConfig.targetRounds === n ? "bg-indigo-600 text-white" : "text-gray-300 hover:text-white hover:bg-gray-700/50")}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[9px] text-gray-500 mb-1">Vote Timer</p>
+                <div className="inline-flex rounded-full border border-gray-700 bg-gray-800/60 p-1 text-xs">
+                  {[30, 60, 90].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setTournamentConfig(prev => ({ ...prev, votingTimerSeconds: s }))}
+                      className={"rounded-full px-3 py-1.5 font-semibold transition-colors duration-200 " + (tournamentConfig.votingTimerSeconds === s ? "bg-indigo-600 text-white" : "text-gray-300 hover:text-white hover:bg-gray-700/50")}
+                    >
+                      {s}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <p className="text-xs text-white font-medium leading-tight flex items-center gap-1">
+                    <span className="text-amber-400">⚡</span> Blitz Mode
+                  </p>
+                  <p className="text-[9px] text-gray-500 leading-tight">Speed scoring: +1 fastest, -1 slowest</p>
+                </div>
+                <button
+                  onClick={() => setTournamentConfig(prev => ({ ...prev, speedScoringEnabled: !prev.speedScoringEnabled }))}
+                  aria-pressed={tournamentConfig.speedScoringEnabled}
+                  aria-label="Toggle blitz mode"
+                  className={"relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 ml-2 " + (tournamentConfig.speedScoringEnabled ? "bg-amber-500" : "bg-gray-600")}
+                >
+                  <div className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 " + (tournamentConfig.speedScoringEnabled ? "translate-x-5" : "translate-x-0.5")} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {!isHost && tournamentConfig.enabled && (
+        <div className="card py-2 px-3 text-center">
+          <p className="text-xs text-indigo-300 font-medium">Tournament Mode: {tournamentConfig.targetRounds} rounds{tournamentConfig.speedScoringEnabled ? " · ⚡ Blitz" : ""}</p>
         </div>
       )}
       {isHost ? (

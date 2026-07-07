@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { initDatabase, getDb, saveDatabase } = require('./database');
+const { calculateRoundPoints, tallyRound, mergeRoundScores, resolveStandings } = require('./tournament');
 
 const ADMIN_KEY = 'fluke-admin-2024';
 
@@ -665,7 +666,7 @@ io.on('connection', (socket) => {
     
     const game = {
       host: socket.id,
-      players: [{ id: socket.id, name: cleanName, isHost: true, isActive: true, hasSubmittedQuestion: false, hasSubmittedAnswer: false }],
+      players: [{ id: socket.id, name: cleanName, isHost: true, isActive: true, role: 'player', hasSubmittedQuestion: false, hasSubmittedAnswer: false }],
       phase: 'lobby',
       questions: {},
       answers: {},
@@ -674,7 +675,9 @@ io.on('connection', (socket) => {
       anonymousMode: false,
       currentRoundAnonymousMode: false,
       reactions: {},      // { contentId: { emoji: count, ... } }
-      playerReactions: {} // { contentId: Set(playerId) }
+      playerReactions: {}, // { contentId: Set(playerId) }
+      tournament: null,   // Set when host starts a tournament game
+      voteWriteQueue: Promise.resolve() // Serializes vote DB writes for atomic tallying
     };
     games[roomCode] = game;
     
@@ -726,6 +729,18 @@ io.on('connection', (socket) => {
     }
     
     if (game.phase !== 'lobby') {
+      // Tournament mode: allow late joiners as spectators
+      if (game.tournament && game.tournament.enabled && game.tournament.status === 'active') {
+        const isSpectator = true;
+        console.log(`JOIN-ROOM: Late joiner ${cleanName} joining as spectator (phase: ${game.phase})`);
+        game.players.push({ id: socket.id, name: cleanName, isHost: false, isActive: true, role: 'spectator', hasSubmittedQuestion: false, hasSubmittedAnswer: false });
+        socket.join(roomCode);
+        socket.roomCode = roomCode;
+        callback({ success: true, spectator: true });
+        console.log(`${cleanName} joined room ${roomCode} as spectator`);
+        io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
+        return;
+      }
       callback({ success: false, error: 'Game already in progress' });
       return;
     }
@@ -739,7 +754,7 @@ io.on('connection', (socket) => {
     console.log(`JOIN-ROOM: Adding ${cleanName} with socket ${socket.id} to room ${roomCode}`);
     console.log(`JOIN-ROOM: Players before:`, game.players.map(p => ({ name: p.name, id: p.id, isActive: p.isActive })));
     
-    game.players.push({ id: socket.id, name: cleanName, isHost: false, isActive: true, hasSubmittedQuestion: false, hasSubmittedAnswer: false });
+    game.players.push({ id: socket.id, name: cleanName, isHost: false, isActive: true, role: 'player', hasSubmittedQuestion: false, hasSubmittedAnswer: false });
     socket.join(roomCode);
     socket.roomCode = roomCode;
     
@@ -751,7 +766,7 @@ io.on('connection', (socket) => {
   });
 
   // Host starts the game
-  socket.on('start-game', ({ noSelfReading = false }) => {
+  socket.on('start-game', ({ noSelfReading = false, tournament: tournamentConfig = null }) => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
     
@@ -779,12 +794,35 @@ io.on('connection', (socket) => {
       p.hasSubmittedAnswer = false;
     }
     game.isTransitioning = false;
-    
+
     // CRITICAL FIX: Remove any disconnected players from lobby before starting
     game.players = activePlayers;
     game.phase = 'writing';
+    game.writingPhaseStartedAt = Date.now();
     game.currentRoundAnonymousMode = game.anonymousMode;
-    io.to(roomCode).emit('game-started', { phase: 'writing', anonymousMode: game.anonymousMode, totalPlayers: activePlayers.length });
+
+    // Initialize tournament if host configured one
+    if (tournamentConfig && tournamentConfig.enabled) {
+      game.tournament = {
+        enabled: true,
+        targetRounds: tournamentConfig.targetRounds || 3,
+        votingTimerSeconds: tournamentConfig.votingTimerSeconds || 60,
+        speedScoringEnabled: !!tournamentConfig.speedScoringEnabled,
+        currentRound: 1,
+        scores: {},
+        pendingPromotions: [],
+        roundSettings: {},
+        status: 'active'
+      };
+      console.log(`[start-game] Tournament enabled: ${game.tournament.targetRounds} rounds, ${game.tournament.votingTimerSeconds}s voting timer`);
+    }
+
+    io.to(roomCode).emit('game-started', {
+      phase: 'writing',
+      anonymousMode: game.anonymousMode,
+      totalPlayers: activePlayers.length,
+      tournament: game.tournament ? { enabled: true, targetRounds: game.tournament.targetRounds, currentRound: 1, speedScoringEnabled: game.tournament.speedScoringEnabled } : null
+    });
   });
 
   // Host toggles anonymous mode (show/hide names in end-of-game summary)
@@ -853,6 +891,10 @@ io.on('connection', (socket) => {
       socket.emit('error', 'You are not in this game');
       return;
     }
+    if (player.role === 'spectator') {
+      socket.emit('error', 'Spectators cannot submit questions');
+      return;
+    }
     if (player.hasSubmittedQuestion) {
       console.log(`submit-question rejected: duplicate submission from ${player.name}`);
       socket.emit('error', 'You already submitted a question this round');
@@ -864,7 +906,8 @@ io.on('connection', (socket) => {
     game.questions[socket.id] = {
       text: question,
       authorId: socket.id,
-      authorName: player?.name || 'Unknown'
+      authorName: player?.name || 'Unknown',
+      submittedAt: Date.now()
     };
 
     // Save question to database
@@ -991,6 +1034,7 @@ io.on('connection', (socket) => {
       console.log(`[distributeQuestions] Assignments complete. Count: ${Object.keys(game.questionAssignments).length}`);
       
       game.phase = 'answering';
+      game.answeringPhaseStartedAt = Date.now();
       console.log(`[distributeQuestions] Game phase set to 'answering'`);
 
       // Reset answer submission flags and transition guard for the new phase
@@ -1083,6 +1127,10 @@ io.on('connection', (socket) => {
       socket.emit('error', 'You are not in this game');
       return;
     }
+    if (player.role === 'spectator') {
+      socket.emit('error', 'Spectators cannot submit answers');
+      return;
+    }
     
     // Duplicate submission guard
     if (player.hasSubmittedAnswer) {
@@ -1122,7 +1170,8 @@ io.on('connection', (socket) => {
         text: answer,
         question: assignedQuestion,
         authorId: socket.id,
-        authorName: player.name || 'Unknown'
+        authorName: player.name || 'Unknown',
+        submittedAt: Date.now()
       };
 
       // Save answer to database
@@ -1350,8 +1399,8 @@ io.on('connection', (socket) => {
   async function preparePerformancePhase(roomCode) {
     const game = games[roomCode];
     
-    // CRITICAL FIX: Only use active players for performance phase
-    const activePlayers = game.players.filter(p => p.isActive);
+    // CRITICAL FIX: Only use active players (not spectators) for performance phase
+    const activePlayers = game.players.filter(p => p.isActive && p.role !== 'spectator');
     const playerIds = activePlayers.map(p => p.id);
     
     // Shuffle playerOrder for randomized reading order
@@ -1466,6 +1515,46 @@ io.on('connection', (socket) => {
       const db = getDb();
       const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
       const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
+
+      // Tournament mode: enter voting phase with server-side timer
+      if (game.tournament && game.tournament.enabled && game.tournament.status === 'active') {
+        game.phase = 'voting';
+        game.voteWriteQueue = Promise.resolve();
+        const votingMs = (game.tournament.votingTimerSeconds || 60) * 1000;
+        const votingDeadlineAt = Date.now() + votingMs;
+        game.votingDeadlineAt = votingDeadlineAt;
+        game.votingTimer = setTimeout(() => closeVotingAndTally(roomCode, 'timer'), votingMs);
+
+        // Mask author names in summary for tournament voting phase
+        const maskedSummary = summary.map(p => ({
+          ...p,
+          questionAuthorName: '???',
+          actualAnswerAuthorName: '???',
+          pairedAnswerAuthorName: '???'
+        }));
+
+        io.to(roomCode).emit('game-ended', {
+          message: 'Vote for the best pairing!',
+          summary: maskedSummary,
+          votersCount: 0,
+          firstQuestionSubmitter: game.firstQuestionSubmitter,
+          firstAnswerSubmitter: game.firstAnswerSubmitter,
+          lastQuestionSubmitter: game.lastQuestionSubmitter,
+          lastAnswerSubmitter: game.lastAnswerSubmitter,
+          mostAdoredWriter: computeMostAdoredWriter(roomCode),
+          tournament: {
+            enabled: true,
+            currentRound: game.tournament.currentRound,
+            targetRounds: game.tournament.targetRounds,
+            votingDeadlineAt,
+            serverNow: Date.now()
+          }
+        });
+        console.log(`[startNextReading] Tournament voting phase started for room ${roomCode}, deadline at ${votingDeadlineAt}`);
+        return;
+      }
+
+      // Classic mode: unchanged behavior
       io.to(roomCode).emit('game-ended', {
         message: 'Thanks for playing!',
         summary: summary,
@@ -1653,6 +1742,267 @@ io.on('connection', (socket) => {
     });
   });
 
+  // ─── Tournament: close voting and tally scores ───
+  async function closeVotingAndTally(roomCode, trigger) {
+    const game = games[roomCode];
+    if (!game || game.phase !== 'voting') return; // idempotent guard
+    game.phase = 'tallying';
+    clearTimeout(game.votingTimer);
+
+    // Drain in-flight vote DB writes
+    await game.voteWriteQueue;
+
+    // Fetch current pair vote counts from DB
+    const db = getDb();
+    const voteRows = await db.exec(
+      "SELECT target_id, COUNT(*) as cnt FROM votes WHERE game_id = ? AND vote_type = 'qa_pair' GROUP BY target_id",
+      [game.dbGameId]
+    );
+    const votesByPair = {};
+    if (voteRows.length > 0) {
+      for (const row of voteRows[0].values) {
+        votesByPair[row[0]] = row[1];
+      }
+    }
+
+    // Build pairs array for calculateRoundPoints from cardPairs
+    const pairsForTally = (game.cardPairs || []).filter(p => p.dbId).map(p => ({
+      pairDbId: p.dbId,
+      questionAuthor: p.question?.authorName || 'Unknown',
+      answerAuthor: p.answer?.authorName || 'Unknown'
+    }));
+
+    // Build speed data from submission timestamps (if speed scoring is enabled)
+    const speedScoringEnabled = !!game.tournament.speedScoringEnabled;
+    let scoringSettings = {};
+    if (speedScoringEnabled) {
+      const activePlayerCount = game.players.filter(p => p.isActive && p.role !== 'spectator').length;
+      const writingStart = game.writingPhaseStartedAt || 0;
+      const answeringStart = game.answeringPhaseStartedAt || 0;
+
+      // Build question times from game.questions
+      const questionTimes = [];
+      for (const [socketId, q] of Object.entries(game.questions)) {
+        if (q.submittedAt && q.authorName) {
+          questionTimes.push({ name: q.authorName, ms: q.submittedAt - writingStart });
+        }
+      }
+
+      // Build answer times from game.answers
+      const answerTimes = [];
+      for (const [socketId, a] of Object.entries(game.answers)) {
+        if (a.submittedAt && a.authorName) {
+          answerTimes.push({ name: a.authorName, ms: a.submittedAt - answeringStart });
+        }
+      }
+
+      scoringSettings = {
+        speedScoringEnabled: true,
+        speedData: { questionTimes, answerTimes, activePlayerCount, phaseStartedAt: writingStart }
+      };
+    }
+
+    // Store per-round settings for historical consistency
+    game.tournament.roundSettings[game.tournament.currentRound] = { speedScoringEnabled };
+
+    const roundResult = calculateRoundPoints(pairsForTally, votesByPair, scoringSettings);
+    mergeRoundScores(game.tournament.scores, roundResult, game.tournament.currentRound);
+
+    // Build author reveal map for the frontend
+    const authorsReveal = {};
+    for (const pair of (game.cardPairs || [])) {
+      if (pair.dbId) {
+        authorsReveal[pair.dbId] = {
+          qAuthor: pair.question?.authorName || 'Unknown',
+          aAuthor: pair.answer?.authorName || 'Unknown'
+        };
+      }
+    }
+
+    // Build unmasked summary for scoreboard display
+    const fullSummary = await buildGameSummary(roomCode);
+
+    const { standings } = resolveStandings(game.tournament.scores);
+    const isFinalRound = game.tournament.currentRound >= game.tournament.targetRounds;
+    const scoreboardMs = 20000;
+    const scoreboardDeadlineAt = Date.now() + scoreboardMs;
+
+    game.phase = 'scoreboard';
+    game.scoreboardDeadlineAt = scoreboardDeadlineAt;
+    game.tournament.lastRoundResult = { standings, roundWinnerDetails: roundResult.roundWinnerDetails, speedDetails: roundResult.speedDetails };
+    game.tournament.scoreboardDeadlineAt = scoreboardDeadlineAt;
+    game.scoreboardTimer = setTimeout(() => advanceRound(roomCode, 'timer'), scoreboardMs);
+
+    io.to(roomCode).emit('scoreboard', {
+      standings,
+      roundWinnerDetails: roundResult.roundWinnerDetails,
+      summary: fullSummary,
+      authorsReveal,
+      speedDetails: roundResult.speedDetails,
+      scoringRules: { speedScoringEnabled },
+      currentRound: game.tournament.currentRound,
+      targetRounds: game.tournament.targetRounds,
+      isFinalRound,
+      deadlineAt: scoreboardDeadlineAt,
+      serverNow: Date.now()
+    });
+    console.log(`[closeVotingAndTally] Room ${roomCode} entered scoreboard (trigger: ${trigger}), round ${game.tournament.currentRound}/${game.tournament.targetRounds}`);
+  }
+
+  // ─── Tournament: advance to next round or complete ───
+  async function advanceRound(roomCode, trigger) {
+    const game = games[roomCode];
+    if (!game || game.phase !== 'scoreboard') return; // idempotent guard
+    clearTimeout(game.scoreboardTimer);
+
+    const isFinalRound = game.tournament.currentRound >= game.tournament.targetRounds;
+
+    if (isFinalRound) {
+      // Tournament complete
+      game.phase = 'tournament_complete';
+      game.tournament.status = 'complete';
+      const { champions, isTie, standings } = resolveStandings(game.tournament.scores);
+      game.tournament.finalStandings = { champions, isTie, standings };
+      io.to(roomCode).emit('tournament-complete', { champions, isTie, standings });
+      console.log(`[advanceRound] Room ${roomCode} tournament complete (trigger: ${trigger})`);
+      return;
+    }
+
+    // Apply pending promotions (spectator → player)
+    for (const name of game.tournament.pendingPromotions) {
+      const player = game.players.find(p => p.name === name);
+      if (player && player.role === 'spectator') {
+        player.role = 'player';
+        if (!game.tournament.scores[name]) {
+          game.tournament.scores[name] = {
+            total: 0, roundScores: [], firstPlaces: 0, votesReceived: 0,
+            joinedAtRound: game.tournament.currentRound + 1, leftGame: false
+          };
+        }
+        console.log(`[advanceRound] Promoted ${name} to player for round ${game.tournament.currentRound + 1}`);
+      }
+    }
+    game.tournament.pendingPromotions = [];
+
+    // Increment round
+    game.tournament.currentRound++;
+
+    // Reset round state (same as replay-game but preserving tournament)
+    const prevLastQuestionSubmitter = game.lastQuestionSubmitter;
+    game.phase = 'writing';
+    game.writingPhaseStartedAt = Date.now();
+    game.currentRoundAnonymousMode = game.anonymousMode;
+    game.questions = {};
+    game.answers = {};
+    game.questionAssignments = {};
+    game.cardPairs = [];
+    game.shuffledCards = [];
+    game.cardAssignments = {};
+    game.currentReaderIndex = 0;
+    game.playerOrder = [];
+    game.firstQuestionSubmitter = null;
+    game.firstAnswerSubmitter = null;
+    game.lastQuestionSubmitter = prevLastQuestionSubmitter;
+    game.lastAnswerSubmitter = null;
+    game.isTransitioning = false;
+    game.voteWriteQueue = Promise.resolve();
+
+    for (const p of game.players) {
+      p.hasSubmittedQuestion = false;
+      p.hasSubmittedAnswer = false;
+    }
+
+    // Clear votes for next round
+    try {
+      const db = getDb();
+      await db.run("DELETE FROM votes WHERE game_id = ?", [game.dbGameId]);
+    } catch (e) {
+      console.error('[advanceRound] Failed to clear votes:', e.message);
+    }
+
+    io.to(roomCode).emit('game-restarted', {
+      phase: 'writing',
+      lastQuestionSubmitter: game.lastQuestionSubmitter,
+      tournament: { currentRound: game.tournament.currentRound, targetRounds: game.tournament.targetRounds }
+    });
+    io.to(roomCode).emit('player-joined', { players: game.players.filter(p => p.isActive), hostId: game.host });
+    console.log(`[advanceRound] Room ${roomCode} started round ${game.tournament.currentRound} (trigger: ${trigger})`);
+  }
+
+  // ─── Tournament socket handlers ───
+
+  // Host manually finishes voting
+  socket.on('finish-voting', () => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+    if (game.phase !== 'voting') return;
+    closeVotingAndTally(roomCode, 'host');
+  });
+
+  // Host manually advances to next round from scoreboard
+  socket.on('next-round', () => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+    if (game.phase !== 'scoreboard') return;
+    advanceRound(roomCode, 'host');
+  });
+
+  // Host starts a new tournament (from tournament-complete screen)
+  socket.on('new-tournament', () => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+    if (game.phase !== 'tournament_complete') return;
+
+    // Reset tournament scores but keep players
+    game.tournament.currentRound = 1;
+    game.tournament.scores = {};
+    game.tournament.pendingPromotions = [];
+    game.tournament.roundSettings = {};
+    game.tournament.status = 'active';
+
+    // Reset all players to player role (spectators from last tournament stay spectators)
+    // Host decides who plays via promotions
+
+    // Reset round state
+    game.phase = 'lobby';
+    game.questions = {};
+    game.answers = {};
+    game.questionAssignments = {};
+    game.cardPairs = [];
+    game.shuffledCards = [];
+    game.cardAssignments = {};
+    game.currentReaderIndex = 0;
+    game.playerOrder = [];
+    game.isTransitioning = false;
+
+    io.to(roomCode).emit('tournament-reset', { tournament: { enabled: true, targetRounds: game.tournament.targetRounds } });
+    io.to(roomCode).emit('player-joined', { players: game.players.filter(p => p.isActive), hostId: game.host });
+    console.log(`[new-tournament] Room ${roomCode} reset for new tournament`);
+  });
+
+  // Host promotes a spectator to player (takes effect next round)
+  socket.on('promote-player', ({ playerName }) => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+    if (!game.tournament || !game.tournament.enabled) return;
+
+    const player = game.players.find(p => p.name === playerName);
+    if (!player || player.role !== 'spectator') {
+      socket.emit('error', 'Player is not a spectator');
+      return;
+    }
+
+    if (!game.tournament.pendingPromotions.includes(playerName)) {
+      game.tournament.pendingPromotions.push(playerName);
+    }
+    console.log(`[promote-player] ${playerName} queued for promotion in room ${roomCode}`);
+    io.to(roomCode).emit('promotion-queued', { playerName });
+  });
+
   // Player submits a vote (non-blocking during performance phase)
   socket.on('submit-vote', async ({ type, targetId }) => {
     let roomCode = socket.roomCode;
@@ -1672,10 +2022,22 @@ io.on('connection', (socket) => {
       return
     }
 
+    // Tournament phase guard: reject votes outside the voting phase
+    if (game.tournament && game.tournament.enabled) {
+      if (game.phase !== 'voting') {
+        socket.emit('vote-submitted', { success: false, message: 'Voting is closed for this round' });
+        return;
+      }
+    }
+
     // Resolve stable player identity (player.name) for vote tracking
     const voter = game.players.find(p => p.id === socket.id);
     if (!voter) {
       socket.emit('vote-submitted', { success: false, message: 'You are not in this game' });
+      return;
+    }
+    if (voter.role === 'spectator') {
+      socket.emit('vote-submitted', { success: false, message: 'Spectators cannot vote' });
       return;
     }
     const stableVoterId = voter.name;
@@ -1731,16 +2093,57 @@ io.on('connection', (socket) => {
       }
     }
 
-    // Insert new vote and increment count
-    await db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)", [game.dbGameId, stableVoterId, type, targetId]);
-    await db.run(`UPDATE ${tableName} SET vote_count = vote_count + 1 WHERE id = ?`, [targetId]);
+    // Insert new vote and increment count — chain onto voteWriteQueue for tournament atomicity
+    const voteWritePromise = (async () => {
+      await db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)", [game.dbGameId, stableVoterId, type, targetId]);
+      await db.run(`UPDATE ${tableName} SET vote_count = vote_count + 1 WHERE id = ?`, [targetId]);
+    })();
+
+    if (game.tournament && game.tournament.enabled) {
+      game.voteWriteQueue = game.voteWriteQueue.then(() => voteWritePromise);
+    }
+    await voteWritePromise;
 
     const result = await db.exec(`SELECT vote_count FROM ${tableName} WHERE id = ?`, [targetId]);
     const voteCount = result.length > 0 ? result[0].values[0][0] : 0;
     const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
     const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
-    socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: true });
+
+    // Tournament: include author reveal in vote-submitted ack
+    let authorReveal = null;
+    if (game.tournament && game.tournament.enabled && type === 'qa_pair') {
+      const pair = (game.cardPairs || []).find(p => p.dbId === targetId);
+      if (pair) {
+        authorReveal = {
+          qAuthor: pair.question?.authorName || 'Unknown',
+          aAuthor: pair.answer?.authorName || 'Unknown'
+        };
+      }
+    }
+
+    socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: true, authorReveal });
     io.to(roomCode).emit('vote-update', { type, targetId, voteCount, votersCount });
+
+    // Tournament: auto-close voting when all active players have voted
+    if (game.tournament && game.tournament.enabled && game.phase === 'voting' && type === 'qa_pair') {
+      const activePlayers = game.players.filter(p => p.isActive && p.role === 'player');
+      const distinctVotersResult = await db.exec(
+        "SELECT DISTINCT player_id FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'",
+        [game.dbGameId]
+      );
+      const votedPlayerIds = new Set();
+      if (distinctVotersResult.length > 0) {
+        for (const row of distinctVotersResult[0].values) {
+          votedPlayerIds.add(row[0]);
+        }
+      }
+      const allPlayersVoted = activePlayers.every(p => votedPlayerIds.has(p.name));
+      if (allPlayersVoted && activePlayers.length > 0) {
+        console.log(`[submit-vote] All ${activePlayers.length} players voted — auto-closing voting for room ${roomCode}`);
+        closeVotingAndTally(roomCode, 'all-voted');
+      }
+    }
+
     return;
   });
 
@@ -1750,6 +2153,12 @@ io.on('connection', (socket) => {
     const game = games[roomCode];
     
     if (!game || game.host !== socket.id) return;
+
+    // Block replay-game during tournament phases — use next-round or new-tournament instead
+    if (game.tournament && game.tournament.enabled && game.phase !== 'ended') {
+      socket.emit('error', 'Use Next Round or New Tournament during tournament mode');
+      return;
+    }
 
     // Honor No Self-Read choice made on the summary screen before replaying
     if (typeof payload.noSelfReading === 'boolean') {
@@ -1788,6 +2197,7 @@ io.on('connection', (socket) => {
     const prevLastQuestionSubmitter = game.lastQuestionSubmitter;
 
     game.phase = 'writing';
+    game.writingPhaseStartedAt = Date.now();
     game.currentRoundAnonymousMode = game.anonymousMode;
     game.questions = {};
     game.answers = {};
@@ -2375,7 +2785,7 @@ io.on('connection', (socket) => {
     };
 
     // If reconnecting during ended phase, include the game summary and current vote state
-    if (game.phase === 'ended') {
+    if (game.phase === 'ended' || game.phase === 'voting') {
       reconnectData.summary = await buildGameSummary(roomCode);
       reconnectData.mostAdoredWriter = computeMostAdoredWriter(roomCode);
       const db = getDb();
@@ -2385,6 +2795,17 @@ io.on('connection', (socket) => {
       reconnectData.firstAnswerSubmitter = game.firstAnswerSubmitter || null;
       reconnectData.lastQuestionSubmitter = game.lastQuestionSubmitter || null;
       reconnectData.lastAnswerSubmitter = game.lastAnswerSubmitter || null;
+
+      // Tournament: include tournament state for voting phase
+      if (game.tournament && game.tournament.enabled) {
+        reconnectData.tournament = {
+          enabled: true,
+          currentRound: game.tournament.currentRound,
+          targetRounds: game.tournament.targetRounds,
+          votingDeadlineAt: game.tournament.votingDeadlineAt || null,
+          serverNow: Date.now()
+        };
+      }
 
       // Restore this player's existing votes so the frontend can show vote state
       const voteRows = await db.exec("SELECT vote_type, target_id FROM votes WHERE game_id = ? AND player_id = ?", [game.dbGameId, player.name]);
@@ -2418,6 +2839,36 @@ io.on('connection', (socket) => {
           timestamp: Date.now()
         }];
       }
+    }
+
+    // Tournament: reconnect into scoreboard or tournament_complete phase
+    if (game.tournament && game.tournament.enabled && (game.phase === 'scoreboard' || game.phase === 'tournament_complete')) {
+      if (game.phase === 'scoreboard' && game.tournament.lastRoundResult) {
+        const roundSettings = game.tournament.roundSettings[game.tournament.currentRound] || {};
+        reconnectData.scoreboardData = {
+          standings: game.tournament.lastRoundResult.standings,
+          roundWinnerDetails: game.tournament.lastRoundResult.roundWinnerDetails,
+          speedDetails: game.tournament.lastRoundResult.speedDetails || null,
+          scoringRules: { speedScoringEnabled: !!roundSettings.speedScoringEnabled },
+          currentRound: game.tournament.currentRound,
+          targetRounds: game.tournament.targetRounds,
+          isFinalRound: game.tournament.currentRound >= game.tournament.targetRounds,
+          deadlineAt: game.tournament.scoreboardDeadlineAt || null,
+          serverNow: Date.now()
+        };
+      }
+      if (game.phase === 'tournament_complete' && game.tournament.finalStandings) {
+        reconnectData.tournamentCompleteData = {
+          champions: game.tournament.finalStandings.champions,
+          isTie: game.tournament.finalStandings.isTie,
+          standings: game.tournament.finalStandings.standings
+        };
+      }
+      reconnectData.tournament = {
+        enabled: true,
+        currentRound: game.tournament.currentRound,
+        targetRounds: game.tournament.targetRounds
+      };
     }
 
     // If reconnecting during performance phase, the fresh current-turn state is delivered
@@ -2690,6 +3141,10 @@ io.on('connection', (socket) => {
         return;
       }
       console.log(`[grace-timeout] Permanently removing ${stillDisconnected.name}`);
+      // Tournament: mark player as left game in scores
+      if (stillThere.tournament && stillThere.tournament.enabled && stillThere.tournament.scores[stillDisconnected.name]) {
+        stillThere.tournament.scores[stillDisconnected.name].leftGame = true;
+      }
       removePlayerFromGame(roomCode, stillDisconnected.id);
 
       if (stillThere.players.length === 0) {

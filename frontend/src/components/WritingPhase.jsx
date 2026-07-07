@@ -15,10 +15,17 @@ export default function WritingPhase({
   forceConfirm,
   forceConfirmTrapRef,
   forceProgress,
-  renderWaitingPanel
+  renderWaitingPanel,
+  speedScoringEnabled
 }) {
   return (
     <div className="game-container game-container--active game-container--keyboard-aware py-2 flex flex-col">
+      {speedScoringEnabled && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5" title="Blitz Mode: Speed counts this round">
+          <span className="text-xs">⚡</span>
+          <span className="text-[9px] text-amber-400 font-semibold uppercase tracking-wide hidden sm:inline">Blitz</span>
+        </div>
+      )}
       {forceConfirm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="force-title">
           <div ref={forceConfirmTrapRef} className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
