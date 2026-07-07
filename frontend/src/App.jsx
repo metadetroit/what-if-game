@@ -88,6 +88,7 @@ function App() {
   const [bestOfHasMore, setBestOfHasMore] = useState(false)
   const [bestOfLoading, setBestOfLoading] = useState(false)
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('adminKey') || '')
+  const [isAuthChecking, setIsAuthChecking] = useState(true)
   const [bestOfViewMode, setBestOfViewMode] = useState('approved') // 'approved' | 'pending'
   const [pendingData, setPendingData] = useState(null)
   const [pendingLoading, setPendingLoading] = useState(false)
@@ -160,6 +161,12 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const key = sessionStorage.getItem('adminKey') || ''
+    setAdminKey(key)
+    setIsAuthChecking(false)
+  }, [])
+
+  useEffect(() => {
     if (gameState !== 'ended') {
       setVotersCount(0)
       setSummaryVotes({})
@@ -189,13 +196,14 @@ function App() {
       const url = `${SOCKET_URL}/api/best-of?type=qa_pairs&limit=${limit}&sort=${sort}&offset=${offset}`
       const response = await fetch(url)
       const data = await response.json()
+      const items = Array.isArray(data) ? data : []
       if (offset === 0) {
-        setBestOfData(data)
+        setBestOfData(items)
       } else {
         setBestOfData(prev => {
-          if (!Array.isArray(prev)) return data
+          if (!Array.isArray(prev)) return items
           const seen = new Set(prev.map(i => `${i.type}:${i.id}`))
-          const deduped = data.filter(i => !seen.has(`${i.type}:${i.id}`))
+          const deduped = items.filter(i => !seen.has(`${i.type}:${i.id}`))
           return [...prev, ...deduped]
         })
       }
@@ -209,6 +217,10 @@ function App() {
   const fetchPendingData = async (opts = {}) => {
     try {
       if (pendingLoading && !opts.force) return
+      if (!adminKey) {
+        setPendingLoading(false)
+        return
+      }
       setPendingLoading(true)
       const limit = opts.limit || 50
       const offset = opts.offset || 0
@@ -217,14 +229,15 @@ function App() {
         headers: { 'x-admin-key': adminKey }
       })
       const data = await response.json()
+      const items = Array.isArray(data) ? data : []
 
       if (offset === 0) {
-        setPendingData(data)
+        setPendingData(items)
       } else {
         setPendingData(prev => {
-          if (!Array.isArray(prev)) return data
+          if (!Array.isArray(prev)) return items
           const seen = new Set(prev.map(i => `${i.type}:${i.id}`))
-          const deduped = data.filter(i => !seen.has(`${i.type}:${i.id}`))
+          const deduped = items.filter(i => !seen.has(`${i.type}:${i.id}`))
           return [...prev, ...deduped]
         })
       }
@@ -258,7 +271,15 @@ function App() {
   const handleApproveSFW = useCallback(async (id, index) => {
     // Optimistic UI update
     if (bestOfViewMode === 'pending') {
+      const item = Array.isArray(pendingData) ? pendingData.find(i => i.id === id) : null
       setPendingData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
+      if (item) {
+        setBestOfData(prev => {
+          if (!Array.isArray(prev)) return prev
+          if (prev.some(i => i.id === id)) return prev
+          return [...prev, { ...item, is_nsfw: false }]
+        })
+      }
     } else {
       setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
     }
@@ -283,6 +304,7 @@ function App() {
         setNotice(noticeFor('Failed to approve as SFW', 'warn', 3000))
       } else {
         setNotice(noticeFor('Approved as SFW', 'success', 2000))
+        setTimeout(() => fetchBestOfData({ force: true }), 300)
       }
     } catch (error) {
       console.error('Failed to approve as SFW:', error)
@@ -294,7 +316,7 @@ function App() {
       }
       setNotice(noticeFor('Failed to approve as SFW', 'warn', 3000))
     }
-  }, [adminKey, bestOfViewMode])
+  }, [adminKey, bestOfViewMode, pendingData, bestOfData])
 
   const handleApproveNSFW = useCallback(async (id, index) => {
     // Optimistic UI update
@@ -324,6 +346,7 @@ function App() {
         setNotice(noticeFor('Failed to approve as NSFW', 'warn', 3000))
       } else {
         setNotice(noticeFor('Approved as NSFW', 'success', 2000))
+        setTimeout(() => fetchBestOfData({ force: true }), 300)
       }
     } catch (error) {
       console.error('Failed to approve as NSFW:', error)
@@ -341,10 +364,8 @@ function App() {
     setBestOfViewMode(mode)
     if (mode === 'pending') {
       setPendingData(null)
-      fetchPendingData({ force: true })
     } else {
       setBestOfData(null)
-      fetchBestOfData({ force: true })
     }
   }, [])
 
@@ -410,6 +431,7 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (isAuthChecking) return
     if (gameState === 'best-of') {
       if (bestOfViewMode === 'pending' && pendingData === null && !pendingLoading && adminKey) {
         fetchPendingData({ force: true })
@@ -417,7 +439,7 @@ function App() {
         fetchBestOfData({ sort: 'votes', offset: 0, force: true })
       }
     }
-  }, [gameState, bestOfData, bestOfLoading, pendingData, pendingLoading, bestOfViewMode, adminKey])
+  }, [gameState, bestOfData, bestOfLoading, pendingData, pendingLoading, bestOfViewMode, adminKey, isAuthChecking])
 
   useEffect(() => {
     if (Array.isArray(bestOfData) && scrollBestOfIdRef.current) {

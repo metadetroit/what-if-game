@@ -53,97 +53,100 @@ app.get('/api/best-of', async (req, res) => {
 
   let results = [];
 
-  if (!type || type === 'questions') {
-    const orderByQuestions = sort === 'newest' ? 'g.created_at DESC' : 'q.vote_count DESC';
-    const questions = await db.exec(`
-      SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
-      FROM questions q
-      JOIN games g ON q.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND q.vote_count > 0 AND (q.hidden IS NULL OR q.hidden = 0)
-      ORDER BY ${orderByQuestions}
-      LIMIT ? OFFSET ?
-    `, [limit, offset]);
-    
-    if (questions.length > 0) {
-      questions[0].values.forEach(row => {
-        const isAnon = row[5] === 1 || row[5] === true;
-        results.push({
-          type: 'question',
-          id: row[0],
-          content: row[1],
-          author: isAnon ? '???' : (row[2] || 'Unknown'),
-          vote_count: row[3],
-          game_date: row[4]
-        });
-      });
-    }
-  }
+  try {
+    if (!type || type === 'questions') {
+      const orderByQuestions = sort === 'newest' ? 'g.created_at DESC' : 'q.vote_count DESC';
+      const questions = await db.exec(`
+        SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
+        FROM questions q
+        JOIN games g ON q.game_id = g.id
+        WHERE g.hidden_from_best_of = 0 AND q.vote_count > 0 AND (q.hidden IS NULL OR q.hidden = 0)
+        ORDER BY ${orderByQuestions}
+        LIMIT ? OFFSET ?
+      `, [limit, offset]);
 
-  if (!type || type === 'answers') {
-    const orderByAnswers = sort === 'newest' ? 'g.created_at DESC' : 'a.vote_count DESC';
-    const answers = await db.exec(`
-      SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
-      FROM answers a
-      JOIN games g ON a.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND a.vote_count > 0 AND (a.hidden IS NULL OR a.hidden = 0)
-      ORDER BY ${orderByAnswers}
-      LIMIT ? OFFSET ?
-    `, [limit, offset]);
-    
-    if (answers.length > 0) {
-      answers[0].values.forEach(row => {
-        const isAnon = row[5] === 1 || row[5] === true;
-        results.push({
-          type: 'answer',
-          id: row[0],
-          content: row[1],
-          author: isAnon ? '???' : (row[2] || 'Unknown'),
-          vote_count: row[3],
-          game_date: row[4]
+      if (questions.length > 0) {
+        questions[0].values.forEach(row => {
+          const isAnon = row[5] === 1 || row[5] === true;
+          results.push({
+            type: 'question',
+            id: row[0],
+            content: row[1],
+            author: isAnon ? '???' : (row[2] || 'Unknown'),
+            vote_count: row[3],
+            game_date: row[4]
+          });
         });
-      });
+      }
     }
-  }
 
-  if (!type || type === 'qa_pairs') {
-    const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
-    const pairs = await db.exec(`
-      SELECT qp.id, q.text as question_text, a.text as answer_text,
-             q.author_name as question_author, a.author_name as answer_author,
-             qp.vote_count, g.created_at, qp.anonymous
-      FROM qa_pairs qp
-      JOIN questions q ON qp.question_id = q.id
-      JOIN answers a ON qp.answer_id = a.id
-      JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
-            AND (qp.hidden IS NULL OR qp.hidden = 0)
-            AND qp.is_approved = 1
-            AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
-      ORDER BY ${orderByPairs}
-      LIMIT ? OFFSET ?
-    `, [pairVoteThreshold, limit, offset]);
-    
-    if (pairs.length > 0) {
-      pairs[0].values.forEach(row => {
-        const isAnon = row[7] === 1 || row[7] === true;
-        results.push({
-          type: 'qa_pair',
-          id: row[0],
-          question: row[1],
-          answer: row[2],
-          question_author: isAnon ? '???' : (row[3] || 'Unknown'),
-          answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
-          vote_count: row[5],
-          game_date: row[6]
+    if (!type || type === 'answers') {
+      const orderByAnswers = sort === 'newest' ? 'g.created_at DESC' : 'a.vote_count DESC';
+      const answers = await db.exec(`
+        SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
+        FROM answers a
+        JOIN games g ON a.game_id = g.id
+        WHERE g.hidden_from_best_of = 0 AND a.vote_count > 0 AND (a.hidden IS NULL OR a.hidden = 0)
+        ORDER BY ${orderByAnswers}
+        LIMIT ? OFFSET ?
+      `, [limit, offset]);
+
+      if (answers.length > 0) {
+        answers[0].values.forEach(row => {
+          const isAnon = row[5] === 1 || row[5] === true;
+          results.push({
+            type: 'answer',
+            id: row[0],
+            content: row[1],
+            author: isAnon ? '???' : (row[2] || 'Unknown'),
+            vote_count: row[3],
+            game_date: row[4]
+          });
         });
-      });
+      }
     }
-  }
 
-  // Sort by vote count if mixed types
-  if (!type) {
-    results.sort((a, b) => b.vote_count - a.vote_count);
-    results = results.slice(0, limit);
+    if (!type || type === 'qa_pairs') {
+      const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
+      const pairs = await db.exec(`
+        SELECT qp.id, q.text as question_text, a.text as answer_text,
+               q.author_name as question_author, a.author_name as answer_author,
+               qp.vote_count, g.created_at, qp.anonymous
+        FROM qa_pairs qp
+        JOIN questions q ON qp.question_id = q.id
+        JOIN answers a ON qp.answer_id = a.id
+        JOIN games g ON qp.game_id = g.id
+        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
+              AND (qp.hidden IS NULL OR qp.hidden = 0)
+              AND qp.is_approved = 1
+              AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
+        ORDER BY ${orderByPairs}
+        LIMIT ? OFFSET ?
+      `, [pairVoteThreshold, limit, offset]);
+
+      if (pairs.length > 0) {
+        pairs[0].values.forEach(row => {
+          const isAnon = row[7] === 1 || row[7] === true;
+          results.push({
+            type: 'qa_pair',
+            id: row[0],
+            question: row[1],
+            answer: row[2],
+            question_author: isAnon ? '???' : (row[3] || 'Unknown'),
+            answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
+            vote_count: row[5],
+            game_date: row[6]
+          });
+        });
+      }
+    }
+
+    if (!type) {
+      results.sort((a, b) => b.vote_count - a.vote_count);
+      results = results.slice(0, limit);
+    }
+  } catch (e) {
+    console.error('[best-of] Error:', e.message);
   }
 
   res.json(results);
@@ -160,45 +163,48 @@ app.get('/api/best-of-uncut', async (req, res) => {
 
   let results = [];
 
-  if (!type || type === 'qa_pairs') {
-    const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
-    const pairs = await db.exec(`
-      SELECT qp.id, q.text as question_text, a.text as answer_text,
-             q.author_name as question_author, a.author_name as answer_author,
-             qp.vote_count, g.created_at, qp.anonymous, qp.is_nsfw
-      FROM qa_pairs qp
-      JOIN questions q ON qp.question_id = q.id
-      JOIN answers a ON qp.answer_id = a.id
-      JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
-            AND (qp.hidden IS NULL OR qp.hidden = 0)
-            AND qp.is_approved = 1
-      ORDER BY ${orderByPairs}
-      LIMIT ? OFFSET ?
-    `, [pairVoteThreshold, limit, offset]);
+  try {
+    if (!type || type === 'qa_pairs') {
+      const orderByPairs = sort === 'newest' ? 'g.created_at DESC' : 'qp.vote_count DESC';
+      const pairs = await db.exec(`
+        SELECT qp.id, q.text as question_text, a.text as answer_text,
+               q.author_name as question_author, a.author_name as answer_author,
+               qp.vote_count, g.created_at, qp.anonymous, qp.is_nsfw
+        FROM qa_pairs qp
+        JOIN questions q ON qp.question_id = q.id
+        JOIN answers a ON qp.answer_id = a.id
+        JOIN games g ON qp.game_id = g.id
+        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= ?
+              AND (qp.hidden IS NULL OR qp.hidden = 0)
+              AND qp.is_approved = 1
+        ORDER BY ${orderByPairs}
+        LIMIT ? OFFSET ?
+      `, [pairVoteThreshold, limit, offset]);
 
-    if (pairs.length > 0) {
-      pairs[0].values.forEach(row => {
-        const isAnon = row[7] === 1 || row[7] === true;
-        results.push({
-          type: 'qa_pair',
-          id: row[0],
-          question: row[1],
-          answer: row[2],
-          question_author: isAnon ? '???' : (row[3] || 'Unknown'),
-          answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
-          vote_count: row[5],
-          game_date: row[6],
-          is_nsfw: row[8] === 1 || row[8] === true
+      if (pairs.length > 0) {
+        pairs[0].values.forEach(row => {
+          const isAnon = row[7] === 1 || row[7] === true;
+          results.push({
+            type: 'qa_pair',
+            id: row[0],
+            question: row[1],
+            answer: row[2],
+            question_author: isAnon ? '???' : (row[3] || 'Unknown'),
+            answer_author: isAnon ? '???' : (row[4] || 'Unknown'),
+            vote_count: row[5],
+            game_date: row[6],
+            is_nsfw: row[8] === 1 || row[8] === true
+          });
         });
-      });
+      }
     }
-  }
 
-  // Sort by vote count if mixed types
-  if (!type) {
-    results.sort((a, b) => b.vote_count - a.vote_count);
-    results = results.slice(0, limit);
+    if (!type) {
+      results.sort((a, b) => b.vote_count - a.vote_count);
+      results = results.slice(0, limit);
+    }
+  } catch (e) {
+    console.error('[best-of-uncut] Error:', e.message);
   }
 
   res.json(results);
