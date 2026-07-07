@@ -60,7 +60,7 @@ app.get('/api/best-of', async (req, res) => {
         SELECT q.id, q.text, q.author_name, q.vote_count, g.created_at, q.anonymous
         FROM questions q
         JOIN games g ON q.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND q.vote_count >= 2 AND (q.hidden IS NULL OR q.hidden = 0)
+        WHERE g.hidden_from_best_of = 0 AND q.vote_count >= 1 AND (q.hidden IS NULL OR q.hidden = 0)
         ORDER BY ${orderByQuestions}
         LIMIT ? OFFSET ?
       `, [limit, offset]);
@@ -86,7 +86,7 @@ app.get('/api/best-of', async (req, res) => {
         SELECT a.id, a.text, a.author_name, a.vote_count, g.created_at, a.anonymous
         FROM answers a
         JOIN games g ON a.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND a.vote_count >= 2 AND (a.hidden IS NULL OR a.hidden = 0)
+        WHERE g.hidden_from_best_of = 0 AND a.vote_count >= 1 AND (a.hidden IS NULL OR a.hidden = 0)
         ORDER BY ${orderByAnswers}
         LIMIT ? OFFSET ?
       `, [limit, offset]);
@@ -116,7 +116,7 @@ app.get('/api/best-of', async (req, res) => {
         JOIN questions q ON qp.question_id = q.id
         JOIN answers a ON qp.answer_id = a.id
         JOIN games g ON qp.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 2
+        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 1
               AND (qp.hidden IS NULL OR qp.hidden = 0)
               AND qp.is_approved = 1
               AND (qp.is_nsfw IS NULL OR qp.is_nsfw = 0)
@@ -174,7 +174,7 @@ app.get('/api/best-of-uncut', async (req, res) => {
         JOIN questions q ON qp.question_id = q.id
         JOIN answers a ON qp.answer_id = a.id
         JOIN games g ON qp.game_id = g.id
-        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 2
+        WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 1
               AND (qp.hidden IS NULL OR qp.hidden = 0)
               AND qp.is_approved = 1
         ORDER BY ${orderByPairs}
@@ -406,7 +406,7 @@ app.get('/api/random-pairs', async (req, res) => {
       JOIN questions q ON qp.question_id = q.id
       JOIN answers a ON qp.answer_id = a.id
       JOIN games g ON qp.game_id = g.id
-      WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 2
+      WHERE g.hidden_from_best_of = 0 AND qp.vote_count >= 1
             AND (qp.hidden IS NULL OR qp.hidden = 0)
             AND (q.hidden IS NULL OR q.hidden = 0)
             AND (a.hidden IS NULL OR a.hidden = 0)
