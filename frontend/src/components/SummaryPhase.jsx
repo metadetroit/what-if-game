@@ -136,7 +136,7 @@ export default function SummaryPhase({
                         <div className="summary-paired">
                           <p className="summary-paired__answer">{pair.pairedAnswer || 'No pairing was performed'}</p>
                         </div>
-                        <p className="text-[11px] text-gray-400">
+                        <p className="text-xs text-gray-400">
                           Q by {questionAuthor}{pair.pairedAnswer && <> · Paired by {pairedAuthor}</>}
                         </p>
                       </>
@@ -145,13 +145,13 @@ export default function SummaryPhase({
                         <div className="summary-paired">
                           <p className="font-hand text-lg leading-snug text-emerald-100/90">{pair.actualAnswer || <span className="text-gray-500 italic text-sm">No actual answer</span>}</p>
                         </div>
-                        <p className="text-[11px] text-gray-400">
+                        <p className="text-xs text-gray-400">
                           Q by {questionAuthor}{pair.actualAnswer && <> · A by {actualAuthor}</>}
                         </p>
                       </>
                     )}
                     {maskNames && (
-                      <div className="inline-flex items-center gap-1 text-[10px] text-purple-300 bg-purple-900/30 border border-purple-700/50 rounded-full px-2 py-0.5 w-fit">
+                      <div className="inline-flex items-center gap-1 text-xs text-purple-300 bg-purple-900/30 border border-purple-700/50 rounded-full px-2 py-0.5 w-fit">
                         <span>🙈</span>
                         <span>Anonymous</span>
                       </div>
@@ -167,7 +167,7 @@ export default function SummaryPhase({
                       </div>
                       <div className="flex items-center gap-2 flex-1">
                         {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
-                          <div className="flex flex-wrap gap-1 text-[10px]">
+                          <div className="flex flex-wrap gap-1 text-xs">
                             {pair.questionReactions && Object.entries(pair.questionReactions).map(([emoji, count]) => (
                               <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
                             ))}
@@ -203,7 +203,7 @@ export default function SummaryPhase({
                     <div className="summary-card__footer">
                       <div className="flex items-center gap-2 flex-1">
                         {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
-                          <div className="flex flex-wrap gap-1 text-[10px]">
+                          <div className="flex flex-wrap gap-1 text-xs">
                             {pair.questionReactions && Object.entries(pair.questionReactions).map(([emoji, count]) => (
                               <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
                             ))}
@@ -342,7 +342,7 @@ export default function SummaryPhase({
             <p id="vote-confirm-title" className="text-lg font-bold text-white mb-2">Lock in vote?</p>
             <p className="text-sm text-gray-400 mb-1">You're voting for:</p>
             <p className="text-sm text-indigo-300 font-medium mb-4 line-clamp-2">{voteConfirm.question}</p>
-            <p className="text-[10px] text-gray-500 mb-4">Authors will be revealed after you lock in.</p>
+            <p className="text-xs text-gray-500 mb-4">Authors will be revealed after you lock in.</p>
             <div className="flex gap-3">
               <button onClick={() => setVoteConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
               <button
@@ -366,12 +366,14 @@ export default function SummaryPhase({
               <div className="summary-actions__cta">
                 <button
                   onClick={() => socketRef.current?.emit("finish-voting")}
-                  className="btn-primary py-3 text-base"
+                  className="btn-primary py-3 text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10"
                 >
-                  ⚡ Finish Voting & Tally
+                  <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                  <span className="ml-2">⚡ Finish Voting & Tally</span>
                 </button>
-                <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
-                  🏠 Abandon Tournament
+                <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
+                  <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                  <span className="ml-2">🏠 Abandon Tournament</span>
                 </button>
               </div>
             </>
@@ -381,7 +383,7 @@ export default function SummaryPhase({
                 <div className="summary-toggle card">
                   <div>
                     <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                    <p className="text-[11px] text-gray-400">Hide names in next game's summary + Best Of.</p>
+                    <p className="text-xs text-gray-400">Hide names in next game's summary + Best Of.</p>
                   </div>
                   <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
                     <span />
@@ -390,7 +392,7 @@ export default function SummaryPhase({
                 <div className="summary-toggle card">
                   <div>
                     <p className="text-xs text-white font-semibold">No Self-Reading</p>
-                    <p className="text-[11px] text-gray-400">Players won't read their own content next round.</p>
+                    <p className="text-xs text-gray-400">Players won't read their own content next round.</p>
                   </div>
                   <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
                     <span />
@@ -405,8 +407,9 @@ export default function SummaryPhase({
                   🏠 New game (change number of players)
                 </button>
                 {adminKey && (
-                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn">
-                    🚫 Hide from Best Of
+                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
+                    <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                    <span className="ml-2">🚫 Hide from Best Of</span>
                   </button>
                 )}
               </div>
@@ -416,20 +419,20 @@ export default function SummaryPhase({
       ) : (
         <div className="summary-actions">
           {tournament && tournament.enabled ? (
-            <div className="card text-center py-5 px-6">
-              <p className="text-sm text-gray-200 mb-1">Waiting for votes or timer…</p>
+            <div className="card text-center py-5 px-6 animate-pulse">
+              <p className="text-base text-gray-200 mb-1 font-semibold">Waiting for votes or timer…</p>
               {tournament.votingDeadlineAt && (
                 <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="text-lg font-bold text-indigo-300" />
               )}
-              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs mt-3">
+              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-sm w-full max-w-xs mt-3">
                 Abandon game (exit to main screen)
               </button>
             </div>
           ) : (
-            <div className="card text-center py-5 px-6">
-              <p className="text-sm text-gray-200 mb-1">Please wait for the host to start a new round</p>
-              <p className="text-xs text-gray-500 mb-5">Your screen will automatically refresh</p>
-              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs w-full max-w-xs">
+            <div className="card text-center py-5 px-6 animate-pulse">
+              <p className="text-base text-gray-200 mb-1 font-semibold">Please wait for the host to start a new round</p>
+              <p className="text-sm text-gray-500 mb-5 font-semibold">Your screen will automatically refresh</p>
+              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-sm w-full max-w-xs">
                 Abandon game (exit to main screen)
               </button>
             </div>

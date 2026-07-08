@@ -130,10 +130,10 @@ export default function PerformancePhase({
               return (
                 <div className="flex justify-center gap-2 mt-2">
                   {isSelfContent && (
-                    <span className="text-[10px] text-gray-500 self-center mr-1">You wrote this — no self-reactions</span>
+                    <span className="text-xs text-gray-500 self-center mr-1">You wrote this — no self-reactions</span>
                   )}
                   {alreadyReacted && !isSelfContent && (
-                    <span className="text-[10px] text-gray-500 self-center mr-1">You reacted ✓</span>
+                    <span className="text-xs text-gray-500 self-center mr-1">You reacted ✓</span>
                   )}
                   {['❤️', '😂', '❓'].map(emoji => {
                     const count = currentCounts?.[emoji] || 0
@@ -155,7 +155,7 @@ export default function PerformancePhase({
                       >
                         {emoji}
                         {count > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{count}</span>
+                          <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{count}</span>
                         )}
                       </button>
                     )
@@ -164,17 +164,18 @@ export default function PerformancePhase({
               )
             })()}
             {isHost && (
-              <button onClick={() => setForceConfirm(true)} className="w-full active-body-text text-red-500 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-900/20 transition-colors mt-1 md:text-xs">
-                ⚡ Skip Current Turn
+              <button onClick={() => setForceConfirm(true)} className="w-full active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-3 py-3 hover:bg-red-900/20 transition-colors mt-1 md:text-xs">
+                <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                <span className="ml-2">⚡ Skip Current Turn</span>
               </button>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
+        <div className="flex-1 flex flex-col items-center justify-center text-center animate-pulse">
           <div className="text-6xl mb-4">🎭</div>
-          <h3 className="font-bubble active-heading-text font-bold text-white mb-2">Get Ready!</h3>
-          <p className="text-gray-400 active-body-text">Reading round starting soon...</p>
+          <h3 className="font-bubble active-heading-text font-bold text-white mb-2 text-2xl">Get Ready!</h3>
+          <p className="text-gray-400 active-body-text text-base font-semibold">Reading round starting soon...</p>
         </div>
       )}
     </div>

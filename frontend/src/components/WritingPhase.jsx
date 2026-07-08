@@ -23,7 +23,7 @@ export default function WritingPhase({
       {speedScoringEnabled && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5" title="Blitz Mode: Speed counts this round">
           <span className="text-xs">⚡</span>
-          <span className="text-[9px] text-amber-400 font-semibold uppercase tracking-wide hidden sm:inline">Blitz</span>
+          <span className="text-xs text-amber-400 font-semibold uppercase tracking-wide hidden sm:inline">Blitz</span>
         </div>
       )}
       {forceConfirm && (
@@ -50,7 +50,7 @@ export default function WritingPhase({
             <strong className="active-heading-text">Question Time</strong>
           </div>
           <div className="text-center active-fill-mt">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
             <h2 className="font-bubble active-heading-text font-bold text-white leading-tight">Write a Question</h2>
             <p className="active-body-text text-indigo-400 leading-tight">Must begin with "What if..."</p>
           </div>
@@ -63,12 +63,13 @@ export default function WritingPhase({
           {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
           <button onClick={submitQuestion} disabled={!question.trim() || !question.toLowerCase().startsWith("what if")} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Question</button>
           <div className="w-full active-fill-mt">
-            <div className={"flex justify-between text-[10px] mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
+            <div className={"flex justify-between text-xs mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
             <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
           </div>
           {canForceAdvance && (
-            <button onClick={() => setForceConfirm(true)} className="active-fill-mt active-body-text text-red-500 border border-red-800 rounded-lg px-4 py-2 hover:bg-red-900/20 transition-colors">
-              ⚡ Force Advance (skip waiting players)
+            <button onClick={() => setForceConfirm(true)} className="active-fill-mt active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-4 py-3 hover:bg-red-900/20 transition-colors">
+              <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+              <span className="ml-2">⚡ Force Advance (skip waiting players)</span>
             </button>
           )}
         </div>

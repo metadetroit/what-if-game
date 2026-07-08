@@ -408,3 +408,204 @@ test('mergeRoundScores tracks roundSpeedBonuses', () => {
   assert.equal(scores['Bob'].total, 6);
   assert.equal(scores['Bob'].roundSpeedBonuses[0], 1);
 });
+
+// ─── Additional Edge Cases ───
+
+test('speed scoring: exactly 20s threshold (no penalty)', () => {
+  const pairs = [
+    { pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' },
+    { pairDbId: 2, questionAuthor: 'Carol', answerAuthor: 'Dave' },
+  ];
+  const votesByPair = { 1: 2, 2: 1 };
+  const settings = {
+    speedScoringEnabled: true,
+    speedData: {
+      questionTimes: [
+        { name: 'Alice', ms: 3000 },
+        { name: 'Carol', ms: 20000 }, // Exactly 20s - no penalty
+      ],
+      answerTimes: [
+        { name: 'Bob', ms: 5000 },
+        { name: 'Dave', ms: 20000 }, // Exactly 20s - no penalty
+      ],
+      activePlayerCount: 4,
+      phaseStartedAt: 0,
+    },
+  };
+  const result = calculateRoundPoints(pairs, votesByPair, settings);
+  assert.equal(result.speedDetails.slowestQ, null);
+  assert.equal(result.speedDetails.slowestA, null);
+});
+
+test('speed scoring: exactly 4 players with slowest >20s (penalty applies)', () => {
+  const pairs = [
+    { pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' },
+    { pairDbId: 2, questionAuthor: 'Carol', answerAuthor: 'Dave' },
+  ];
+  const votesByPair = { 1: 2, 2: 1 };
+  const settings = {
+    speedScoringEnabled: true,
+    speedData: {
+      questionTimes: [
+        { name: 'Alice', ms: 3000 },
+        { name: 'Carol', ms: 21000 }, // >20s with exactly 4 players - penalty
+      ],
+      answerTimes: [
+        { name: 'Bob', ms: 5000 },
+        { name: 'Dave', ms: 22000 }, // >20s with exactly 4 players - penalty
+      ],
+      activePlayerCount: 4,
+      phaseStartedAt: 0,
+    },
+  };
+  const result = calculateRoundPoints(pairs, votesByPair, settings);
+  assert.equal(result.speedDetails.slowestQ, 'Carol');
+  assert.equal(result.speedDetails.slowestA, 'Dave');
+  assert.equal(result.scores['Carol'], 0); // 1 base - 1 penalty
+  assert.equal(result.scores['Dave'], 0); // 1 base - 1 penalty
+});
+
+test('multi-round tournament with cumulative scoring', () => {
+  const scores = {};
+  
+  // Round 1
+  const r1 = calculateRoundPoints(
+    [{ pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' }],
+    { 1: 3 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r1, 1);
+  
+  // Round 2
+  const r2 = calculateRoundPoints(
+    [{ pairDbId: 2, questionAuthor: 'Alice', answerAuthor: 'Carol' }],
+    { 2: 2 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r2, 2);
+  
+  // Round 3
+  const r3 = calculateRoundPoints(
+    [{ pairDbId: 3, questionAuthor: 'Bob', answerAuthor: 'Dave' }],
+    { 3: 4 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r3, 3);
+  
+  // Alice: R1(5) + R2(4) = 9
+  // Bob: R1(5) + R3(6) = 11
+  // Carol: R2(2) = 2
+  // Dave: R3(6) = 6 (4 votes + 2 win bonus)
+  assert.equal(scores['Alice'].total, 9);
+  assert.equal(scores['Bob'].total, 11);
+  assert.equal(scores['Carol'].total, 2);
+  assert.equal(scores['Dave'].total, 6);
+  assert.equal(scores['Alice'].firstPlaces, 2);
+  assert.equal(scores['Bob'].firstPlaces, 1);
+});
+
+test('player leaves mid-tournament and rejoins', () => {
+  const scores = {};
+  
+  // Round 1: All players
+  const r1 = calculateRoundPoints(
+    [
+      { pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' },
+      { pairDbId: 2, questionAuthor: 'Carol', answerAuthor: 'Dave' },
+    ],
+    { 1: 3, 2: 2 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r1, 1);
+  
+  // Mark Carol as left
+  scores['Carol'].leftGame = true;
+  
+  // Round 2: Carol rejoins
+  const r2 = calculateRoundPoints(
+    [{ pairDbId: 3, questionAuthor: 'Carol', answerAuthor: 'Alice' }],
+    { 3: 2 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r2, 2);
+  
+  // Carol should have leftGame: true but still get points from round 2
+  assert.equal(scores['Carol'].leftGame, true);
+  assert.equal(scores['Carol'].total, 6); // R1(2) + R2(4)
+  assert.equal(scores['Carol'].joinedAtRound, 1);
+});
+
+test('zero-vote round in tournament context', () => {
+  const scores = {};
+  
+  // Round 1: Normal round
+  const r1 = calculateRoundPoints(
+    [{ pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' }],
+    { 1: 3 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r1, 1);
+  
+  // Round 2: Zero votes
+  const r2 = calculateRoundPoints(
+    [{ pairDbId: 2, questionAuthor: 'Alice', answerAuthor: 'Bob' }],
+    { 2: 0 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r2, 2);
+  
+  // Alice: R1(5) + R2(0) = 5
+  // Bob: R1(5) + R2(0) = 5
+  assert.equal(scores['Alice'].total, 5);
+  assert.equal(scores['Bob'].total, 5);
+  // Zero-vote rounds may not add to roundScores array
+  assert.equal(scores['Alice'].roundScores.length, 1);
+  assert.equal(scores['Bob'].roundScores.length, 1);
+});
+
+test('multiple fluke wins in single round', () => {
+  const pairs = [
+    { pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Alice' },
+    { pairDbId: 2, questionAuthor: 'Bob', answerAuthor: 'Bob' },
+  ];
+  const result = calculateRoundPoints(pairs, { 1: 3, 2: 3 }, { speedScoringEnabled: false });
+  // Both are fluke winners with tied votes
+  // Alice: 3*2 + 2 + 3 = 11
+  // Bob: 3*2 + 2 + 3 = 11
+  assert.equal(result.scores['Alice'], 11);
+  assert.equal(result.scores['Bob'], 11);
+  assert.deepEqual(result.winningPairIds, [1, 2]);
+  assert.equal(result.roundWinnerDetails[0].isFluke, true);
+  assert.equal(result.roundWinnerDetails[1].isFluke, true);
+});
+
+test('player joins mid-tournament (late joiner)', () => {
+  const scores = {};
+  
+  // Round 1: Original players
+  const r1 = calculateRoundPoints(
+    [{ pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' }],
+    { 1: 3 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r1, 1);
+  
+  // Round 2: New player joins
+  const r2 = calculateRoundPoints(
+    [
+      { pairDbId: 2, questionAuthor: 'Alice', answerAuthor: 'Carol' },
+      { pairDbId: 3, questionAuthor: 'Bob', answerAuthor: 'Dave' },
+    ],
+    { 2: 2, 3: 1 },
+    { speedScoringEnabled: false }
+  );
+  mergeRoundScores(scores, r2, 2);
+  
+  // Carol and Dave joined at round 2
+  assert.equal(scores['Carol'].joinedAtRound, 2);
+  assert.equal(scores['Dave'].joinedAtRound, 2);
+  assert.equal(scores['Carol'].roundScores[0], undefined);
+  assert.equal(scores['Dave'].roundScores[0], undefined);
+  assert.equal(scores['Alice'].joinedAtRound, 1);
+  assert.equal(scores['Bob'].joinedAtRound, 1);
+});

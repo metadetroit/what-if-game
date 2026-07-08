@@ -983,15 +983,15 @@ function App() {
     const remainingPlayers = playerStatuses.length - visiblePlayers.length
 
     return (
-    <div className="waiting-panel waiting-panel--compact">
+    <div className="waiting-panel waiting-panel--compact animate-pulse">
       <div className="waiting-panel__top">
         <div>
-          <p className="summary-pill">Waiting Room</p>
-          <h3 className="waiting-panel__title">{getWaitingMessage(phase, remainingNames)}</h3>
+          <p className="summary-pill text-sm font-bold">Waiting Room</p>
+          <h3 className="waiting-panel__title text-base font-bold">{getWaitingMessage(phase, remainingNames)}</h3>
         </div>
-        <span className="waiting-panel__count">{progress.submitted}/{progress.total}</span>
+        <span className="waiting-panel__count text-base font-bold">{progress.submitted}/{progress.total}</span>
       </div>
-      {getWaitingTip(remainingNames) && (<p className="waiting-panel__tip">{getWaitingTip(remainingNames)}</p>)}
+      {getWaitingTip(remainingNames) && (<p className="waiting-panel__tip text-sm font-semibold">{getWaitingTip(remainingNames)}</p>)}
       {playerStatuses.length > 0 && (
         <div className="waiting-panel__players">
           {visiblePlayers.map((p, i) => (
@@ -1003,13 +1003,13 @@ function App() {
                 {showLastSubmitterIndicator && lastQuestionSubmitter && p.name === lastQuestionSubmitter && (
                   <span className="text-lg" title={phase === 'writing' ? "You were last to submit your question" : "Last question submitter warning active"}><span className="sr-only">{phase === 'writing' ? "You were last to submit your question" : "Last question submitter"}</span>⏰</span>
                 )}
-                <span className={p.submitted ? "text-green-300 truncate" : "text-gray-300 truncate"}>{p.name}</span>
+                <span className={p.submitted ? "text-green-300 truncate text-sm font-semibold" : "text-gray-300 truncate text-sm font-semibold"}>{p.name}</span>
               </div>
-              <span className={p.submitted ? "text-green-400" : "text-gray-400"}>{p.submitted ? "✓ Done" : phase === 'writing' ? "writing..." : "answering..."}</span>
+              <span className={p.submitted ? "text-green-400 text-sm font-semibold" : "text-gray-400 text-sm font-semibold"}>{p.submitted ? "✓ Done" : phase === 'writing' ? "writing..." : "answering..."}</span>
             </div>
           ))}
           {remainingPlayers > 0 && (
-            <div className="waiting-panel__more">+{remainingPlayers} more player{remainingPlayers === 1 ? "" : "s"}</div>
+            <div className="waiting-panel__more text-sm font-semibold">+{remainingPlayers} more player{remainingPlayers === 1 ? "" : "s"}</div>
           )}
         </div>
       )}

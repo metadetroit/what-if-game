@@ -73,7 +73,7 @@ export default function ScoreboardView({
                     <span className="text-xs text-indigo-300">{winner.questionAuthor} & {winner.answerAuthor}</span>
                   </div>
                 )}
-                <p className="text-[10px] text-gray-500 mt-1">{winner.votes} vote{winner.votes === 1 ? "" : "s"}{speed !== 0 && <span className="text-amber-400"> · ⚡{speed > 0 ? "+" : ""}{speed} speed</span>}</p>
+                <p className="text-xs text-gray-500 mt-1">{winner.votes} vote{winner.votes === 1 ? "" : "s"}{speed !== 0 && <span className="text-amber-400"> · ⚡{speed > 0 ? "+" : ""}{speed} speed</span>}</p>
               </div>
             )
           })}
@@ -83,38 +83,38 @@ export default function ScoreboardView({
       {/* Round Highlights — Speed badges (only if blitz was enabled for this round) */}
       {speedEnabled && speedDetails && (
         <div className="card mb-3 py-2 px-3">
-          <p className="text-[10px] text-amber-400 uppercase tracking-widest mb-1.5 text-center">⚡ Round Highlights</p>
+          <p className="text-xs text-amber-400 uppercase tracking-widest mb-1.5 text-center">⚡ Round Highlights</p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             {speedDetails.fastestQ && (
               <div className="inline-flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5">
                 <span className="text-xs">⚡</span>
-                <span className="text-[10px] text-amber-300 font-semibold">Fastest Q</span>
-                <span className="text-[10px] text-amber-200">{speedDetails.fastestQ}</span>
+                <span className="text-xs text-amber-300 font-semibold">Fastest Q</span>
+                <span className="text-xs text-amber-200">{speedDetails.fastestQ}</span>
               </div>
             )}
             {speedDetails.fastestA && (
               <div className="inline-flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5">
                 <span className="text-xs">⚡</span>
-                <span className="text-[10px] text-amber-300 font-semibold">Fastest A</span>
-                <span className="text-[10px] text-amber-200">{speedDetails.fastestA}</span>
+                <span className="text-xs text-amber-300 font-semibold">Fastest A</span>
+                <span className="text-xs text-amber-200">{speedDetails.fastestA}</span>
               </div>
             )}
             {speedDetails.slowestQ && (
               <div className="inline-flex items-center gap-1 bg-gray-800 border border-gray-600/40 rounded-full px-2 py-0.5">
                 <span className="text-xs">🐢</span>
-                <span className="text-[10px] text-gray-400 font-semibold">Slowest Q</span>
-                <span className="text-[10px] text-gray-300">{speedDetails.slowestQ}</span>
+                <span className="text-xs text-gray-400 font-semibold">Slowest Q</span>
+                <span className="text-xs text-gray-300">{speedDetails.slowestQ}</span>
               </div>
             )}
             {speedDetails.slowestA && (
               <div className="inline-flex items-center gap-1 bg-gray-800 border border-gray-600/40 rounded-full px-2 py-0.5">
                 <span className="text-xs">🐢</span>
-                <span className="text-[10px] text-gray-400 font-semibold">Slowest A</span>
-                <span className="text-[10px] text-gray-300">{speedDetails.slowestA}</span>
+                <span className="text-xs text-gray-400 font-semibold">Slowest A</span>
+                <span className="text-xs text-gray-300">{speedDetails.slowestA}</span>
               </div>
             )}
             {!speedDetails.fastestQ && !speedDetails.fastestA && !speedDetails.slowestQ && !speedDetails.slowestA && (
-              <span className="text-[10px] text-gray-500">No speed data this round</span>
+              <span className="text-xs text-gray-500">No speed data this round</span>
             )}
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function ScoreboardView({
             return (
               <React.Fragment key={s.name}>
                 {showSeparator && (
-                  <div className="text-center text-[10px] text-gray-600 py-1">· · ·</div>
+                  <div className="text-center text-xs text-gray-600 py-1">· · ·</div>
                 )}
                 <div className={
                   "flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all duration-300 " +
@@ -152,7 +152,7 @@ export default function ScoreboardView({
                     <p className={"text-sm font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
                       {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                     </p>
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-xs text-gray-500">
                       {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes
                       {speedEnabled && speedBonus !== 0 && <span className={"ml-1 " + (speedBonus > 0 ? "text-amber-400" : "text-gray-500")}>· ⚡{speedBonus > 0 ? "+" : ""}{speedBonus}</span>}
                     </p>
@@ -162,7 +162,7 @@ export default function ScoreboardView({
                   )}
                   <div className="text-right shrink-0">
                     <p className="text-xl font-black text-amber-300">{s.total}</p>
-                    <p className="text-[9px] text-gray-500">pts</p>
+                    <p className="text-xs text-gray-500">pts</p>
                   </div>
                 </div>
               </React.Fragment>
@@ -183,7 +183,7 @@ export default function ScoreboardView({
         <div className="mt-2">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="w-full text-center text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors py-1"
+            className="w-full text-center text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-1"
           >
             {showHistory ? "▾ Hide Scoring History" : "▸ Show Scoring History"}
           </button>
@@ -196,7 +196,7 @@ export default function ScoreboardView({
                 const baseScore = roundScore - speedBonus
                 const isMe = s.name === playerName
                 return (
-                  <div key={s.name} className={"flex items-center justify-between text-[10px] py-0.5 " + (isMe ? "text-indigo-300" : "text-gray-400")}>
+                  <div key={s.name} className={"flex items-center justify-between text-xs py-0.5 " + (isMe ? "text-indigo-300" : "text-gray-400")}>
                     <span className="truncate max-w-[80px]">{s.name}</span>
                     <span className="flex items-center gap-2">
                       <span className="text-gray-500">Base: {baseScore > 0 ? "+" : ""}{baseScore}</span>
@@ -215,15 +215,16 @@ export default function ScoreboardView({
         <div className="summary-actions">
           <button
             onClick={() => socketRef.current?.emit(isFinalRound ? "next-round" : "next-round")}
-            className="btn-primary py-3 text-base"
+            className="btn-primary py-3 text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10"
           >
-            {isFinalRound ? "🏆 See Final Results →" : "Next Round →"}
+            <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+            <span className="ml-2">{isFinalRound ? "🏆 See Final Results →" : "Next Round →"}</span>
           </button>
         </div>
       ) : (
         <div className="summary-actions">
-          <div className="card text-center py-5 px-6">
-            <p className="text-sm text-gray-200 mb-1">Waiting for host or timer…</p>
+          <div className="card text-center py-5 px-6 animate-pulse">
+            <p className="text-base text-gray-200 mb-1 font-semibold">Waiting for host or timer…</p>
             <Countdown deadlineAt={deadlineAt} serverNow={serverNow} className="text-lg font-bold text-indigo-300" />
           </div>
         </div>

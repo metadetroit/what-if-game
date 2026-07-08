@@ -107,7 +107,7 @@
   }
 
   .summary-pill {
-    @apply text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-1;
+    @apply text-xs uppercase tracking-[0.3em] text-gray-400 mb-1;
   }
 
   .summary-pill--accent {
@@ -167,11 +167,12 @@
   }
 
   .summary-meta-note {
-    @apply text-[10px] text-gray-400 mt-0.5 leading-tight;
+    @apply text-xs text-gray-400 mt-0.5 leading-tight;
   }
 
   .summary-scroll {
-    @apply flex-1;
+    @apply flex-1 overflow-x-auto;
+    touch-action: pan-x pan-y;
   }
 
   .summary-grid {
@@ -195,7 +196,7 @@
   }
 
   .summary-paired__label {
-    @apply text-[10px] uppercase tracking-[0.3em] text-indigo-300 mb-1;
+    @apply text-xs uppercase tracking-[0.3em] text-indigo-300 mb-1;
   }
 
   .summary-paired__answer {
@@ -203,7 +204,7 @@
   }
 
   .summary-authors {
-    @apply text-[11px] text-gray-400 flex flex-wrap gap-2;
+    @apply text-xs text-gray-400 flex flex-wrap gap-2;
   }
 
   .summary-actual {
@@ -211,7 +212,7 @@
   }
 
   .summary-actual__label {
-    @apply text-[11px] text-emerald-300 uppercase tracking-[0.3em];
+    @apply text-xs text-emerald-300 uppercase tracking-[0.3em];
   }
 
   .summary-actual__text {
@@ -219,7 +220,7 @@
   }
 
   .summary-actual__author {
-    @apply text-[11px] text-gray-500 mt-1;
+    @apply text-xs text-gray-500 mt-1;
   }
 
   .summary-card__footer {
@@ -243,7 +244,7 @@
   }
 
   .you-badge {
-    @apply text-[10px] bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded-full border border-amber-400/40;
+    @apply text-xs bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded-full border border-amber-400/40;
   }
 
   .summary-card--active {
@@ -259,7 +260,7 @@
   }
 
   .phase-banner span {
-    @apply text-[10px] uppercase tracking-[0.25em] text-indigo-300;
+    @apply text-xs uppercase tracking-[0.25em] text-indigo-300;
   }
 
   .phase-banner strong {
@@ -320,11 +321,11 @@
   }
 
   .host-nudge span {
-    @apply text-[10px] text-red-100/60 leading-tight;
+    @apply text-xs text-red-100/60 leading-tight;
   }
 
   .host-nudge button {
-    @apply shrink-0 rounded-lg border border-red-700 px-3 py-2 text-[11px] font-bold text-red-200 hover:bg-red-900/30;
+    @apply shrink-0 rounded-lg border border-red-700 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-900/30;
   }
 
   .lobby-ready {
@@ -433,7 +434,7 @@
   }
 
   .game-container--active .phase-banner span {
-    @apply text-[9px] md:text-[10px] tracking-[0.35em] text-fuchsia-200/80;
+    @apply text-xs tracking-[0.35em] text-fuchsia-200/80;
   }
 
   .game-container--active .phase-banner strong {
