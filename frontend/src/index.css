@@ -481,10 +481,22 @@
   }
 
   .lobby-section-label {
-    @apply text-xs md:text-sm uppercase tracking-[0.3em] font-black text-white/50 mb-3 flex items-center gap-2;
+    @apply text-xs md:text-sm uppercase tracking-[0.3em] font-black text-white/50 mb-3 flex items-center gap-2 justify-between;
   }
 
-  .lobby-player-grid {
+  .tournament-summary-button {
+    @apply flex items-center gap-2 text-[10px] text-white/60 uppercase tracking-[0.3em] text-xs;
+  }
+
+  .tournament-summary-button__switch {
+    @apply px-3 py-1 rounded-full border border-white/20 text-[9px] text-white/60 font-black tracking-widest;
+  }
+
+  .tournament-summary-button__switch--on {
+    @apply bg-indigo-500/20 border-indigo-500/40 text-indigo-100;
+  }
+
+  .lobby-player-strip {
     @apply flex flex-wrap gap-3 mb-8;
   }
 
@@ -529,7 +541,28 @@
   }
 
   .lobby-settings-grid {
-    @apply flex flex-wrap gap-3 mb-8;
+    @apply flex flex-wrap gap-3 mb-4;
+  }
+
+  .tournament-reveal {
+    @apply bg-white/5 border border-white/10 rounded-[2rem] p-5 mb-6 backdrop-blur-xl shadow-2xl shadow-black/30 transition-all duration-300 overflow-hidden;
+  }
+
+  .tournament-reveal__header {
+    @apply flex items-center justify-between mb-4 text-xs uppercase tracking-[0.3em] text-white/50;
+  }
+
+  .tournament-reveal__meta {
+    @apply text-[10px] text-indigo-200 font-semibold tracking-[0.2em];
+  }
+
+  .tournament-reveal-content {
+    max-height: 0;
+    @apply overflow-hidden transition-all duration-300;
+  }
+
+  .tournament-reveal-content--open {
+    max-height: 1000px;
   }
 
   .lobby-setting-card {

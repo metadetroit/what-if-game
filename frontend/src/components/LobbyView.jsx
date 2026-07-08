@@ -31,6 +31,7 @@ export default function LobbyView({
   tournamentConfig,
   setTournamentConfig
 }) {
+  const [revealOpen, setRevealOpen] = useState(false)
   const isMobile = useIsMobile()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -67,7 +68,6 @@ export default function LobbyView({
         </div>
       )}
 
-      {/* Room Code Header */}
       <div className="lobby-header">
         <p className="lobby-room-label">Room Code</p>
         <h1 className="lobby-room-code">{roomCode}</h1>
@@ -97,17 +97,20 @@ export default function LobbyView({
         )}
       </div>
 
-      {/* Players Section */}
       <div className="lobby-section-label">
-        <span>Players</span>
-        <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded-full text-white/60">{players.length} / 15</span>
+        <span>Players ({players.length}/15)</span>
+        <button
+          className="tournament-summary-button"
+          onClick={() => setRevealOpen(v => !v)}
+          aria-expanded={revealOpen}
+        >
+          <span>{tournamentConfig.enabled ? `${tournamentConfig.targetRounds}× rounds · ${tournamentConfig.votingTimerSeconds}s votes` : "Tournament Off"}</span>
+          <span className={`tournament-summary-button__switch ${tournamentConfig.enabled ? "tournament-summary-button__switch--on" : ""}`}>{tournamentConfig.enabled ? "ON" : "OFF"}</span>
+        </button>
       </div>
-      <div className="lobby-player-grid">
+      <div className="lobby-player-strip">
         {players.map((player, index) => (
-          <div
-            key={player.id}
-            className={`lobby-player-card ${player.id === socket?.id ? "lobby-player-card--me" : "lobby-player-card--other"}`}
-          >
+          <div key={player.id} className={`lobby-player-card ${player.id === socket?.id ? "lobby-player-card--me" : "lobby-player-card--other"}`}>
             {isHost && player.id !== socket?.id && (
               <button
                 onClick={() => setKickConfirm({ id: player.id, name: player.name })}
@@ -131,104 +134,96 @@ export default function LobbyView({
         ))}
       </div>
 
-      {/* Game Rules Section */}
-      <div className="lobby-section-label">
-        <span>Game Rules</span>
-      </div>
-      <div className="lobby-settings-grid">
-        {isHost ? (
-          <>
-            {/* Anonymous Mode */}
-            <div className="lobby-setting-card">
-              <div className="lobby-setting-header">
-                <div>
-                  <p className="lobby-setting-title">Anonymous Mode</p>
-                  <p className="lobby-setting-desc mt-1">Hide names in results</p>
+      <div className={`tournament-reveal ${revealOpen ? "tournament-reveal--open" : ""}`}>
+        <div className="tournament-reveal__header">
+          <span>Tournament Controls</span>
+          <span className="tournament-reveal__meta">Rounds · Votes · Blitz</span>
+        </div>
+        <div className="lobby-settings-grid">
+          {isHost ? (
+            <>
+              <div className="lobby-setting-card">
+                <div className="lobby-setting-header">
+                  <div>
+                    <p className="lobby-setting-title">Anonymous Mode</p>
+                    <p className="lobby-setting-desc mt-1">Hide names in results</p>
+                  </div>
+                  <button
+                    onClick={() => socketRef.current?.emit("toggle-anonymous")}
+                    className={`toggle-switch ${anonymousMode ? "toggle-switch--on" : ""}`}
+                  >
+                    <span />
+                  </button>
                 </div>
-                <button
-                  onClick={() => socketRef.current?.emit("toggle-anonymous")}
-                  className={`toggle-switch ${anonymousMode ? "toggle-switch--on" : ""}`}
-                >
-                  <span />
-                </button>
               </div>
-            </div>
-
-            {/* No Self-Reading */}
-            <div className="lobby-setting-card">
-              <div className="lobby-setting-header">
-                <div>
-                  <p className="lobby-setting-title">No Self-Reading</p>
-                  <p className="lobby-setting-desc mt-1">Don't read your own content</p>
+              <div className="lobby-setting-card">
+                <div className="lobby-setting-header">
+                  <div>
+                    <p className="lobby-setting-title">No Self-Reading</p>
+                    <p className="lobby-setting-desc mt-1">Don't read your own content</p>
+                  </div>
+                  <button
+                    onClick={() => setNoSelfReading(!noSelfReading)}
+                    className={`toggle-switch ${noSelfReading ? "toggle-switch--on" : ""}`}
+                  >
+                    <span />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setNoSelfReading(!noSelfReading)}
-                  className={`toggle-switch ${noSelfReading ? "toggle-switch--on" : ""}`}
-                >
-                  <span />
-                </button>
               </div>
-            </div>
-
-            {/* Tournament Mode */}
-            <div className="lobby-setting-card lobby-setting-card--tournament">
-              <div className="lobby-setting-header">
-                <button
-                  onClick={() => setSettingsOpen(true)}
-                  className="flex-1 text-left"
-                >
-                  <p className="lobby-setting-title">Tournament Mode</p>
-                  <p className="lobby-setting-desc mt-1 text-indigo-300">
-                    {tournamentConfig.enabled ? `${tournamentConfig.targetRounds} Rounds · Blitz ${blitzLabel}` : "Off"}
-                  </p>
-                </button>
-                <button
-                  onClick={toggleTournamentEnabled}
-                  className={`toggle-switch ${tournamentConfig.enabled ? "toggle-switch--on" : ""}`}
-                >
-                  <span />
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Non-host: Anonymous */}
-            <div className="lobby-setting-card">
-              <div className="lobby-setting-header">
-                <div>
-                  <p className="lobby-setting-title">Anonymous Results</p>
-                  <p className="lobby-setting-desc mt-1">Hide names in results</p>
+              <div className="lobby-setting-card lobby-setting-card--tournament">
+                <div className="lobby-setting-header">
+                  <button
+                    onClick={() => setSettingsOpen(true)}
+                    className="flex-1 text-left"
+                  >
+                    <p className="lobby-setting-title">Tournament Mode</p>
+                    <p className="lobby-setting-desc mt-1 text-indigo-300">
+                      {tournamentConfig.enabled ? `${tournamentConfig.targetRounds} Rounds · Blitz ${blitzLabel}` : "Off"}
+                    </p>
+                  </button>
+                  <button
+                    onClick={toggleTournamentEnabled}
+                    className={`toggle-switch ${tournamentConfig.enabled ? "toggle-switch--on" : ""}`}
+                  >
+                    <span />
+                  </button>
                 </div>
-                <span className="lobby-setting-status">{anonymousMode ? "ENABLED" : "DISABLED"}</span>
               </div>
-            </div>
-
-            {/* Non-host: Self-Reading */}
-            <div className="lobby-setting-card">
-              <div className="lobby-setting-header">
-                <div>
-                  <p className="lobby-setting-title">Self-Reading</p>
-                  <p className="lobby-setting-desc mt-1">Read your own content</p>
+            </>
+          ) : (
+            <>
+              <div className="lobby-setting-card">
+                <div className="lobby-setting-header">
+                  <div>
+                    <p className="lobby-setting-title">Anonymous Results</p>
+                    <p className="lobby-setting-desc mt-1">Hide names in results</p>
+                  </div>
+                  <span className="lobby-setting-status">{anonymousMode ? "ENABLED" : "DISABLED"}</span>
                 </div>
-                <span className="lobby-setting-status">{noSelfReading ? "DISABLED" : "ENABLED"}</span>
               </div>
-            </div>
-
-            {/* Non-host: Tournament */}
-            <div className={`lobby-setting-card ${tournamentConfig.enabled ? "lobby-setting-card--tournament" : ""}`}>
-              <div className="lobby-setting-header">
-                <div>
-                  <p className="lobby-setting-title">Tournament Mode</p>
-                  <p className="lobby-setting-desc mt-1">
-                    {tournamentConfig.enabled ? `${tournamentConfig.targetRounds} Rounds · Blitz ${blitzLabel}` : "Off"}
-                  </p>
+              <div className="lobby-setting-card">
+                <div className="lobby-setting-header">
+                  <div>
+                    <p className="lobby-setting-title">Self-Reading</p>
+                    <p className="lobby-setting-desc mt-1">Read your own content</p>
+                  </div>
+                  <span className="lobby-setting-status">{noSelfReading ? "DISABLED" : "ENABLED"}</span>
                 </div>
-                <span className="lobby-setting-status">{tournamentConfig.enabled ? "ENABLED" : "DISABLED"}</span>
               </div>
-            </div>
-          </>
-        )}
+              <div className={`lobby-setting-card ${tournamentConfig.enabled ? "lobby-setting-card--tournament" : ""}`}>
+                <div className="lobby-setting-header">
+                  <div>
+                    <p className="lobby-setting-title">Tournament Mode</p>
+                    <p className="lobby-setting-desc mt-1">
+                      {tournamentConfig.enabled ? `${tournamentConfig.targetRounds} Rounds · Blitz ${blitzLabel}` : "Off"}
+                    </p>
+                  </div>
+                  <span className="lobby-setting-status">{tournamentConfig.enabled ? "ENABLED" : "DISABLED"}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Tournament Settings Bottom Sheet */}
