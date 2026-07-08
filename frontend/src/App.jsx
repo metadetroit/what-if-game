@@ -1378,7 +1378,7 @@ function App() {
   }
 
   return (
-    <div className="h-dvh overflow-hidden bg-gradient-to-br from-gray-950 to-gray-900 relative">
+    <div className="min-h-dvh bg-gradient-to-br from-gray-950 to-gray-900 relative">
       {notice && (
         <div
           className={"notice-banner " + (notice.tone === "success" ? "notice-banner--success" : notice.tone === "warn" ? "notice-banner--warn" : "notice-banner--info")}

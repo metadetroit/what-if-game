@@ -424,8 +424,13 @@ export default function LobbyView({
 
   const TopBar = () => (
     <div className="lobby-top-bar">
-      <div className="lobby-logo">
-        <span>F</span><span>l</span><span>u</span><span>k</span><span>e</span><span>!</span>
+      <div className="lobby-logo font-bubble glow-title">
+        <span style={{ color: "#c026d3" }}>F</span>
+        <span style={{ color: "#f97316" }}>l</span>
+        <span style={{ color: "#facc15" }}>u</span>
+        <span style={{ color: "#f43f5e" }}>k</span>
+        <span style={{ color: "#a855f7" }}>e</span>
+        <span style={{ color: "#facc15" }} className="ml-1 animate-pop-wiggle">!</span>
       </div>
       <div className="flex items-center gap-2">
         <button onClick={copyInviteLink} className="lobby-icon-btn text-sm font-bold px-4" style={{ width: "auto" }}>Copy Link</button>
@@ -458,7 +463,7 @@ export default function LobbyView({
 
   // ─── Desktop Layout ───
   const DesktopLayout = () => (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col">
       <TopBar />
       <div className="lobby-desktop-grid">
         <div className="lobby-desktop-left lobby-scroll space-y-4 pr-2">
