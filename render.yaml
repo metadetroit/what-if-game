@@ -3,8 +3,8 @@ services:
   - type: web
     name: what-if-game-backend
     runtime: node
-    buildCommand: npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend
-    startCommand: npm start --prefix backend
+    buildCommand: cd .. && npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend
+    startCommand: npm start
     envVars:
       - key: PORT
         value: 10000
