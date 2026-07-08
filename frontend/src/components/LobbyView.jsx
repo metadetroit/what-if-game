@@ -544,7 +544,7 @@ export default function LobbyView({
       <div className="lobby-scroll px-4 pb-6 space-y-4">
         <TournamentBadge />
         <Roster />
-        <HouseRulesSummary />
+        <GameSettingsSummary />
       </div>
       <div className="px-4 py-3 z-40" style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(12px)", borderTop: "1px solid var(--glass-border)" }}>
         {isHost ? <StartButton /> : <WaitingIndicator />}
