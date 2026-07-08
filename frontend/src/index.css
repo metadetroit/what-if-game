@@ -525,6 +525,35 @@
     @apply flex items-center justify-between gap-3 px-4 py-3 z-30;
   }
 
+  @media (max-width: 640px) {
+    .lobby-top-bar {
+      @apply flex-col items-stretch gap-3;
+    }
+    .lobby-top-bar > *:not(.lobby-room-code-pill) {
+      @apply flex items-center justify-between;
+    }
+  }
+
+  .lobby-room-code-pill {
+    @apply flex flex-col items-center justify-center px-5 py-2 cursor-pointer transition-transform active:scale-95;
+    background: linear-gradient(90deg, var(--color-yellow) 0%, var(--color-orange) 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
+    min-height: 56px;
+  }
+
+  .lobby-room-code-pill__label {
+    @apply text-[10px] font-black uppercase tracking-[0.2em];
+    color: #2A1200;
+    line-height: 1;
+  }
+
+  .lobby-room-code-pill__code {
+    @apply font-black uppercase tracking-[0.1em] leading-none mt-0.5;
+    font-size: clamp(24px, 4vw, 32px);
+    color: #2A1200;
+  }
+
   .lobby-logo {
     @apply font-black text-xl tracking-tight;
   }

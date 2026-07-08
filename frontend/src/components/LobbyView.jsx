@@ -105,6 +105,18 @@ export default function LobbyView({
 
   // ─── Sub-components ───
 
+  const RoomCodePill = () => (
+    <div 
+      className="lobby-room-code-pill"
+      onClick={copyInviteLink} 
+      role="button" 
+      tabIndex={0}
+    >
+      <span className="lobby-room-code-pill__label">ROOM CODE</span>
+      <span className="lobby-room-code-pill__code">{roomCode}</span>
+    </div>
+  )
+
   const RoomCodeHero = () => (
     <div className="lobby-room-hero" onClick={copyInviteLink} role="button" tabIndex={0}>
       <span className="lobby-room-hero__label">Room Code</span>
@@ -432,6 +444,7 @@ export default function LobbyView({
         <span style={{ color: "#a855f7" }}>e</span>
         <span style={{ color: "#facc15" }} className="ml-1 animate-pop-wiggle">!</span>
       </div>
+      <RoomCodePill />
       <div className="flex items-center gap-2">
         <button onClick={copyInviteLink} className="lobby-icon-btn text-sm font-bold px-4" style={{ width: "auto" }}>Copy Link</button>
         <button onClick={handleSoundToggle} className="lobby-icon-btn" title={soundMuted ? "Unmute" : "Mute"} aria-label={soundMuted ? "Unmute" : "Mute"}>
@@ -467,7 +480,6 @@ export default function LobbyView({
       <TopBar />
       <div className="lobby-desktop-grid">
         <div className="lobby-desktop-left lobby-scroll space-y-4 pr-2">
-          <RoomCodeHero />
           <TournamentBadge />
           <Roster />
         </div>
