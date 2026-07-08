@@ -294,12 +294,12 @@ export default function LobbyView({
       ) : (
         <>
           <div className="flex items-center justify-between gap-4">
-            <div className="font-bold text-sm text-white">Anonymous Results</div>
+            <div className="font-bold text-sm text-white">Anonymous Mode</div>
             <span className="text-xs font-black" style={{ color: anonymousMode ? "var(--color-green)" : "var(--text-muted)" }}>{anonymousMode ? "ON" : "OFF"}</span>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <div className="font-bold text-sm text-white">Self-Reading</div>
-            <span className="text-xs font-black" style={{ color: noSelfReading ? "var(--text-muted)" : "var(--color-green)" }}>{noSelfReading ? "OFF" : "ON"}</span>
+            <div className="font-bold text-sm text-white">No Self-Reading</div>
+            <span className="text-xs font-black" style={{ color: noSelfReading ? "var(--color-green)" : "var(--text-muted)" }}>{noSelfReading ? "ON" : "OFF"}</span>
           </div>
           <div className="flex items-center justify-between gap-4">
             <div className="font-bold text-sm text-white">Tournament Mode</div>
@@ -458,8 +458,7 @@ export default function LobbyView({
   const MobileLayout = () => (
     <div className="flex flex-col h-full">
       <TopBar />
-      <div className="lobby-scroll px-4 pb-4 space-y-4">
-        <RoomCodeHero />
+      <div className="lobby-scroll px-4 pb-6 space-y-4">
         <TournamentBadge />
         <Roster />
         <GameSettingsPanel />
@@ -484,7 +483,7 @@ export default function LobbyView({
           <Roster />
         </div>
         <div className="lobby-desktop-right space-y-4">
-          <div className="flex-1 lobby-scroll space-y-4 pl-2">
+          <div className="flex-1 lobby-scroll space-y-4 pl-2 pb-6">
             <GameSettingsPanel />
             {tournamentConfig.enabled && isHost && <TournamentDetails />}
           </div>

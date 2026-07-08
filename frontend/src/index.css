@@ -557,6 +557,11 @@
   .lobby-logo {
     @apply font-black text-xl tracking-tight;
   }
+  @media (max-width: 640px) {
+    .lobby-logo {
+      @apply text-lg;
+    }
+  }
 
   .lobby-icon-btn {
     @apply w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95;
@@ -602,11 +607,12 @@
   }
 
   .lobby-player-grid {
-    @apply grid grid-cols-2 gap-3;
+    @apply grid gap-3;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  @media (min-width: 1024px) {
+  @media (max-width: 640px) {
     .lobby-player-grid {
-      @apply grid-cols-2;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
