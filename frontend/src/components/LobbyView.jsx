@@ -54,7 +54,7 @@ export default function LobbyView({
   const tournamentSummary = `🏆 ${tournamentConfig.targetRounds} Rounds · ${tournamentConfig.votingTimerSeconds}s Votes · Blitz: ${blitzLabel}`
 
   const copyInviteLink = () => {
-    const url = `${window.location.origin}?room=${roomCode}`
+    const url = `https://playfluke.com?room=${roomCode}`
     if (typeof navigator !== "undefined" && typeof navigator.share === "function" && isMobile) {
       navigator.share({ title: "Fluke!", text: "Join my Fluke game!", url }).catch(() => {})
     } else {
