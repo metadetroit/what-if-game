@@ -467,11 +467,7 @@ export default function LobbyView({
       <TopBar />
       <div className="lobby-desktop-grid">
         <div className="lobby-desktop-left lobby-scroll space-y-4 pr-2">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <RoomCodeHero />
-            </div>
-          </div>
+          <RoomCodeHero />
           <TournamentBadge />
           <Roster />
         </div>

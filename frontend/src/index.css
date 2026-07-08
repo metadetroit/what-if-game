@@ -541,7 +541,7 @@
   }
 
   .lobby-room-hero {
-    @apply flex flex-col items-center justify-center text-center px-6 py-5 mx-4;
+    @apply flex flex-col items-center justify-center text-center px-6 py-5;
     background: linear-gradient(90deg, var(--color-yellow) 0%, var(--color-orange) 100%);
     border-radius: 28px;
     box-shadow: 0 12px 40px rgba(249, 115, 22, 0.35);
@@ -807,7 +807,7 @@
   }
 
   .lobby-scroll {
-    @apply flex-1 overflow-y-auto;
+    @apply flex-1 overflow-y-auto overflow-x-hidden;
     scrollbar-width: thin;
   }
   .lobby-scroll::-webkit-scrollbar {
@@ -826,7 +826,7 @@
 
   @media (min-width: 1024px) {
     .lobby-desktop-grid {
-      @apply grid grid-cols-[1.2fr_1fr] gap-4 px-4 pb-4;
+      @apply grid grid-cols-[1.15fr_0.85fr] gap-6 px-6 pb-6;
     }
     .lobby-desktop-left,
     .lobby-desktop-right {
