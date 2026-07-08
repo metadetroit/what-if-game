@@ -35,7 +35,11 @@ export default function LobbyView({
   leaveConfirm,
   setLeaveConfirm,
   disbandConfirm,
-  setDisbandConfirm
+  setDisbandConfirm,
+  prefillWhatIf,
+  setPrefillWhatIf,
+  setPrefillWhatIfStorage,
+  writeSoundMuted
 }) {
   const isMobile = useIsMobile()
   const [gameSettingsOpen, setGameSettingsOpen] = useState(false)
@@ -54,7 +58,28 @@ export default function LobbyView({
   }
 
   const blitzLabel = tournamentConfig.speedScoringEnabled ? "ON" : "OFF"
-  const tournamentSummary = `🏆 ${tournamentConfig.targetRounds} Rounds · ${tournamentConfig.votingTimerSeconds}s Votes · Blitz: ${blitzLabel}`
+  const tournamentSummary = `${tournamentConfig.targetRounds} Rounds · ${tournamentConfig.votingTimerSeconds}s Votes · Blitz: ${blitzLabel}`
+
+  const LobbyStatusBadge = () => {
+    const rules = []
+    if (anonymousMode) rules.push("Anonymous")
+    if (noSelfReading) rules.push("No Self-Reading")
+    if (tournamentConfig.enabled) {
+      rules.push(`${tournamentConfig.targetRounds} Rounds`)
+      rules.push(`${tournamentConfig.votingTimerSeconds}s`)
+      if (tournamentConfig.speedScoringEnabled) rules.push("BLITZ")
+    }
+
+    if (rules.length === 0) return null
+
+    return (
+      <div className="lobby-status-badge">
+        <span className="lobby-status-badge__text">
+          {rules.join(" · ")}
+        </span>
+      </div>
+    )
+  }
 
   const copyInviteLink = () => {
     const url = `https://playfluke.com?room=${roomCode}`
@@ -114,25 +139,11 @@ export default function LobbyView({
       onClick={copyInviteLink} 
       role="button" 
       tabIndex={0}
+      title="Click to copy invite link"
     >
       <span className="lobby-room-code-pill__label">ROOM CODE</span>
       <span className="lobby-room-code-pill__code">{roomCode}</span>
     </div>
-  )
-
-  const RoomCodeHero = () => (
-    <div className="lobby-room-hero" onClick={copyInviteLink} role="button" tabIndex={0}>
-      <span className="lobby-room-hero__label">Room Code</span>
-      <span className="lobby-room-hero__code">{roomCode}</span>
-    </div>
-  )
-
-  const TournamentBadge = () => (
-    tournamentConfig.enabled ? (
-      <div className="lobby-tournament-badge">
-        <span>{tournamentSummary}</span>
-      </div>
-    ) : null
   )
 
   const PlayerRow = ({ player }) => {
@@ -226,61 +237,6 @@ export default function LobbyView({
     </button>
   )
 
-  const GameSettingsSummary = () => {
-    const chips = (
-      <>
-        <span className="lobby-house-rules__chip">Anonymous: {anonymousMode ? "ON" : "OFF"}</span>
-        <span className="lobby-house-rules__chip">No Self-Reading: {noSelfReading ? "ON" : "OFF"}</span>
-        <span className="lobby-house-rules__chip">Tournament: {tournamentConfig.enabled ? "ON" : "OFF"}</span>
-      </>
-    )
-
-    return (
-      <div className="lobby-house-rules">
-        <div className="lobby-house-rules__main">
-          <div className="lobby-house-rules__title-row">
-            <div className="lobby-house-rules__icon">
-              <span aria-hidden="true">⚙</span>
-            </div>
-            <span className="lobby-house-rules__label">Game Settings</span>
-          </div>
-          <div className="lobby-house-rules__chips">
-            {chips}
-          </div>
-        </div>
-        {isHost ? (
-          <button
-            className="lobby-house-rules__manage"
-            onClick={(e) => {
-              e.stopPropagation()
-              setGameSettingsOpen(true)
-            }}
-            aria-label="Manage game settings"
-          >
-            Manage
-            <span aria-hidden="true">›</span>
-          </button>
-        ) : tournamentConfig.enabled ? (
-          <button
-            className="lobby-house-rules__expand"
-            onClick={() => setInfoExpanded(e => !e)}
-            aria-expanded={infoExpanded}
-            aria-label={infoExpanded ? "Hide tournament details" : "Show tournament details"}
-          >
-            {infoExpanded ? "▲" : "▼"}
-          </button>
-        ) : null}
-        {infoExpanded && !isHost && tournamentConfig.enabled && (
-          <div className="lobby-house-rules__info">
-            <span>{tournamentConfig.targetRounds} Rounds</span>
-            <span>{tournamentConfig.votingTimerSeconds}s Votes</span>
-            <span>Blitz: {tournamentConfig.speedScoringEnabled ? "ON" : "OFF"}</span>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   const GameSettingsDrawer = () => {
     const panelRef = useRef(null)
     const closeBtnRef = useRef(null)
@@ -370,83 +326,120 @@ export default function LobbyView({
           <div className="lobby-drawer__content">
             <div className="lobby-drawer__row">
               <div className="lobby-drawer__label">
-                <div className="lobby-drawer__label-title">Anonymous Mode</div>
-                <div className="lobby-drawer__label-sub">Hide names in results</div>
+                <div className="lobby-drawer__label-title">Sound Effects</div>
+                <div className="lobby-drawer__label-sub">Play game sounds</div>
               </div>
-              <Toggle value={anonymousMode} onChange={() => socketRef.current?.emit("toggle-anonymous")} />
+              <Toggle value={!soundMuted} onChange={handleSoundToggle} />
             </div>
 
             <div className="lobby-drawer__row">
               <div className="lobby-drawer__label">
-                <div className="lobby-drawer__label-title">No Self-Reading</div>
-                <div className="lobby-drawer__label-sub">Don't read your own content</div>
+                <div className="lobby-drawer__label-title">Pre-fill "What if..."</div>
+                <div className="lobby-drawer__label-sub">Start with sample text</div>
               </div>
-              <Toggle value={noSelfReading} onChange={() => {
-                const next = !noSelfReading
-                setNoSelfReading(next)
-                if (isHost) socketRef.current?.emit("update-lobby-settings", { noSelfReading: next })
+              <Toggle value={prefillWhatIf} onChange={() => {
+                const next = !prefillWhatIf
+                setPrefillWhatIf(next)
+                setPrefillWhatIfStorage(next)
               }} />
             </div>
 
-            <div className="lobby-drawer__row">
-              <div className="lobby-drawer__label">
-                <div className="lobby-drawer__label-title">Tournament Mode</div>
-                <div className="lobby-drawer__label-sub">Enable rounds & voting</div>
-              </div>
-              <Toggle value={tournamentConfig.enabled} onChange={toggleTournamentEnabled} />
-            </div>
-
-            {tournamentConfig.enabled && (
-              <div className="lobby-drawer__nested">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="lobby-drawer__nested-label">Rounds</span>
-                    <span className="lobby-drawer__nested-value">{tournamentConfig.targetRounds}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1" max="10" step="1"
-                    value={tournamentConfig.targetRounds}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value)
-                      setTournamentConfig(prev => ({ ...prev, targetRounds: val }))
-                      if (isHost) socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { targetRounds: val } })
-                    }}
-                    className="lobby-slider"
-                  />
-                </div>
-
-                <div>
-                  <div className="lobby-drawer__nested-label lobby-drawer__nested-label--center">Voting Timer</div>
-                  <div className="flex justify-center gap-3">
-                    {[30, 60, 90].map(s => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          setTournamentConfig(prev => ({ ...prev, votingTimerSeconds: s }))
-                          if (isHost) socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { votingTimerSeconds: s } })
-                        }}
-                        className={`lobby-segment ${tournamentConfig.votingTimerSeconds === s ? "lobby-segment--selected" : ""}`}
-                      >
-                        {s}s
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="lobby-drawer__row lobby-drawer__row--nested">
+            {isHost && (
+              <>
+                <div className="lobby-drawer__divider" />
+                <h3 className="lobby-drawer__section-title">Host Options</h3>
+                
+                <div className="lobby-drawer__row">
                   <div className="lobby-drawer__label">
-                    <div className="lobby-drawer__label-title">Blitz Mode</div>
-                    <div className="lobby-drawer__label-sub">+1 fastest · -1 slowest</div>
+                    <div className="lobby-drawer__label-title">Anonymous Mode</div>
+                    <div className="lobby-drawer__label-sub">Hide names in results</div>
                   </div>
-                  <Toggle value={tournamentConfig.speedScoringEnabled} onChange={() => {
-                    const next = !tournamentConfig.speedScoringEnabled
-                    setTournamentConfig(prev => ({ ...prev, speedScoringEnabled: next }))
-                    if (isHost) socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { speedScoringEnabled: next } })
+                  <Toggle value={anonymousMode} onChange={() => socketRef.current?.emit("toggle-anonymous")} />
+                </div>
+
+                <div className="lobby-drawer__row">
+                  <div className="lobby-drawer__label">
+                    <div className="lobby-drawer__label-title">No Self-Reading</div>
+                    <div className="lobby-drawer__label-sub">Don't read your own content</div>
+                  </div>
+                  <Toggle value={noSelfReading} onChange={() => {
+                    const next = !noSelfReading
+                    setNoSelfReading(next)
+                    if (isHost) socketRef.current?.emit("update-lobby-settings", { noSelfReading: next })
                   }} />
                 </div>
-              </div>
+
+                <div className="lobby-drawer__row">
+                  <div className="lobby-drawer__label">
+                    <div className="lobby-drawer__label-title">Tournament Mode</div>
+                    <div className="lobby-drawer__label-sub">Enable rounds & voting</div>
+                  </div>
+                  <Toggle value={tournamentConfig.enabled} onChange={toggleTournamentEnabled} />
+                </div>
+
+                {tournamentConfig.enabled && (
+                  <div className="lobby-drawer__nested">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="lobby-drawer__nested-label">Rounds</span>
+                        <span className="lobby-drawer__nested-value">{tournamentConfig.targetRounds}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1" max="10" step="1"
+                        value={tournamentConfig.targetRounds}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value)
+                          setTournamentConfig(prev => ({ ...prev, targetRounds: val }))
+                          if (isHost) socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { targetRounds: val } })
+                        }}
+                        className="lobby-slider"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="lobby-drawer__nested-label lobby-drawer__nested-label--center">Voting Timer</div>
+                      <div className="flex justify-center gap-3">
+                        {[30, 60, 90].map(s => (
+                          <button
+                            key={s}
+                            onClick={() => {
+                              setTournamentConfig(prev => ({ ...prev, votingTimerSeconds: s }))
+                              if (isHost) socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { votingTimerSeconds: s } })
+                            }}
+                            className={`lobby-segment ${tournamentConfig.votingTimerSeconds === s ? "lobby-segment--selected" : ""}`}
+                          >
+                            {s}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="lobby-drawer__row lobby-drawer__row--nested">
+                      <div className="lobby-drawer__label">
+                        <div className="lobby-drawer__label-title">Blitz Mode</div>
+                        <div className="lobby-drawer__label-sub">+1 fastest · -1 slowest</div>
+                      </div>
+                      <Toggle value={tournamentConfig.speedScoringEnabled} onChange={() => {
+                        const next = !tournamentConfig.speedScoringEnabled
+                        setTournamentConfig(prev => ({ ...prev, speedScoringEnabled: next }))
+                        if (isHost) socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { speedScoringEnabled: next } })
+                      }} />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
+
+            <div className="lobby-drawer__divider" />
+            <div className="pt-2">
+              <button 
+                onClick={() => isHost ? setDisbandConfirm(true) : setLeaveConfirm(true)} 
+                className="lobby-drawer__leave-btn"
+              >
+                {isHost ? "Disband Room" : "Leave Room"}
+              </button>
+            </div>
           </div>
 
           <div className="lobby-drawer__footer">
@@ -507,16 +500,6 @@ export default function LobbyView({
     </div>
   )
 
-  const ActionFooter = () => (
-    <div className="flex items-center justify-center gap-4 py-2">
-      {isHost ? (
-        <button onClick={() => setDisbandConfirm(true)} className="lobby-link">Disband Room</button>
-      ) : (
-        <button onClick={() => setLeaveConfirm(true)} className="lobby-link">Leave Room</button>
-      )}
-    </div>
-  )
-
   const TopBar = () => (
     <div className="lobby-top-bar">
       <div className="lobby-logo font-bubble glow-title">
@@ -527,58 +510,45 @@ export default function LobbyView({
         <span style={{ color: "#a855f7" }}>e</span>
         <span style={{ color: "#facc15" }} className="ml-1 animate-pop-wiggle">!</span>
       </div>
-      <div className="lobby-top-bar__controls">
+      <div className="lobby-top-bar__center">
         <RoomCodePill />
-        <div className="lobby-top-bar__actions">
-          <button onClick={copyInviteLink} className="lobby-icon-btn lobby-icon-btn--copy" style={{ width: "auto" }}>Copy Link</button>
-          <button onClick={handleSoundToggle} className="lobby-icon-btn" title={soundMuted ? "Unmute" : "Mute"} aria-label={soundMuted ? "Unmute" : "Mute"}>
-            {soundMuted ? "🔇" : "🔊"}
-          </button>
-        </div>
+      </div>
+      <div className="lobby-top-bar__actions">
+        <button 
+          onClick={() => setGameSettingsOpen(true)} 
+          className="lobby-icon-btn lobby-icon-btn--gear"
+          aria-label="Settings"
+        >
+          <span aria-hidden="true" className="text-xl">⚙️</span>
+        </button>
       </div>
     </div>
   )
 
   // ─── Mobile Layout ───
   const MobileLayout = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <TopBar />
-      <div className="lobby-scroll px-4 pb-6 space-y-4">
-        <TournamentBadge />
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <LobbyStatusBadge />
         <Roster />
-        <GameSettingsSummary />
       </div>
-      <div className="px-4 py-3 z-40" style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(12px)", borderTop: "1px solid var(--glass-border)" }}>
+      <div className="px-4 py-4 z-40 bg-black/40 backdrop-blur-xl border-t border-white/10">
         {isHost ? <StartButton /> : <WaitingIndicator />}
-        <div className="lobby-cta-hint">
-          {players.length < 3 ? "Need at least 3 players to start" : "Ready when you are!"}
-        </div>
-        <ActionFooter />
       </div>
     </div>
   )
 
   // ─── Desktop Layout ───
   const DesktopLayout = () => (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full overflow-hidden max-w-2xl mx-auto w-full">
       <TopBar />
-      <div className="lobby-desktop-grid">
-        <div className="lobby-desktop-left lobby-scroll space-y-4 pr-2">
-          <TournamentBadge />
-          <Roster />
-        </div>
-        <div className="lobby-desktop-right space-y-4">
-          <div className="flex-1 lobby-scroll space-y-4 pl-2 pb-6">
-            <GameSettingsSummary />
-          </div>
-          <div className="pt-2">
-            {isHost ? <StartButton /> : <WaitingIndicator />}
-            <div className="lobby-cta-hint">
-              {players.length < 3 ? "Need at least 3 players to start" : "Ready when you are!"}
-            </div>
-            <ActionFooter />
-          </div>
-        </div>
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+        <LobbyStatusBadge />
+        <Roster />
+      </div>
+      <div className="px-4 py-6 z-40 bg-black/40 backdrop-blur-xl border-t border-white/10 rounded-t-3xl">
+        {isHost ? <StartButton /> : <WaitingIndicator />}
       </div>
     </div>
   )

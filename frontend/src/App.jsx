@@ -185,16 +185,28 @@ function App() {
     }
   }, [gameState])
 
-  // Browser back button support for lobby
+  // Browser Back Button Support: ensure we return to welcome screen on back
   useEffect(() => {
     const handlePopState = (e) => {
-      if (gameState === 'lobby') {
-        e.preventDefault()
-        setLeaveConfirm(true)
+      const activePhases = ["lobby", "writing", "answering", "performing", "summary", "scoreboard"]
+      if (activePhases.includes(gameState)) {
+        if (isHost && gameState === "lobby") {
+          socket?.emit("disband-room")
+        } else {
+          socket?.emit("leave-room")
+        }
+        resetGame()
       }
     }
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [gameState, isHost, socket, resetGame])
+
+  // Push state when entering lobby
+  useEffect(() => {
+    if (gameState === "lobby" && window.history.state?.view !== "lobby") {
+      window.history.pushState({ view: "lobby" }, "")
+    }
   }, [gameState])
 
   useEffect(() => {
@@ -764,6 +776,31 @@ function App() {
     }
   }, [gameState])
 
+  // Browser Back Button Support: ensure we return to welcome screen on back
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (gameState === "lobby" || gameState === "writing" || gameState === "answering" || gameState === "performing" || gameState === "summary" || gameState === "scoreboard") {
+        // If in game, ask or just reset? User says "back functionality should cover [disband]"
+        // So we just reset the game state.
+        if (isHost && (gameState === "lobby")) {
+          socket?.emit("disband-room")
+        } else {
+          socket?.emit("leave-room")
+        }
+        resetGame()
+      }
+    }
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [gameState, isHost, socket])
+
+  // Push state when entering lobby
+  useEffect(() => {
+    if (gameState === "lobby" && window.history.state?.view !== "lobby") {
+      window.history.pushState({ view: "lobby" }, "")
+    }
+  }, [gameState])
+
   const createRoom = useCallback(() => {
     if (!playerName.trim()) { setError("Please enter your name"); return }
     if (!socket) { setError("Not connected to server"); return }
@@ -1250,6 +1287,9 @@ function App() {
             setLeaveConfirm={setLeaveConfirm}
             disbandConfirm={disbandConfirm}
             setDisbandConfirm={setDisbandConfirm}
+            prefillWhatIf={prefillWhatIf}
+            setPrefillWhatIf={setPrefillWhatIf}
+            setPrefillWhatIfStorage={setPrefillWhatIfStorage}
           />
         )
 
