@@ -48,6 +48,8 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     setProgress,
     setQuestion,
     setAnonymousMode,
+    setNoSelfReading,
+    setTournamentConfig,
     setPlayerStatuses,
     setAssignedQuestion,
     setShowLastSubmitterIndicator,

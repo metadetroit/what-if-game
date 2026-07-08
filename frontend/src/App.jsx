@@ -648,6 +648,8 @@ function App() {
       setProgress,
       setQuestion,
       setAnonymousMode,
+      setNoSelfReading,
+      setTournamentConfig,
       setPlayerStatuses,
       setAssignedQuestion,
       setShowLastSubmitterIndicator,
