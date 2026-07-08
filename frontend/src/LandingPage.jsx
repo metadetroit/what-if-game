@@ -111,7 +111,7 @@ export default function LandingPage({
           <img
             src={bannerSrc}
             onError={() => setBannerSrc("/hero-chaos-v2.png")}
-            alt="A laughing crowd of friends celebrating with confetti, sparks, and emojis"
+            alt=""
             className="absolute inset-0 h-full w-full object-cover"
           />
         </picture>
