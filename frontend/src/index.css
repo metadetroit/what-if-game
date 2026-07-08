@@ -522,15 +522,58 @@
   }
 
   .lobby-top-bar {
-    @apply flex items-center justify-between gap-3 px-4 py-3 z-30 glass-overlay rounded-2xl;
+    @apply grid items-center gap-3 px-4 py-3 z-30 glass-overlay rounded-2xl;
+    grid-template-columns: 1fr auto 1fr;
+  }
+  .lobby-top-bar__controls {
+    display: contents;
+  }
+  .lobby-top-bar__actions {
+    @apply flex items-center gap-2;
+  }
+  .lobby-top-bar > .lobby-logo,
+  .lobby-top-bar__controls > .lobby-logo {
+    justify-self: start;
+  }
+  .lobby-top-bar__controls > .lobby-room-code-pill {
+    justify-self: center;
+  }
+  .lobby-top-bar > .lobby-top-bar__actions,
+  .lobby-top-bar__controls > .lobby-top-bar__actions {
+    justify-self: end;
   }
 
   @media (max-width: 640px) {
     .lobby-top-bar {
-      @apply flex-col items-stretch gap-3;
+      @apply flex flex-col items-stretch gap-2;
     }
-    .lobby-top-bar > *:not(.lobby-room-code-pill) {
-      @apply flex items-center justify-between;
+    .lobby-top-bar > .lobby-logo {
+      @apply text-base;
+      align-self: flex-start;
+    }
+    .lobby-top-bar__controls {
+      @apply flex items-center justify-center gap-2;
+      align-self: center;
+    }
+    .lobby-top-bar__actions {
+      @apply gap-2;
+    }
+    .lobby-room-code-pill {
+      @apply px-3 py-1;
+      min-height: auto;
+      min-width: auto;
+    }
+    .lobby-room-code-pill__label {
+      @apply text-[8px] tracking-[0.15em];
+    }
+    .lobby-room-code-pill__code {
+      font-size: 1.25rem;
+    }
+    .lobby-icon-btn {
+      @apply w-10 h-10;
+    }
+    .lobby-icon-btn--copy {
+      @apply text-xs font-bold px-3;
     }
   }
 
@@ -539,6 +582,7 @@
     background: linear-gradient(135deg, var(--color-orange), var(--color-yellow));
     box-shadow: 0 10px 30px -10px rgba(249, 115, 22, 0.5);
     min-height: 56px;
+    min-width: auto;
   }
 
   .lobby-room-code-pill__label {

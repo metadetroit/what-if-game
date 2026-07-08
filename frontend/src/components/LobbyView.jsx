@@ -527,12 +527,14 @@ export default function LobbyView({
         <span style={{ color: "#a855f7" }}>e</span>
         <span style={{ color: "#facc15" }} className="ml-1 animate-pop-wiggle">!</span>
       </div>
-      <RoomCodePill />
-      <div className="flex items-center gap-2">
-        <button onClick={copyInviteLink} className="lobby-icon-btn text-sm font-bold px-4" style={{ width: "auto" }}>Copy Link</button>
-        <button onClick={handleSoundToggle} className="lobby-icon-btn" title={soundMuted ? "Unmute" : "Mute"} aria-label={soundMuted ? "Unmute" : "Mute"}>
-          {soundMuted ? "🔇" : "🔊"}
-        </button>
+      <div className="lobby-top-bar__controls">
+        <RoomCodePill />
+        <div className="lobby-top-bar__actions">
+          <button onClick={copyInviteLink} className="lobby-icon-btn lobby-icon-btn--copy" style={{ width: "auto" }}>Copy Link</button>
+          <button onClick={handleSoundToggle} className="lobby-icon-btn" title={soundMuted ? "Unmute" : "Mute"} aria-label={soundMuted ? "Unmute" : "Mute"}>
+            {soundMuted ? "🔇" : "🔊"}
+          </button>
+        </div>
       </div>
     </div>
   )
