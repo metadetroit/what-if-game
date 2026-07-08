@@ -187,19 +187,6 @@ function KickConfirmModal({ kickConfirm, kickTrapRef, onKick, onCancel }) {
   )
 }
 
-function LeaveConfirmModal({ onLeave, onCancel }) {
-  return (
-    <div className="lobby-modal" role="dialog" aria-modal="true" onClick={onCancel}>
-      <div className="lobby-modal__card" onClick={e => e.stopPropagation()}>
-        <div className="lobby-modal__title">Leave Room?</div>
-        <div className="lobby-modal__body">You will exit the lobby and return to the welcome screen.</div>
-        <button onClick={onLeave} className="lobby-modal__destructive">Leave Room</button>
-        <button onClick={onCancel} className="lobby-modal__secondary">Stay</button>
-      </div>
-    </div>
-  )
-}
-
 function GameSettingsDrawer({
   open,
   onClose,
@@ -216,7 +203,6 @@ function GameSettingsDrawer({
   onNoSelfReadingToggle,
   anonymousMode,
   onToggleAnonymous,
-  onLeave
 }) {
   const panelRef = useRef(null)
   const closeBtnRef = useRef(null)
@@ -407,15 +393,6 @@ function GameSettingsDrawer({
             </>
           )}
 
-          <div className="lobby-drawer__divider" />
-          <div className="pt-2">
-            <button
-              onClick={onLeave}
-              className="lobby-drawer__leave-btn"
-            >
-              Leave Room
-            </button>
-          </div>
         </div>
 
         <div className="lobby-drawer__footer">
@@ -447,8 +424,6 @@ function LobbyView({
   setTournamentConfig,
   connectionStatus,
   disconnectedPlayerMeta,
-  leaveConfirm,
-  setLeaveConfirm,
   prefillWhatIf,
   setPrefillWhatIf,
   setPrefillWhatIfStorage
@@ -473,10 +448,6 @@ function LobbyView({
     const next = !soundMuted
     writeSoundMuted(next)
     setSoundMuted(next)
-  }
-
-  const handleLeave = () => {
-    socketRef.current?.emit("leave-room")
   }
 
   const handleKick = () => {
@@ -603,11 +574,9 @@ function LobbyView({
         onNoSelfReadingToggle={onNoSelfReadingToggle}
         anonymousMode={anonymousMode}
         onToggleAnonymous={onToggleAnonymous}
-        onLeave={() => setLeaveConfirm(true)}
       />
 
       {kickConfirm && <KickConfirmModal kickConfirm={kickConfirm} kickTrapRef={kickTrapRef} onKick={handleKick} onCancel={() => setKickConfirm(null)} />}
-      {leaveConfirm && <LeaveConfirmModal onLeave={handleLeave} onCancel={() => setLeaveConfirm(false)} />}
       {showToast && <div className="lobby-toast">{showToast}</div>}
     </div>
   )

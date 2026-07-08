@@ -960,6 +960,7 @@
     border: none;
   }
   .lobby-drawer__row--nested {
+    @apply px-4;
     background: rgba(253, 224, 71, 0.06);
     border-color: rgba(253, 224, 71, 0.2);
   }

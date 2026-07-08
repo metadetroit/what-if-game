@@ -64,7 +64,6 @@ function App() {
   const [playerStatuses, setPlayerStatuses] = useState([])
   const [forceConfirm, setForceConfirm] = useState(false)
   const [kickConfirm, setKickConfirm] = useState(null) // { id, name } when host wants to confirm a kick
-  const [leaveConfirm, setLeaveConfirm] = useState(false) // Leave room confirmation
   const [disconnectedPlayerMeta, setDisconnectedPlayerMeta] = useState({}) // { [name]: { disconnectedAt, graceMs } }
   const [reconnectPrompt, setReconnectPrompt] = useState(null) // { roomCode, playerName } on page-load reconnect
   const [helpTab, setHelpTab] = useState("how-to-play") // "how-to-play" | "faq" | "tips" | "about"
@@ -1279,8 +1278,6 @@ function App() {
             setTournamentConfig={setTournamentConfig}
             connectionStatus={connectionStatus}
             disconnectedPlayerMeta={disconnectedPlayerMeta}
-            leaveConfirm={leaveConfirm}
-            setLeaveConfirm={setLeaveConfirm}
             prefillWhatIf={prefillWhatIf}
             setPrefillWhatIf={setPrefillWhatIf}
             setPrefillWhatIfStorage={setPrefillWhatIfStorage}
