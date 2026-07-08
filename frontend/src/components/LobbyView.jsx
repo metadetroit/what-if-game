@@ -31,13 +31,15 @@ export default function LobbyView({
   tournamentConfig,
   setTournamentConfig,
   connectionStatus,
-  disconnectedPlayerMeta
+  disconnectedPlayerMeta,
+  leaveConfirm,
+  setLeaveConfirm,
+  disbandConfirm,
+  setDisbandConfirm
 }) {
   const isMobile = useIsMobile()
   const [gameSettingsOpen, setGameSettingsOpen] = useState(false)
   const [infoExpanded, setInfoExpanded] = useState(false)
-  const [leaveConfirm, setLeaveConfirm] = useState(false)
-  const [disbandConfirm, setDisbandConfirm] = useState(false)
   const [showToast, setShowToast] = useState(null)
 
   const myId = socket?.id
@@ -234,7 +236,9 @@ export default function LobbyView({
       <div className="lobby-house-rules">
         <div className="lobby-house-rules__main">
           <div className="lobby-house-rules__title-row">
-            <span className="lobby-house-rules__icon" aria-hidden="true">⚙</span>
+            <div className="lobby-house-rules__icon">
+              <span aria-hidden="true">⚙</span>
+            </div>
             <span className="lobby-house-rules__label">Game Settings</span>
           </div>
           <div className="lobby-house-rules__chips">
@@ -443,7 +447,7 @@ export default function LobbyView({
           </div>
 
           <div className="lobby-drawer__footer">
-            <button onClick={() => setHouseRulesOpen(false)} className="lobby-cta">Apply</button>
+            <button onClick={() => setGameSettingsOpen(false)} className="lobby-cta">Apply & Close</button>
           </div>
         </div>
       </div>
@@ -512,9 +516,6 @@ export default function LobbyView({
 
   const TopBar = () => (
     <div className="lobby-top-bar">
-      <button onClick={() => setLeaveConfirm(true)} className="lobby-icon-btn" title="Back to homescreen" aria-label="Back to homescreen">
-        ←
-      </button>
       <div className="lobby-logo font-bubble glow-title">
         <span style={{ color: "#c026d3" }}>F</span>
         <span style={{ color: "#f97316" }}>l</span>

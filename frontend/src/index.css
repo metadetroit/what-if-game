@@ -522,7 +522,7 @@
   }
 
   .lobby-top-bar {
-    @apply flex items-center justify-between gap-3 px-4 py-3 z-30;
+    @apply flex items-center justify-between gap-3 px-4 py-3 z-30 glass-overlay rounded-2xl;
   }
 
   @media (max-width: 640px) {
@@ -535,10 +535,9 @@
   }
 
   .lobby-room-code-pill {
-    @apply flex flex-col items-center justify-center px-5 py-2 cursor-pointer transition-transform active:scale-95;
-    background: linear-gradient(90deg, var(--color-yellow) 0%, var(--color-orange) 100%);
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
+    @apply flex flex-col items-center justify-center px-5 py-2 cursor-pointer transition-transform active:scale-95 rounded-2xl;
+    background: linear-gradient(135deg, var(--color-orange), var(--color-yellow));
+    box-shadow: 0 10px 30px -10px rgba(249, 115, 22, 0.5);
     min-height: 56px;
   }
 
@@ -617,10 +616,10 @@
   }
 
   .lobby-player-row {
-    @apply relative flex items-center gap-2 px-3 py-2.5 rounded-2xl transition-all duration-200;
-    background: var(--glass-fill);
-    border: 1px solid var(--glass-border);
-    min-height: 48px;
+    @apply relative flex items-center gap-3 px-4 rounded-2xl transition-all duration-200;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 56px;
   }
   .lobby-player-row:hover {
     background: var(--glass-fill-strong);
@@ -734,34 +733,38 @@
   }
 
   .lobby-slider {
-    @apply w-full h-2 rounded-full appearance-none cursor-pointer;
-    background: var(--glass-fill-strong);
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-orange), var(--color-yellow));
+    outline: none;
   }
   .lobby-slider::-webkit-slider-thumb {
-    @apply w-5 h-5 rounded-full appearance-none;
-    background: var(--color-orange);
-    box-shadow: 0 0 12px rgba(249, 115, 22, 0.6);
-    margin-top: -6px;
-  }
-  .lobby-slider::-webkit-slider-runnable-track {
-    @apply h-2 rounded-full;
-    background: linear-gradient(90deg, var(--color-orange), var(--color-pink));
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(192, 38, 211, 0.5);
   }
   .lobby-slider::-moz-range-thumb {
-    @apply w-5 h-5 rounded-full border-0;
-    background: var(--color-orange);
-    box-shadow: 0 0 12px rgba(249, 115, 22, 0.6);
-  }
-  .lobby-slider::-moz-range-track {
-    @apply h-2 rounded-full;
-    background: linear-gradient(90deg, var(--color-orange), var(--color-pink));
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: white;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(192, 38, 211, 0.5);
   }
 
   .lobby-cta {
-    @apply w-full font-black uppercase tracking-widest py-4 px-6 rounded-full transition-all duration-200 active:scale-95;
-    background: linear-gradient(90deg, var(--color-purple), var(--color-orange));
-    color: var(--text-primary);
-    box-shadow: 0 8px 32px rgba(192, 38, 211, 0.4);
+    @apply w-full font-black uppercase tracking-widest py-4 px-6 rounded-2xl transition-all duration-200 active:scale-95;
+    background: linear-gradient(135deg, var(--color-orange), var(--color-yellow));
+    color: #2A1200;
+    box-shadow: 0 15px 40px -10px rgba(249, 115, 22, 0.55);
   }
   .lobby-cta:hover {
     transform: scale(1.02);
@@ -783,9 +786,9 @@
   }
 
   .lobby-waiting {
-    @apply flex items-center justify-center gap-3 py-4 px-6 rounded-2xl;
-    background: var(--glass-fill);
-    border: 1px solid var(--glass-border);
+    @apply flex items-center justify-center gap-3 h-14 rounded-2xl;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   .lobby-waiting__dot {
     @apply w-2.5 h-2.5 rounded-full animate-pulse;
@@ -800,9 +803,9 @@
   /* House Rules summary row */
   .lobby-house-rules {
     @apply relative flex items-center gap-3 px-4 py-3 rounded-2xl;
-    background: var(--glass-fill);
-    border: 1px solid var(--glass-border);
-    min-height: 72px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 76px;
   }
   .lobby-house-rules__main {
     @apply flex flex-col gap-1 flex-1 min-w-0;
@@ -811,7 +814,8 @@
     @apply flex items-center gap-2;
   }
   .lobby-house-rules__icon {
-    @apply text-base leading-none;
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-xl;
+    background: rgba(255, 255, 255, 0.1);
   }
   .lobby-house-rules__label {
     @apply text-sm font-black;
@@ -828,9 +832,9 @@
   }
   .lobby-house-rules__manage,
   .lobby-house-rules__expand {
-    @apply flex items-center gap-1 px-3 py-2 rounded-full text-xs font-black transition-all duration-200;
-    background: linear-gradient(90deg, var(--color-purple), var(--color-orange));
-    color: var(--text-primary);
+    @apply flex items-center gap-1 px-4 py-2 rounded-full text-xs font-black transition-all duration-200;
+    background: linear-gradient(135deg, var(--color-orange), var(--color-yellow));
+    color: #2A1200;
     min-width: 44px;
     min-height: 44px;
   }
@@ -865,6 +869,10 @@
     background: linear-gradient(180deg, #1a0b2e 0%, #0c0617 100%);
     border: 1px solid var(--glass-border);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  .lobby-drawer__panel--right,
+  .lobby-drawer__panel--bottom {
+    @apply glass-overlay;
   }
   .lobby-drawer__panel--right {
     @apply fixed top-0 right-0 bottom-0 w-full max-w-md flex flex-col;
@@ -902,9 +910,9 @@
     @apply flex-1 overflow-y-auto p-5 space-y-5;
   }
   .lobby-drawer__row {
-    @apply flex items-center justify-between gap-4 p-4 rounded-2xl;
-    background: var(--glass-fill-strong);
-    border: 1px solid var(--glass-border);
+    @apply flex items-center justify-between gap-4 rounded-xl py-3;
+    background: transparent;
+    border: none;
   }
   .lobby-drawer__row--nested {
     background: rgba(253, 224, 71, 0.06);
@@ -959,7 +967,7 @@
     @apply fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4;
   }
   .lobby-modal__card {
-    @apply w-full max-w-sm p-6 text-center;
+    @apply w-full max-w-sm p-6 text-center glass-overlay;
     background: linear-gradient(180deg, #1a0b2e 0%, #0c0617 100%);
     border: 1px solid var(--glass-border);
     border-radius: 32px;
@@ -1015,7 +1023,10 @@
       @apply px-6;
     }
     .lobby-desktop-grid {
-      @apply grid grid-cols-[1fr_1fr] gap-6 pb-6 max-w-6xl mx-auto;
+      @apply flex flex-col gap-6 pb-6 max-w-3xl mx-auto;
+    }
+    .lobby-player-grid {
+      @apply grid grid-cols-2 gap-2;
     }
     .lobby-desktop-left,
     .lobby-desktop-right {
@@ -1031,6 +1042,17 @@
 }
 
 @layer utilities {
+  .glass-overlay {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, var(--color-orange), var(--color-yellow));
+  }
+
   .animate-bounce-soft {
     animation: bounce-soft 2s infinite;
   }
