@@ -274,6 +274,18 @@ export default function LobbyView({
   const HouseRulesDrawer = () => {
     const panelRef = useRef(null)
     const closeBtnRef = useRef(null)
+    const touchStartY = useRef(null)
+
+    const handleTouchStart = (e) => {
+      touchStartY.current = e.touches?.[0]?.clientY ?? null
+    }
+    const handleTouchEnd = (e) => {
+      if (touchStartY.current == null || !isMobile) return
+      const endY = e.changedTouches?.[0]?.clientY ?? touchStartY.current
+      const delta = endY - touchStartY.current
+      if (delta > 60) setHouseRulesOpen(false)
+      touchStartY.current = null
+    }
 
     useEffect(() => {
       if (!houseRulesOpen) return
@@ -326,6 +338,8 @@ export default function LobbyView({
           ref={panelRef}
           className={`lobby-drawer__panel ${isMobile ? "lobby-drawer__panel--bottom" : "lobby-drawer__panel--right"}`}
           onClick={e => e.stopPropagation()}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <div className="lobby-drawer__header">
             <h2 id="house-rules-title" className="lobby-drawer__title">House Rules</h2>
