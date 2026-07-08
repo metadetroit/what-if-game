@@ -134,13 +134,18 @@ export default function LobbyView({
         ))}
       </div>
 
-      <div className={`tournament-reveal ${revealOpen ? "tournament-reveal--open" : ""}`}>
-        <div className="tournament-reveal__header">
+      <div className="tournament-reveal">
+        <button
+          className="w-full tournament-reveal__header bg-transparent border-none p-0 cursor-pointer text-left"
+          onClick={() => setRevealOpen(v => !v)}
+          aria-expanded={revealOpen}
+        >
           <span>Tournament Controls</span>
           <span className="tournament-reveal__meta">Rounds · Votes · Blitz</span>
-        </div>
-        <div className="lobby-settings-grid">
-          {isHost ? (
+        </button>
+        <div className={`tournament-reveal-content ${revealOpen ? "tournament-reveal-content--open" : ""}`}>
+          <div className="lobby-settings-grid">
+            {isHost ? (
             <>
               <div className="lobby-setting-card">
                 <div className="lobby-setting-header">
@@ -223,6 +228,7 @@ export default function LobbyView({
               </div>
             </>
           )}
+          </div>
         </div>
       </div>
 
