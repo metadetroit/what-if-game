@@ -478,7 +478,7 @@
   }
   /* ─── Lobby redesign v2 styles ─── */
   .lobby-root {
-    @apply relative w-full h-full flex flex-col overflow-hidden;
+    @apply relative w-full h-full flex flex-col overflow-auto;
     background: linear-gradient(135deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
   }
 
