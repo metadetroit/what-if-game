@@ -674,6 +674,7 @@ io.on('connection', (socket) => {
       playerOrder: [],
       anonymousMode: false,
       currentRoundAnonymousMode: false,
+      noSelfReading: false,
       reactions: {},      // { contentId: { emoji: count, ... } }
       playerReactions: {}, // { contentId: Set(playerId) }
       tournament: null,   // Set when host starts a tournament game
@@ -693,10 +694,13 @@ io.on('connection', (socket) => {
     
     callback({ success: true, roomCode });
     console.log(`Room ${roomCode} created by ${cleanName}`);
-    
+
     // CRITICAL FIX: Emit player-joined to update host's player list
     const activePlayers = game.players.filter(p => p.isActive);
     io.to(roomCode).emit('player-joined', { players: activePlayers, hostId: game.host });
+
+    // Send initial lobby settings to the host
+    broadcastLobbySettings(roomCode, game);
   });
 
   // Join existing room
@@ -763,6 +767,9 @@ io.on('connection', (socket) => {
     callback({ success: true });
     console.log(`${cleanName} joined room ${roomCode}`);
     io.to(roomCode).emit('player-joined', game.players.filter(p => p.isActive));
+
+    // Send current lobby settings to the new player
+    broadcastLobbySettings(roomCode, game);
   });
 
   // Host starts the game
@@ -846,8 +853,50 @@ io.on('connection', (socket) => {
 
     // Broadcast to all players in the room
     io.to(roomCode).emit('anonymous-toggled', { anonymousMode: game.anonymousMode });
+    broadcastLobbySettings(roomCode, game);
     console.log(`Room ${roomCode}: Anonymous mode ${game.anonymousMode ? 'ON' : 'OFF'}`);
   });
+
+  // Host updates lobby settings (tournament config, no-self-reading)
+  socket.on('update-lobby-settings', (settings) => {
+    const roomCode = socket.roomCode;
+    const game = games[roomCode];
+
+    if (!game || game.host !== socket.id) return;
+
+    if (game.phase !== 'lobby') {
+      console.log(`[update-lobby-settings] Rejected: not in lobby (phase: ${game.phase})`);
+      return;
+    }
+
+    // Update tournament config if provided
+    if (settings.tournamentConfig) {
+      game.tournament = { ...game.tournament, ...settings.tournamentConfig };
+    }
+
+    // Update no-self-reading if provided
+    if (typeof settings.noSelfReading === 'boolean') {
+      game.noSelfReading = settings.noSelfReading;
+    }
+
+    broadcastLobbySettings(roomCode, game);
+    console.log(`Room ${roomCode}: Lobby settings updated`);
+  });
+
+  // Broadcast current lobby settings to all players
+  function broadcastLobbySettings(roomCode, game) {
+    const settings = {
+      anonymousMode: game.anonymousMode,
+      noSelfReading: game.noSelfReading,
+      tournamentConfig: game.tournament ? {
+        enabled: game.tournament.enabled,
+        targetRounds: game.tournament.targetRounds,
+        votingTimerSeconds: game.tournament.votingTimerSeconds,
+        speedScoringEnabled: game.tournament.speedScoringEnabled
+      } : { enabled: false, targetRounds: 3, votingTimerSeconds: 60, speedScoringEnabled: false }
+    };
+    io.to(roomCode).emit('lobby-settings', settings);
+  }
 
   // Player submits question
   socket.on('submit-question', async (question) => {

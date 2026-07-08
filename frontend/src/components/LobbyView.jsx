@@ -43,7 +43,11 @@ export default function LobbyView({
   const isMe = (player) => player.id === myId
 
   const toggleTournamentEnabled = () => {
-    setTournamentConfig(prev => ({ ...prev, enabled: !prev.enabled }))
+    const next = !tournamentConfig.enabled
+    setTournamentConfig(prev => ({ ...prev, enabled: next }))
+    if (isHost) {
+      socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { enabled: next } })
+    }
   }
 
   const blitzLabel = tournamentConfig.speedScoringEnabled ? "ON" : "OFF"
@@ -100,17 +104,6 @@ export default function LobbyView({
   }, [players])
 
   // ─── Sub-components ───
-
-  const status = connectionStatus || "online"
-  const ConnectionPill = () => {
-    const color = status === "online" ? "var(--color-green)" : status === "reconnecting" ? "var(--color-yellow-status)" : "var(--color-red)"
-    return (
-      <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-white" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
-        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: color }} />
-        <span className="capitalize">{status}</span>
-      </div>
-    )
-  }
 
   const RoomCodeHero = () => (
     <div className="lobby-room-hero" onClick={copyInviteLink} role="button" tabIndex={0}>
@@ -261,7 +254,13 @@ export default function LobbyView({
               <div className="font-bold text-sm text-white">No Self-Reading</div>
               <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Don't read your own content</div>
             </div>
-            <Toggle value={noSelfReading} onChange={() => setNoSelfReading(!noSelfReading)} />
+            <Toggle value={noSelfReading} onChange={() => {
+              const next = !noSelfReading
+              setNoSelfReading(next)
+              if (isHost) {
+                socketRef.current?.emit("update-lobby-settings", { noSelfReading: next })
+              }
+            }} />
           </div>
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -315,7 +314,13 @@ export default function LobbyView({
               type="range"
               min="1" max="10" step="1"
               value={tournamentConfig.targetRounds}
-              onChange={(e) => setTournamentConfig(prev => ({ ...prev, targetRounds: parseInt(e.target.value) }))}
+              onChange={(e) => {
+                const val = parseInt(e.target.value)
+                setTournamentConfig(prev => ({ ...prev, targetRounds: val }))
+                if (isHost) {
+                  socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { targetRounds: val } })
+                }
+              }}
               className="lobby-slider"
             />
           </div>
@@ -325,7 +330,12 @@ export default function LobbyView({
               {[30, 60, 90].map(s => (
                 <button
                   key={s}
-                  onClick={() => setTournamentConfig(prev => ({ ...prev, votingTimerSeconds: s }))}
+                  onClick={() => {
+                    setTournamentConfig(prev => ({ ...prev, votingTimerSeconds: s }))
+                    if (isHost) {
+                      socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { votingTimerSeconds: s } })
+                    }
+                  }}
                   className={`lobby-segment ${tournamentConfig.votingTimerSeconds === s ? "lobby-segment--selected" : ""}`}
                 >
                   {s}s
@@ -338,7 +348,13 @@ export default function LobbyView({
               <div className="font-bold text-sm text-white">Blitz Mode</div>
               <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>+1 fastest · -1 slowest</div>
             </div>
-            <Toggle value={tournamentConfig.speedScoringEnabled} onChange={() => setTournamentConfig(prev => ({ ...prev, speedScoringEnabled: !prev.speedScoringEnabled }))} />
+            <Toggle value={tournamentConfig.speedScoringEnabled} onChange={() => {
+              const next = !tournamentConfig.speedScoringEnabled
+              setTournamentConfig(prev => ({ ...prev, speedScoringEnabled: next }))
+              if (isHost) {
+                socketRef.current?.emit("update-lobby-settings", { tournamentConfig: { speedScoringEnabled: next } })
+              }
+            }} />
           </div>
           <button onClick={() => setSheetOpen(false)} className="lobby-cta">Apply</button>
         </div>
@@ -480,7 +496,6 @@ export default function LobbyView({
       {leaveConfirm && <LeaveConfirmModal />}
       {disbandConfirm && <DisbandConfirmModal />}
       {showToast && <div className="lobby-toast">{showToast}</div>}
-      <ConnectionPill />
     </div>
   )
 }

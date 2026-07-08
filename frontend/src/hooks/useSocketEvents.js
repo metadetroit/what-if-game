@@ -435,6 +435,12 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setAnonymousMode(data.anonymousMode)
     })
 
+    newSocket.on("lobby-settings", (data) => {
+      if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode)
+      if (typeof data.noSelfReading === "boolean") setNoSelfReading(data.noSelfReading)
+      if (data.tournamentConfig) setTournamentConfig(prev => ({ ...prev, ...data.tournamentConfig }))
+    })
+
     newSocket.on("player-disconnected", (data) => {
       setPlayers(data.players)
       playersRef.current = data.players
