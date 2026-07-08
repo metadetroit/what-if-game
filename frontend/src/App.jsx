@@ -185,30 +185,6 @@ function App() {
     }
   }, [gameState])
 
-  // Browser Back Button Support: ensure we return to welcome screen on back
-  useEffect(() => {
-    const handlePopState = (e) => {
-      const activePhases = ["lobby", "writing", "answering", "performing", "summary", "scoreboard"]
-      if (activePhases.includes(gameState)) {
-        if (isHost && gameState === "lobby") {
-          socket?.emit("disband-room")
-        } else {
-          socket?.emit("leave-room")
-        }
-        resetGame()
-      }
-    }
-    window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
-  }, [gameState, isHost, socket, resetGame])
-
-  // Push state when entering lobby
-  useEffect(() => {
-    if (gameState === "lobby" && window.history.state?.view !== "lobby") {
-      window.history.pushState({ view: "lobby" }, "")
-    }
-  }, [gameState])
-
   useEffect(() => {
     if (gameState === 'ended' && gameSummary && Array.isArray(gameSummary)) {
       const derivedVotes = {}
@@ -950,6 +926,30 @@ function App() {
     setShowDisconnectOverlay(false)
     setDisconnectOverlayDeadline(null)
   }, [socket])
+
+  // Browser Back Button Support: ensure we return to welcome screen on back
+  useEffect(() => {
+    const handlePopState = (e) => {
+      const activePhases = ["lobby", "writing", "answering", "performing", "summary", "scoreboard"]
+      if (activePhases.includes(gameState)) {
+        if (isHost && gameState === "lobby") {
+          socket?.emit("disband-room")
+        } else {
+          socket?.emit("leave-room")
+        }
+        resetGame()
+      }
+    }
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [gameState, isHost, socket, resetGame])
+
+  // Push state when entering lobby
+  useEffect(() => {
+    if (gameState === "lobby" && window.history.state?.view !== "lobby") {
+      window.history.pushState({ view: "lobby" }, "")
+    }
+  }, [gameState])
 
   const handleAbandonGame = useCallback(() => {
     if (socketRef.current) {
