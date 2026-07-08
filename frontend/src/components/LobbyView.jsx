@@ -34,7 +34,7 @@ export default function LobbyView({
   disconnectedPlayerMeta
 }) {
   const isMobile = useIsMobile()
-  const [houseRulesOpen, setHouseRulesOpen] = useState(false)
+  const [gameSettingsOpen, setGameSettingsOpen] = useState(false)
   const [infoExpanded, setInfoExpanded] = useState(false)
   const [leaveConfirm, setLeaveConfirm] = useState(false)
   const [disbandConfirm, setDisbandConfirm] = useState(false)
@@ -221,7 +221,7 @@ export default function LobbyView({
     </button>
   )
 
-  const HouseRulesSummary = () => {
+  const GameSettingsSummary = () => {
     const chips = (
       <>
         <span className="lobby-house-rules__chip">Anonymous: {anonymousMode ? "ON" : "OFF"}</span>
@@ -235,7 +235,7 @@ export default function LobbyView({
         <div className="lobby-house-rules__main">
           <div className="lobby-house-rules__title-row">
             <span className="lobby-house-rules__icon" aria-hidden="true">⚙</span>
-            <span className="lobby-house-rules__label">House Rules</span>
+            <span className="lobby-house-rules__label">Game Settings</span>
           </div>
           <div className="lobby-house-rules__chips">
             {chips}
@@ -244,8 +244,11 @@ export default function LobbyView({
         {isHost ? (
           <button
             className="lobby-house-rules__manage"
-            onClick={() => setHouseRulesOpen(true)}
-            aria-label="Manage house rules"
+            onClick={(e) => {
+              e.stopPropagation()
+              setGameSettingsOpen(true)
+            }}
+            aria-label="Manage game settings"
           >
             Manage
             <span aria-hidden="true">›</span>
@@ -271,7 +274,7 @@ export default function LobbyView({
     )
   }
 
-  const HouseRulesDrawer = () => {
+  const GameSettingsDrawer = () => {
     const panelRef = useRef(null)
     const closeBtnRef = useRef(null)
     const touchStartY = useRef(null)
@@ -283,19 +286,19 @@ export default function LobbyView({
       if (touchStartY.current == null || !isMobile) return
       const endY = e.changedTouches?.[0]?.clientY ?? touchStartY.current
       const delta = endY - touchStartY.current
-      if (delta > 60) setHouseRulesOpen(false)
+      if (delta > 60) setGameSettingsOpen(false)
       touchStartY.current = null
     }
 
     useEffect(() => {
-      if (!houseRulesOpen) return
+      if (!gameSettingsOpen) return
       const active = document.activeElement
       closeBtnRef.current?.focus()
 
       const handleKey = (e) => {
         if (e.key === "Escape") {
           e.preventDefault()
-          setHouseRulesOpen(false)
+          setGameSettingsOpen(false)
           return
         }
         if (e.key === "Tab" && panelRef.current) {
@@ -320,19 +323,23 @@ export default function LobbyView({
         document.removeEventListener("keydown", handleKey)
         if (active && typeof active.focus === "function") active.focus()
       }
-    }, [houseRulesOpen])
+    }, [gameSettingsOpen])
 
-    if (!houseRulesOpen) return null
+    if (!gameSettingsOpen) return null
 
     const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
     return (
       <div
         className={`lobby-drawer ${reducedMotion ? "lobby-drawer--no-motion" : ""}`}
-        onClick={() => setHouseRulesOpen(false)}
+        onClick={(e) => {
+          e.stopPropagation()
+          e.nativeEvent.stopImmediatePropagation()
+          setGameSettingsOpen(false)
+        }}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="house-rules-title"
+        aria-labelledby="game-settings-title"
       >
         <div
           ref={panelRef}
@@ -342,12 +349,12 @@ export default function LobbyView({
           onTouchEnd={handleTouchEnd}
         >
           <div className="lobby-drawer__header">
-            <h2 id="house-rules-title" className="lobby-drawer__title">House Rules</h2>
+            <h2 id="game-settings-title" className="lobby-drawer__title">Game Settings</h2>
             <button
               ref={closeBtnRef}
               className="lobby-drawer__close"
-              onClick={() => setHouseRulesOpen(false)}
-              aria-label="Close house rules"
+              onClick={() => setGameSettingsOpen(false)}
+              aria-label="Close game settings"
             >
               ✕
             </button>
@@ -505,6 +512,9 @@ export default function LobbyView({
 
   const TopBar = () => (
     <div className="lobby-top-bar">
+      <button onClick={() => setLeaveConfirm(true)} className="lobby-icon-btn" title="Back to homescreen" aria-label="Back to homescreen">
+        ←
+      </button>
       <div className="lobby-logo font-bubble glow-title">
         <span style={{ color: "#c026d3" }}>F</span>
         <span style={{ color: "#f97316" }}>l</span>
@@ -553,7 +563,7 @@ export default function LobbyView({
         </div>
         <div className="lobby-desktop-right space-y-4">
           <div className="flex-1 lobby-scroll space-y-4 pl-2 pb-6">
-            <HouseRulesSummary />
+            <GameSettingsSummary />
           </div>
           <div className="pt-2">
             {isHost ? <StartButton /> : <WaitingIndicator />}
@@ -571,7 +581,7 @@ export default function LobbyView({
     <div className="lobby-root">
       <div className="lobby-glow" />
       {isMobile ? <MobileLayout /> : <DesktopLayout />}
-      {houseRulesOpen && <HouseRulesDrawer />}
+      {gameSettingsOpen && <GameSettingsDrawer />}
       {kickConfirm && <KickConfirmModal />}
       {leaveConfirm && <LeaveConfirmModal />}
       {disbandConfirm && <DisbandConfirmModal />}

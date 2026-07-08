@@ -1011,8 +1011,11 @@
   }
 
   @media (min-width: 1024px) {
+    .lobby-root {
+      @apply px-6;
+    }
     .lobby-desktop-grid {
-      @apply grid grid-cols-[1.15fr_0.85fr] gap-6 px-6 pb-6;
+      @apply grid grid-cols-[1fr_1fr] gap-6 pb-6 max-w-6xl mx-auto;
     }
     .lobby-desktop-left,
     .lobby-desktop-right {
