@@ -2425,6 +2425,36 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Host toggles a player's spectator role from the lobby roster
+  socket.on('host-set-spectator', ({ playerId, isSpectator }) => {
+    let roomCode = socket.roomCode;
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) roomCode = gameRoom;
+    }
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id) return;
+    if (!playerId || playerId === socket.id) {
+      socket.emit('error', "Can't change your own role");
+      return;
+    }
+    const target = game.players.find(p => p.id === playerId);
+    if (!target) {
+      socket.emit('error', 'Player not found');
+      return;
+    }
+    if (game.phase !== 'lobby') {
+      socket.emit('error', 'Spectator role can only be changed in the lobby');
+      return;
+    }
+    const nextRole = isSpectator ? 'spectator' : undefined;
+    target.role = nextRole;
+    console.log(`[HOST-SET-SPECTATOR] ${target.name} in room ${roomCode} → ${isSpectator ? 'spectator' : 'player'}`);
+    const activePlayers = game.players.filter(p => p.isActive);
+    io.to(roomCode).emit('player-left', { players: activePlayers, hostId: game.host });
+  });
+
   // Host disbands room and sends everyone to welcome screen
   socket.on('disband-room', () => {
     let roomCode = socket.roomCode;

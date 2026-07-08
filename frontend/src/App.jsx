@@ -64,6 +64,7 @@ function App() {
   const [playerStatuses, setPlayerStatuses] = useState([])
   const [forceConfirm, setForceConfirm] = useState(false)
   const [kickConfirm, setKickConfirm] = useState(null) // { id, name } when host wants to confirm a kick
+  const [disconnectedPlayerMeta, setDisconnectedPlayerMeta] = useState({}) // { [name]: { disconnectedAt, graceMs } }
   const [reconnectPrompt, setReconnectPrompt] = useState(null) // { roomCode, playerName } on page-load reconnect
   const [helpTab, setHelpTab] = useState("how-to-play") // "how-to-play" | "faq" | "tips" | "about"
   const [firstSubmitter, setFirstSubmitter] = useState(null) // { name } for the first player to submit
@@ -145,6 +146,7 @@ function App() {
     if (!activeGameplayStates.includes(gameState)) {
       disconnectedPlayersRef.current = []
       disconnectDeadlineRef.current = null
+      setDisconnectedPlayerMeta({})
       if (disconnectNoticeTimerRef.current) {
         clearTimeout(disconnectNoticeTimerRef.current)
         disconnectNoticeTimerRef.current = null
@@ -664,6 +666,51 @@ function App() {
     voteState: { summaryPairVoteId }
   })
 
+  // Track per-player disconnect timestamps so the lobby can show reconnect countdowns.
+  useEffect(() => {
+    const s = socketRef.current
+    if (!s) return
+    const onDisconnected = (data) => {
+      const name = data?.disconnectedPlayer
+      if (!name) return
+      const graceMs = (typeof data?.gracePeriod === "number" ? data.gracePeriod : 180) * 1000
+      setDisconnectedPlayerMeta(prev => ({
+        ...prev,
+        [name]: { disconnectedAt: Date.now(), graceMs }
+      }))
+    }
+    const clearName = (name) => {
+      setDisconnectedPlayerMeta(prev => {
+        if (!prev[name]) return prev
+        const next = { ...prev }
+        delete next[name]
+        return next
+      })
+    }
+    const onRejoined = (data) => {
+      if (data?.playerName) clearName(data.playerName)
+    }
+    const onLeft = (data) => {
+      const list = Array.isArray(data) ? data : data?.players || []
+      const names = new Set(list.map(p => p.name))
+      setDisconnectedPlayerMeta(prev => {
+        const next = {}
+        Object.entries(prev).forEach(([name, meta]) => {
+          if (!names.has(name)) next[name] = meta
+        })
+        return next
+      })
+    }
+    s.on("player-disconnected", onDisconnected)
+    s.on("player-rejoined", onRejoined)
+    s.on("player-left", onLeft)
+    return () => {
+      s.off("player-disconnected", onDisconnected)
+      s.off("player-rejoined", onRejoined)
+      s.off("player-left", onLeft)
+    }
+  }, [socket])
+
   // Screen Wake Lock: keep the screen on during active game phases so the phone
   // doesn't blank and drop the connection mid-round.
   useEffect(() => {
@@ -1181,6 +1228,8 @@ function App() {
             socketRef={socketRef}
             tournamentConfig={tournamentConfig}
             setTournamentConfig={setTournamentConfig}
+            connectionStatus={connectionStatus}
+            disconnectedPlayerMeta={disconnectedPlayerMeta}
           />
         )
 

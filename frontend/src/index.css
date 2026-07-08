@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-grad-start: #2A0D4F;
+  --bg-grad-end:   #0D0318;
+
+  --color-purple:   #C026D3;
+  --color-orange:   #F97316;
+  --color-yellow:   #FDE047;
+  --color-pink:     #EC4899;
+  --color-lilac:    #E9D5FF;
+
+  --color-green:    #22C55E;
+  --color-red:      #F43F5E;
+  --color-yellow-status: #FDE047;
+
+  --glass-fill:     rgba(255,255,255,0.08);
+  --glass-fill-strong: rgba(255,255,255,0.14);
+  --glass-border:   rgba(255,255,255,0.18);
+  --glass-border-strong: rgba(255,255,255,0.35);
+
+  --text-primary:   #FFFFFF;
+  --text-muted:     #D2CDE6;
+  --text-lilac:     #E9D5FF;
+}
+
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
@@ -452,165 +476,369 @@
   .waiting-panel__more {
     @apply rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center text-xs text-white/60;
   }
-  .lobby-container {
-    @apply w-full max-w-5xl mx-auto flex flex-col h-full px-4 py-6 overflow-y-auto;
+  /* ─── Lobby redesign v2 styles ─── */
+  .lobby-root {
+    @apply relative w-full h-full flex flex-col overflow-hidden;
+    background: linear-gradient(135deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
   }
 
-  .lobby-header {
-    @apply text-center mb-6 pt-4;
+  .lobby-glow {
+    @apply absolute inset-0 pointer-events-none overflow-hidden;
+  }
+  .lobby-glow::before,
+  .lobby-glow::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.18;
+  }
+  .lobby-glow::before {
+    width: 40vw;
+    height: 40vw;
+    top: -10vw;
+    left: -10vw;
+    background: var(--color-purple);
+  }
+  .lobby-glow::after {
+    width: 35vw;
+    height: 35vw;
+    top: -5vw;
+    right: -10vw;
+    background: var(--color-orange);
   }
 
-  .lobby-room-code {
-    @apply font-bubble text-5xl md:text-6xl tracking-[0.15em] text-gradient-chaos glow-title;
+  .lobby-glass {
+    background: var(--glass-fill);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .lobby-glass:hover {
+    background: var(--glass-fill-strong);
+    border-color: var(--glass-border-strong);
   }
 
-  .lobby-room-label {
-    @apply text-[10px] md:text-xs uppercase tracking-[0.4em] text-white/40 font-bold mb-2;
+  .lobby-top-bar {
+    @apply flex items-center justify-between gap-3 px-4 py-3 z-30;
   }
 
-  .lobby-header-actions {
-    @apply flex items-center justify-center gap-3 mt-4;
+  .lobby-logo {
+    @apply font-black text-xl tracking-tight;
+    color: var(--text-primary);
+  }
+  .lobby-logo span:nth-child(1) { color: var(--color-purple); }
+  .lobby-logo span:nth-child(2) { color: var(--color-orange); }
+  .lobby-logo span:nth-child(3) { color: var(--color-yellow); }
+  .lobby-logo span:nth-child(4) { color: var(--color-red); }
+  .lobby-logo span:nth-child(5) { color: var(--color-lilac); }
+  .lobby-logo span:nth-child(6) { color: var(--color-yellow); }
+
+  .lobby-icon-btn {
+    @apply w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+  }
+  .lobby-icon-btn:hover {
+    background: var(--glass-fill-strong);
+    border-color: var(--glass-border-strong);
+  }
+
+  .lobby-room-hero {
+    @apply flex flex-col items-center justify-center text-center px-6 py-5 mx-4;
+    background: linear-gradient(90deg, var(--color-yellow) 0%, var(--color-orange) 100%);
+    border-radius: 28px;
+    box-shadow: 0 12px 40px rgba(249, 115, 22, 0.35);
+  }
+  .lobby-room-hero__label {
+    @apply text-xs font-black uppercase tracking-[0.3em];
+    color: #2A1200;
+  }
+  .lobby-room-hero__code {
+    @apply font-black uppercase tracking-[0.1em] leading-none mt-1;
+    font-size: clamp(40px, 12vw, 56px);
+    color: #2A1200;
   }
 
   .lobby-tournament-badge {
-    @apply inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-400/30 rounded-full px-4 py-2 backdrop-blur-xl mt-4;
+    @apply flex items-center justify-center gap-2 mx-4 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider;
+    background: linear-gradient(90deg, var(--color-purple), var(--color-pink));
+    color: var(--text-primary);
+    box-shadow: 0 8px 24px rgba(192, 38, 211, 0.3);
   }
 
-  .lobby-tournament-badge span {
-    @apply text-xs text-indigo-200 font-black tracking-widest uppercase;
+  .lobby-section-title {
+    @apply text-lg font-black uppercase tracking-wider;
+    color: var(--text-primary);
+  }
+  .lobby-section-meta {
+    @apply text-sm font-bold;
+    color: var(--text-muted);
   }
 
-  .lobby-section-label {
-    @apply text-xs md:text-sm uppercase tracking-[0.3em] font-black text-white/50 mb-3 flex items-center gap-2 justify-between;
+  .lobby-player-grid {
+    @apply grid grid-cols-2 gap-3;
+  }
+  @media (min-width: 1024px) {
+    .lobby-player-grid {
+      @apply grid-cols-2;
+    }
   }
 
-  .tournament-summary-button {
-    @apply flex items-center gap-2 text-[10px] text-white/60 uppercase tracking-[0.3em] text-xs;
+  .lobby-player-row {
+    @apply relative flex flex-col gap-1 px-4 py-3 rounded-2xl transition-all duration-200;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+  }
+  .lobby-player-row:hover {
+    background: var(--glass-fill-strong);
+    border-color: var(--glass-border-strong);
+  }
+  .lobby-player-row--me {
+    border-color: rgba(192, 38, 211, 0.45);
+    background: rgba(192, 38, 211, 0.12);
+  }
+  .lobby-player-row--reconnecting {
+    opacity: 0.75;
+    border-color: var(--color-yellow-status);
+    background: rgba(253, 224, 71, 0.08);
+  }
+  .lobby-player-row--disconnected {
+    opacity: 0.55;
+    border-color: rgba(244, 63, 94, 0.35);
+    background: rgba(244, 63, 94, 0.08);
   }
 
-  .tournament-summary-button__switch {
-    @apply px-3 py-1 rounded-full border border-white/20 text-[9px] text-white/60 font-black tracking-widest;
+  .lobby-player-row__name {
+    @apply font-bold text-base truncate;
+    color: var(--text-primary);
   }
-
-  .tournament-summary-button__switch--on {
-    @apply bg-indigo-500/20 border-indigo-500/40 text-indigo-100;
+  .lobby-player-row__meta {
+    @apply flex items-center gap-2 flex-wrap;
   }
-
-  .lobby-player-strip {
-    @apply flex flex-wrap justify-center gap-3 mb-8;
+  .lobby-player-row__you {
+    @apply text-sm font-bold;
+    color: var(--color-lilac);
   }
-
-  .lobby-player-card {
-    @apply relative flex flex-col items-center gap-2 p-4 rounded-3xl border transition-all duration-200 min-w-[130px] md:min-w-[120px] flex-grow-0 basis-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] lg:basis-[calc(20%-0.6rem)];
+  .lobby-player-row__countdown {
+    @apply text-xs font-bold;
+    color: var(--color-red);
   }
-
-  .lobby-player-card--me {
-    @apply bg-indigo-500/15 border-indigo-400/40 shadow-lg shadow-indigo-900/20;
+  .lobby-player-row__actions {
+    @apply absolute top-2 right-2 flex items-center gap-1;
   }
-
-  .lobby-player-card--other {
-    @apply bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20;
+  .lobby-player-row__kick {
+    @apply w-7 h-7 rounded-full flex items-center justify-center text-sm transition-colors;
+    color: var(--color-red);
+    background: rgba(244, 63, 94, 0.12);
   }
-
-  .lobby-player-avatar {
-    @apply w-12 h-12 md:w-14 md:h-14 shrink-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-lg font-black shadow-lg;
+  .lobby-player-row__kick:hover {
+    background: rgba(244, 63, 94, 0.25);
   }
-
-  .lobby-player-name {
-    @apply text-sm font-bold text-white text-center truncate max-w-full;
+  .lobby-player-row__spectator {
+    @apply w-7 h-7 rounded-full flex items-center justify-center text-sm transition-colors;
+    color: var(--color-lilac);
+    background: rgba(233, 213, 255, 0.12);
   }
-
-  .lobby-player-badges {
-    @apply flex items-center gap-1.5 flex-wrap justify-center;
+  .lobby-player-row__spectator--on {
+    color: var(--color-purple);
+    background: rgba(192, 38, 211, 0.18);
   }
 
   .lobby-badge {
-    @apply px-2 py-0.5 rounded-md text-[9px] font-black tracking-widest uppercase;
+    @apply px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider;
   }
-
   .lobby-badge--host {
-    @apply bg-indigo-500/30 text-indigo-200 border border-indigo-400/30;
+    background: rgba(253, 224, 71, 0.9);
+    color: #2A1200;
   }
-
   .lobby-badge--spectator {
-    @apply bg-amber-500/30 text-amber-200 border border-amber-400/30;
+    background: rgba(216, 180, 254, 0.35);
+    color: var(--text-primary);
+  }
+  .lobby-badge--reconnecting {
+    @apply animate-pulse;
+    background: rgba(253, 224, 71, 0.2);
+    color: var(--color-yellow-status);
+    border: 1px solid rgba(253, 224, 71, 0.5);
+  }
+  .lobby-badge--disconnected {
+    background: rgba(107, 114, 128, 0.35);
+    color: var(--text-muted);
   }
 
-  .lobby-kick-btn {
-    @apply absolute top-2 right-2 w-7 h-7 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors text-sm;
+  .lobby-toggle {
+    @apply relative w-16 h-8 rounded-full transition-colors duration-200 cursor-pointer;
+    background: var(--glass-fill-strong);
+    border: 1px solid var(--glass-border);
+  }
+  .lobby-toggle--on {
+    background: var(--color-purple);
+    border-color: var(--color-purple);
+  }
+  .lobby-toggle__knob {
+    @apply absolute top-0.5 left-0.5 w-7 h-7 rounded-full bg-white transition-transform duration-200 shadow-md;
+  }
+  .lobby-toggle--on .lobby-toggle__knob {
+    transform: translateX(32px);
   }
 
-  .lobby-settings-grid {
-    @apply flex flex-wrap gap-3 mb-4;
+  .lobby-segment {
+    @apply px-4 py-2 rounded-full text-sm font-bold transition-all duration-200;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+  }
+  .lobby-segment--selected {
+    background: linear-gradient(90deg, var(--color-purple), var(--color-orange));
+    border-color: transparent;
+    color: var(--text-primary);
   }
 
-  .tournament-reveal {
-    @apply bg-white/5 border border-white/10 rounded-[2rem] p-5 mb-6 backdrop-blur-xl shadow-2xl shadow-black/30 transition-all duration-300 overflow-hidden;
+  .lobby-slider {
+    @apply w-full h-2 rounded-full appearance-none cursor-pointer;
+    background: var(--glass-fill-strong);
+  }
+  .lobby-slider::-webkit-slider-thumb {
+    @apply w-5 h-5 rounded-full appearance-none;
+    background: var(--color-orange);
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.6);
+    margin-top: -6px;
+  }
+  .lobby-slider::-webkit-slider-runnable-track {
+    @apply h-2 rounded-full;
+    background: linear-gradient(90deg, var(--color-orange), var(--color-pink));
+  }
+  .lobby-slider::-moz-range-thumb {
+    @apply w-5 h-5 rounded-full border-0;
+    background: var(--color-orange);
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.6);
+  }
+  .lobby-slider::-moz-range-track {
+    @apply h-2 rounded-full;
+    background: linear-gradient(90deg, var(--color-orange), var(--color-pink));
   }
 
-  .tournament-reveal__header {
-    @apply flex items-center justify-between mb-4 text-xs uppercase tracking-[0.3em] text-white/50;
+  .lobby-cta {
+    @apply w-full font-black uppercase tracking-widest py-4 px-6 rounded-full transition-all duration-200 active:scale-95;
+    background: linear-gradient(90deg, var(--color-purple), var(--color-orange));
+    color: var(--text-primary);
+    box-shadow: 0 8px 32px rgba(192, 38, 211, 0.4);
+  }
+  .lobby-cta:hover {
+    transform: scale(1.02);
+    filter: brightness(1.08);
+  }
+  .lobby-cta:disabled {
+    @apply cursor-not-allowed;
+    transform: none;
+    filter: none;
+    opacity: 0.55;
+    background: var(--glass-fill-strong);
+    color: var(--text-muted);
+    box-shadow: none;
   }
 
-  .tournament-reveal__meta {
-    @apply text-[10px] text-indigo-200 font-semibold tracking-[0.2em];
+  .lobby-cta-hint {
+    @apply text-xs font-bold text-center mt-2;
+    color: var(--text-muted);
   }
 
-  .tournament-reveal-content {
-    max-height: 0;
-    @apply overflow-hidden transition-all duration-300;
+  .lobby-waiting {
+    @apply flex items-center justify-center gap-3 py-4 px-6 rounded-2xl;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+  }
+  .lobby-waiting__dot {
+    @apply w-2.5 h-2.5 rounded-full animate-pulse;
+    background: var(--color-lilac);
+    box-shadow: 0 0 10px rgba(233, 213, 255, 0.5);
+  }
+  .lobby-waiting__text {
+    @apply text-sm font-black uppercase tracking-widest;
+    color: var(--text-lilac);
   }
 
-  .tournament-reveal-content--open {
-    max-height: 1000px;
+  .lobby-sheet {
+    @apply fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm;
+  }
+  .lobby-sheet__panel {
+    @apply w-full max-w-md p-6 pb-8 shadow-2xl;
+    background: linear-gradient(180deg, #1a0b2e 0%, #0c0617 100%);
+    border-top: 1px solid var(--glass-border);
+    border-radius: 36px 36px 0 0;
+  }
+  .lobby-sheet__handle {
+    @apply w-12 h-1.5 rounded-full mx-auto mb-6;
+    background: var(--glass-fill-strong);
   }
 
-  .lobby-setting-card {
-    @apply flex flex-col gap-2 p-4 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 min-w-[200px] flex-1 basis-[calc(100%-0.375rem)] md:basis-[calc(50%-0.375rem)] lg:basis-[calc(33.333%-0.5rem)];
+  .lobby-modal {
+    @apply fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4;
+  }
+  .lobby-modal__card {
+    @apply w-full max-w-sm p-6 text-center;
+    background: linear-gradient(180deg, #1a0b2e 0%, #0c0617 100%);
+    border: 1px solid var(--glass-border);
+    border-radius: 32px;
+  }
+  .lobby-modal__title {
+    @apply text-2xl font-black mb-2;
+    color: var(--text-primary);
+  }
+  .lobby-modal__body {
+    @apply text-sm mb-6;
+    color: var(--text-muted);
+  }
+  .lobby-modal__destructive {
+    @apply w-full font-black py-3 px-4 rounded-2xl mb-3 transition-all duration-200 active:scale-95;
+    background: linear-gradient(90deg, var(--color-red), var(--color-orange));
+    color: var(--text-primary);
+  }
+  .lobby-modal__secondary {
+    @apply w-full font-bold py-3 px-4 rounded-2xl transition-all duration-200 active:scale-95;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
   }
 
-  .lobby-setting-card--tournament {
-    @apply bg-indigo-500/5 border-indigo-500/20;
+  .lobby-link {
+    @apply text-sm font-bold transition-colors;
+    color: var(--color-red);
+  }
+  .lobby-link:hover {
+    color: var(--color-orange);
   }
 
-  .lobby-setting-card--blitz {
-    @apply bg-amber-500/5 border-amber-500/20;
+  .lobby-scroll {
+    @apply flex-1 overflow-y-auto;
+    scrollbar-width: thin;
+  }
+  .lobby-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .lobby-scroll::-webkit-scrollbar-thumb {
+    background: var(--glass-border-strong);
+    border-radius: 999px;
   }
 
-  .lobby-setting-header {
-    @apply flex items-center justify-between gap-2;
+  .lobby-toast {
+    @apply fixed top-4 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-full text-sm font-bold shadow-2xl animate-bounce-soft;
+    background: linear-gradient(90deg, var(--color-purple), var(--color-pink));
+    color: var(--text-primary);
   }
 
-  .lobby-setting-title {
-    @apply text-sm font-black text-white leading-tight;
-  }
-
-  .lobby-setting-desc {
-    @apply text-[10px] text-white/40 font-bold uppercase tracking-wider;
-  }
-
-  .lobby-setting-status {
-    @apply text-xs font-black text-indigo-300;
-  }
-
-  .lobby-launch-bar {
-    @apply sticky bottom-0 left-0 right-0 z-40 bg-[#0c0617]/80 backdrop-blur-2xl border-t border-white/10 pt-4 pb-[env(safe-area-inset-bottom,20px)] px-4 mt-auto;
-  }
-
-  .lobby-launch-content {
-    @apply max-w-5xl mx-auto w-full;
-  }
-
-  .lobby-waiting-indicator {
-    @apply flex items-center justify-center gap-3 py-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl;
-  }
-
-  .lobby-waiting-dot {
-    @apply w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_10px_rgba(129,140,248,0.5)];
-  }
-
-  .lobby-waiting-text {
-    @apply font-black text-indigo-100 tracking-widest uppercase text-sm;
+  @media (min-width: 1024px) {
+    .lobby-desktop-grid {
+      @apply grid grid-cols-[1.5fr_1fr] gap-6 px-6 pb-6 h-full overflow-hidden;
+    }
+    .lobby-desktop-left,
+    .lobby-desktop-right {
+      @apply flex flex-col h-full overflow-hidden;
+    }
   }
 }
 
