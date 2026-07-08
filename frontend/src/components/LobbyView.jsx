@@ -215,7 +215,10 @@ export default function LobbyView({
   const Toggle = ({ value, onChange }) => (
     <button
       className={`lobby-toggle ${value ? "lobby-toggle--on" : ""}`}
-      onClick={onChange}
+      onClick={(e) => {
+        e.stopPropagation()
+        onChange()
+      }}
       aria-checked={value}
       role="switch"
     >
