@@ -14,9 +14,6 @@ export default function LandingPage({
   createRoom,
   joinRoom,
   setGameState,
-  prefillWhatIf,
-  setPrefillWhatIf,
-  setPrefillWhatIfStorage,
   socket,
   error,
 }) {
@@ -251,21 +248,6 @@ export default function LandingPage({
                 />
                 {/* Invisible spacer matching room-code input height so rows align on desktop */}
                 <input className="input-field py-3 text-base font-semibold invisible hidden md:block" tabIndex={-1} aria-hidden="true" readOnly />
-                <div className="flex items-center justify-start gap-3 text-base text-gray-300 md:text-sm">
-                  <span className="mr-1">Pre-fill "What if..."</span>
-                  <button
-                    onClick={() => {
-                      const next = !prefillWhatIf
-                      setPrefillWhatIf(next)
-                      setPrefillWhatIfStorage(next)
-                    }}
-                    aria-pressed={prefillWhatIf}
-                    aria-label="Toggle pre-fill What if"
-                    className={"relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 md:w-11 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
-                  >
-                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-6" : "translate-x-0")} />
-                  </button>
-                </div>
                 <button
                   onClick={createRoom}
                   disabled={!socket}
@@ -301,21 +283,6 @@ export default function LandingPage({
                   className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={4}
                 />
-                <div className="flex items-center justify-start gap-3">
-                  <span className="text-base text-gray-300 mr-1 md:text-sm">Pre-fill "What if..."</span>
-                  <button
-                    onClick={() => {
-                      const next = !prefillWhatIf
-                      setPrefillWhatIf(next)
-                      setPrefillWhatIfStorage(next)
-                    }}
-                    aria-pressed={prefillWhatIf}
-                    aria-label="Toggle pre-fill What if"
-                    className={"relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 md:w-11 " + (prefillWhatIf ? "bg-indigo-600" : "bg-gray-600")}
-                  >
-                    <span className={"absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 " + (prefillWhatIf ? "translate-x-6" : "translate-x-0")} />
-                  </button>
-                </div>
                 <button
                   onClick={joinRoom}
                   disabled={!socket}

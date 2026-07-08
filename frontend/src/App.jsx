@@ -65,7 +65,6 @@ function App() {
   const [forceConfirm, setForceConfirm] = useState(false)
   const [kickConfirm, setKickConfirm] = useState(null) // { id, name } when host wants to confirm a kick
   const [leaveConfirm, setLeaveConfirm] = useState(false) // Leave room confirmation
-  const [disbandConfirm, setDisbandConfirm] = useState(false) // Disband room confirmation
   const [disconnectedPlayerMeta, setDisconnectedPlayerMeta] = useState({}) // { [name]: { disconnectedAt, graceMs } }
   const [reconnectPrompt, setReconnectPrompt] = useState(null) // { roomCode, playerName } on page-load reconnect
   const [helpTab, setHelpTab] = useState("how-to-play") // "how-to-play" | "faq" | "tips" | "about"
@@ -1251,9 +1250,6 @@ function App() {
               soundMuted={soundMuted}
               setSoundMuted={setSoundMuted}
               writeSoundMuted={writeSoundMuted}
-              prefillWhatIf={prefillWhatIf}
-              setPrefillWhatIf={setPrefillWhatIf}
-              setPrefillWhatIfStorage={setPrefillWhatIfStorage}
               socket={socket}
               error={error}
             />
@@ -1285,8 +1281,6 @@ function App() {
             disconnectedPlayerMeta={disconnectedPlayerMeta}
             leaveConfirm={leaveConfirm}
             setLeaveConfirm={setLeaveConfirm}
-            disbandConfirm={disbandConfirm}
-            setDisbandConfirm={setDisbandConfirm}
             prefillWhatIf={prefillWhatIf}
             setPrefillWhatIf={setPrefillWhatIf}
             setPrefillWhatIfStorage={setPrefillWhatIfStorage}

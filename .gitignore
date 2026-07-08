@@ -43,6 +43,6 @@ Thumbs.db
 *.db-wal
 
 # Render/Deployment
-render.yaml
+#render.yaml
 *.zip
 *-BACKUP-*
