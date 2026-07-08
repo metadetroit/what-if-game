@@ -38,8 +38,7 @@ export default function LobbyView({
   setDisbandConfirm,
   prefillWhatIf,
   setPrefillWhatIf,
-  setPrefillWhatIfStorage,
-  writeSoundMuted
+  setPrefillWhatIfStorage
 }) {
   const isMobile = useIsMobile()
   const [gameSettingsOpen, setGameSettingsOpen] = useState(false)
