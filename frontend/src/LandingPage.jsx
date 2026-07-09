@@ -101,7 +101,7 @@ export default function LandingPage({
   }, [])
 
   return (
-    <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
+    <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-auto">
       <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center min-h-[100svh] pb-[max(2.5rem,env(safe-area-inset-bottom))]" style={{ height: '100svh' }}>
         <picture>
           <source media="(max-width: 768px)" srcSet="/hero-chaos-v3-mobile.png" />

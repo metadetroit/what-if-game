@@ -34,14 +34,14 @@
   html {
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
     overscroll-behavior: none;
   }
 
   #root {
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
   }
   
@@ -53,7 +53,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
     overscroll-behavior: none;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
@@ -196,7 +196,7 @@
 
   .summary-scroll {
     @apply flex-1 min-h-0 overflow-y-auto;
-    touch-action: pan-y;
+    touch-action: pan-x pan-y;
   }
 
   .summary-grid {
@@ -1046,7 +1046,7 @@
   }
 
   .lobby-scroll {
-    @apply flex-1 overflow-y-auto overflow-x-hidden;
+    @apply flex-1 overflow-y-auto overflow-x-auto;
     scrollbar-width: thin;
   }
   .lobby-scroll::-webkit-scrollbar {
@@ -1136,8 +1136,7 @@
       radial-gradient(ellipse at bottom right, rgba(244, 63, 94, 0.18), transparent 55%),
       #0c0617;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y pinch-zoom;
-    overscroll-behavior-x: none;
+    touch-action: pan-x pan-y pinch-zoom;
   }
   .text-gradient-chaos {
     background: linear-gradient(90deg, #f5ecff 0%, #f9a8d4 35%, #fbbf24 70%, #f5ecff 100%);
