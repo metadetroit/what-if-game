@@ -102,7 +102,7 @@ export default function LandingPage({
 
   return (
     <div ref={scrollRef} className="absolute inset-0 bg-fluke overflow-y-auto overflow-x-hidden">
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center min-h-[100svh]" style={{ height: '100svh' }}>
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-10 text-center min-h-[100svh] pb-[max(2.5rem,env(safe-area-inset-bottom))]" style={{ height: '100svh' }}>
         <picture>
           <source media="(max-width: 768px)" srcSet="/hero-chaos-v3-mobile.png" />
           <img
@@ -132,26 +132,26 @@ export default function LandingPage({
           <div className="mobile-fill-mt max-w-xl mx-auto w-full flex flex-col mobile-fill-gap">
             <button
               onClick={() => scrollToSection("play")}
-              className="btn-primary w-full rounded-full px-6 mobile-fill-py text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
+              className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               START GAME
             </button>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               <button
                 onClick={() => setGameState("best-of")}
-                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
+                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap min-h-[44px] md:px-4 md:py-3 md:text-sm"
               >
-                View Best Of
+                Best Of
               </button>
               <button
                 onClick={() => setGameState("help")}
-                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
+                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap min-h-[44px] md:px-4 md:py-3 md:text-sm"
               >
                 How to Play
               </button>
               <button
                 onClick={() => setGameState("support")}
-                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap md:px-4 md:py-3 md:text-sm"
+                className="hero-mini-pill px-3 py-3 text-sm font-semibold whitespace-nowrap min-h-[44px] md:px-4 md:py-3 md:text-sm"
               >
                 💜 Support
               </button>
@@ -366,24 +366,24 @@ export default function LandingPage({
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200">
+          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1">
             How to play →
           </button>
-          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200">
+          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1">
             Best Of →
           </button>
           {showInstallLink && (
             <button
               onClick={() => (isIOS ? setShowIOSHelp(true) : promptInstall())}
-              className="text-purple-300 hover:text-purple-200"
+              className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1"
             >
               Play fullscreen (Install app) →
             </button>
           )}
-          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200">
+          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1">
             Support this project →
           </button>
-          <span className="text-purple-300 hover:text-purple-200">
+          <span className="text-purple-300 text-sm min-h-[44px] px-2 py-1">
             Copyright Fluke Games
           </span>
         </div>

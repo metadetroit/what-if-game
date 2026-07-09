@@ -113,7 +113,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setShowDisconnectOverlay(false)
       setDisconnectOverlayDeadline(null)
       if (activeGameplay) {
-        setNotice(noticeFor("Back online", "success", 1500))
+        setNotice(noticeFor("Back online", "success", 2000))
       } else {
         setNotice(prev => (prev && prev.tone === "warn" ? null : prev))
       }
@@ -141,7 +141,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       if (activeGameplay) {
         setShowDisconnectOverlay(true)
         setDisconnectOverlayDeadline(Date.now() + 180000)
-        setNotice(noticeFor("You disconnected. If you don't automatically reconnect, try refreshing your screen.", "warn", null))
+        setNotice(noticeFor("You disconnected. If you don't automatically reconnect, try refreshing your screen.", "warn", 2000))
       }
       touchSession()
     })

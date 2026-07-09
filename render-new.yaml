@@ -1,0 +1,14 @@
+services:
+  # Backend Web Service (also serves frontend)
+  - type: web
+    name: what-if-game-backend
+    runtime: node
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: "*"
+    plan: free
+    healthCheckPath: /

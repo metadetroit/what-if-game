@@ -11,8 +11,8 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
   return (
     <div className="game-container game-container--help py-2">
       <div className="flex items-center justify-between mb-2 md:mb-3">
-        <h2 className="font-bubble text-xl md:text-2xl font-bold text-gradient-chaos">Help & Info</h2>
-        <button onClick={onBack} className="flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors">
+        <h2 className="font-bubble text-xl md:text-3xl font-bold text-gradient-chaos">Help & Info</h2>
+        <button onClick={onBack} className="flex items-center gap-1 text-white/60 hover:text-white text-sm md:text-base font-medium transition-colors min-h-[44px]">
           ← Back
         </button>
       </div>
@@ -23,7 +23,7 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`px-2.5 py-1.5 md:px-3 md:py-1 text-[11px] md:text-xs font-bold rounded-full border whitespace-nowrap ${helpTab === tab.id ? "border-indigo-500 bg-indigo-500/20 text-white" : "border-gray-700 text-gray-400"}`}
+              className={`px-2.5 py-1.5 md:px-3 md:py-2 text-xs md:text-sm font-bold rounded-full border whitespace-nowrap min-h-[40px] md:min-h-[44px] ${helpTab === tab.id ? "border-indigo-500 bg-indigo-500/20 text-white" : "border-gray-700 text-gray-400"}`}
             >
               {tab.label}
             </button>
@@ -63,7 +63,7 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
 
               <div className="border-t border-gray-700 pt-3 md:pt-4">
                 <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Host Controls</h4>
-                <p className="text-sm md:text-base text-gray-500 mb-2">(Only the host sees these)</p>
+                <p className="text-base md:text-lg text-gray-500 mb-2">(Only the host sees these)</p>
                 <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
                   <li>• <strong>Anonymous Results</strong> - Hide names in the summary.</li>
                   <li>• <strong>No Self-Reading</strong> - Reduce self-assigned content.</li>

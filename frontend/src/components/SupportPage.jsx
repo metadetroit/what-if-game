@@ -4,8 +4,8 @@ function SupportPage({ onBack }) {
   return (
     <div className="game-container py-2">
       <div className="flex items-center justify-between mb-2 md:mb-3">
-        <h2 className="font-bubble text-lg md:text-xl font-bold text-gradient-chaos">Support the Project</h2>
-        <button onClick={onBack} className="flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors">
+        <h2 className="font-bubble text-xl md:text-3xl font-bold text-gradient-chaos">Support the Project</h2>
+        <button onClick={onBack} className="flex items-center gap-1 text-white/60 hover:text-white text-sm md:text-base font-medium transition-colors min-h-[44px]">
           ← Back
         </button>
       </div>
@@ -15,17 +15,17 @@ function SupportPage({ onBack }) {
           <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
             <span className="text-lg md:text-xl">🎁</span>
           </div>
-          <h3 className="font-bubble text-base md:text-lg font-bold text-white">Value for Value</h3>
+          <h3 className="font-bubble text-lg md:text-xl font-bold text-white">Value for Value</h3>
         </div>
 
-        <p className="text-sm text-gray-300 leading-relaxed">
+        <p className="text-base md:text-lg text-gray-300 leading-relaxed">
           If Fluke gave you a good laugh, a memorable night, or a reason to reconnect with friends, consider returning some of that value back. This game is free to play, but it is not free to build, host, and improve.
         </p>
 
         <div className="border-t border-gray-700 pt-3 md:pt-4 space-y-3 md:space-y-4">
           <div>
-            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Send a Tip</h4>
-            <p className="text-sm text-gray-300 leading-relaxed mb-2 md:mb-3">
+            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Send a Tip</h4>
+            <p className="text-base md:text-lg text-gray-300 leading-relaxed mb-2 md:mb-3">
               A small donation helps cover server costs and keeps the game online. No amount is too small.
             </p>
 
@@ -36,7 +36,7 @@ function SupportPage({ onBack }) {
                   alt="Cash App QR code for $playfluke"
                   className="w-52 h-52 rounded-lg bg-white p-2"
                 />
-                <p className="text-xs font-semibold text-gray-300 text-center max-w-[10rem] leading-relaxed">
+                <p className="text-sm md:text-base font-semibold text-gray-300 text-center max-w-[10rem] leading-relaxed">
                   Playing on PC? Scan with your phone camera to open Cash App instantly.
                 </p>
               </div>
@@ -45,14 +45,14 @@ function SupportPage({ onBack }) {
                   href="https://square.link/u/YPi6d86H"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors shadow-lg"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-base md:text-lg font-bold rounded-xl transition-colors shadow-lg min-h-[44px]"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
                   </svg>
                   pay with any credit card (no account needed) or Cash App
                 </a>
-                <p className="text-xs font-semibold text-gray-300 text-center leading-relaxed">
+                <p className="text-sm md:text-base font-semibold text-gray-300 text-center leading-relaxed">
                   Opens in a new tab — works without the app.
                 </p>
               </div>
@@ -65,7 +65,7 @@ function SupportPage({ onBack }) {
                   alt="Cash App QR code for $playfluke"
                   className="w-40 h-40 rounded-lg bg-white p-2"
                 />
-                <p className="text-xs font-semibold text-gray-300 text-center max-w-[11rem] leading-relaxed">
+                <p className="text-sm md:text-base font-semibold text-gray-300 text-center max-w-[11rem] leading-relaxed">
                   Scan with your phone camera to open Cash App instantly.
                 </p>
               </div>
@@ -73,46 +73,46 @@ function SupportPage({ onBack }) {
                 href="https://square.link/u/YPi6d86H"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-sm font-bold rounded-xl transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#00D632] hover:bg-[#00bd2c] text-black text-base md:text-lg font-bold rounded-xl transition-colors min-h-[44px]"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
                 </svg>
                 pay with any credit card (no account needed) or Cash App
               </a>
-              <p className="text-[10px] text-gray-500 text-center">
+              <p className="text-xs md:text-sm text-gray-500 text-center">
                 Opens the Cash App if installed, or a secure web checkout otherwise.
               </p>
             </div>
           </div>
 
           <div className="border-t border-gray-700 pt-3 md:pt-4">
-            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Beta Test & Feedback</h4>
-            <p className="text-sm text-gray-300 leading-relaxed mb-2 md:mb-3">
+            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Beta Test & Feedback</h4>
+            <p className="text-base md:text-lg text-gray-300 leading-relaxed mb-2 md:mb-3">
               Spotted a bug? Have an idea? Want to test new features before they go live? Your feedback shapes what Fluke becomes next.
             </p>
-            <a href="mailto:hello@playfluke.com" className="text-sm text-indigo-300 hover:text-indigo-200 underline">
+            <a href="mailto:hello@playfluke.com" className="text-base md:text-lg text-indigo-300 hover:text-indigo-200 underline">
               hello@playfluke.com
             </a>
           </div>
 
           <div className="border-t border-gray-700 pt-3 md:pt-4">
-            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Share the Game</h4>
-            <p className="text-sm text-gray-300 leading-relaxed">
+            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Share the Game</h4>
+            <p className="text-base md:text-lg text-gray-300 leading-relaxed">
               The easiest way to support Fluke is to bring more people into the room. Share the link, teach a friend, or bring it to your next group hangout.
             </p>
           </div>
 
           <div className="border-t border-gray-700 pt-3 md:pt-4">
-            <h4 className="text-sm font-bold text-pink-400 mb-1.5 md:mb-2">Thank You</h4>
-            <p className="text-sm text-gray-300 leading-relaxed">
+            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Thank You</h4>
+            <p className="text-base md:text-lg text-gray-300 leading-relaxed">
               However you choose to give back — donation, bug report, or another round — it matters. Thanks for being part of this.
             </p>
           </div>
         </div>
       </div>
 
-      <button onClick={onBack} className="btn-secondary py-2.5 md:py-3 text-sm w-full mt-3">
+      <button onClick={onBack} className="btn-secondary py-2.5 md:py-3 text-base md:text-lg w-full mt-3 min-h-[44px]">
         Back to Main Screen
       </button>
     </div>

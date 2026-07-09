@@ -44,7 +44,7 @@ export default function SummaryPhase({
   return (
     <div className="game-container game-container--summary py-4">
       {hideGameConfirm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="hide-game-title">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" role="dialog" aria-modal="true" aria-labelledby="hide-game-title">
           <div ref={hideGameTrapRef} className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
             <p id="hide-game-title" className="text-lg font-bold text-white mb-2">Hide from Best Of?</p>
             <p className="text-sm text-gray-400 mb-4">This will prevent any content from this game from appearing on the public Best Of page.</p>
@@ -55,29 +55,29 @@ export default function SummaryPhase({
           </div>
         </div>
       )}
-      <div className="summary-header card">
-        <div className="flex flex-col gap-1">
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
-          <h2 className="font-bubble text-2xl font-black text-white leading-tight">Vote for the best question/answer pair</h2>
+      <div className="summary-header card !p-3 md:!p-4">
+        <div className="flex flex-col gap-0.5 md:gap-1">
+          <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
+          <h2 className="font-bubble text-xl md:text-2xl font-black text-white leading-tight">Vote for the best pair</h2>
           {tournament && tournament.votingDeadlineAt && (
-            <div className="mt-1 flex items-center justify-center gap-2 text-sm text-gray-400">
+            <div className="mt-0.5 flex items-center justify-center gap-2 text-xs md:text-sm text-gray-400">
               <span>Time to vote:</span>
-              <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="font-bold text-lg" />
+              <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="font-bold text-base" />
             </div>
           )}
-          <div className="mt-2 flex justify-center">
-            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-1 text-xs">
+          <div className="mt-1.5 flex justify-center">
+            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-0.5 text-[10px] md:text-xs">
               <button
                 onClick={() => setViewMode("paired")}
-                className={`w-28 sm:w-32 rounded-full px-3 py-1.5 font-semibold text-center transition-colors duration-200 ${
+                className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
                   viewMode === "paired" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
-                Game Pairings
+                Pairings
               </button>
               <button
                 onClick={() => setViewMode("actual")}
-                className={`w-28 sm:w-32 rounded-full px-3 py-1.5 font-semibold text-center transition-colors duration-200 ${
+                className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
                   viewMode === "actual" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
@@ -86,23 +86,23 @@ export default function SummaryPhase({
             </div>
           </div>
         </div>
-        <div className="summary-header__meta">
+        <div className="summary-header__meta !py-2 md:!py-3 !px-3 md:!px-4">
           {roundHistory.length > 0 && (
             <div>
               <p className="summary-pill">History</p>
-              <button onClick={() => setShowRoundHistory(true)} className="text-xs text-indigo-300 hover:text-indigo-200 underline">
+              <button onClick={() => setShowRoundHistory(true)} className="text-[10px] md:text-xs text-indigo-300 hover:text-indigo-200 underline">
                 {roundHistory.length} past round{roundHistory.length === 1 ? '' : 's'}
               </button>
             </div>
           )}
           <div>
             <p className="summary-pill">Players</p>
-            <p className="summary-meta-value">{players.length}</p>
+            <p className="summary-meta-value text-base md:text-lg">{players.length}</p>
           </div>
           <div>
-            <p className="summary-pill">Voting Status</p>
-            <p className={"summary-meta-value " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ Everyone voted" : `${votersCount}/${players.length} voted`}</p>
-            <p className="summary-meta-note">{votersCount >= players.length ? "Ready to start next round" : "Waiting for votes"}</p>
+            <p className="summary-pill">Votes</p>
+            <p className={"summary-meta-value text-base md:text-lg " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ All" : `${votersCount}/${players.length}`}</p>
+            <p className="summary-meta-note">{votersCount >= players.length ? "Ready" : "Waiting"}</p>
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function SummaryPhase({
                     ) : (
                       <>
                         <div className="summary-paired">
-                          <p className="font-hand text-lg leading-snug text-emerald-100/90">{pair.actualAnswer || <span className="text-gray-500 italic text-sm">No actual answer</span>}</p>
+                          <p className="font-hand text-base md:text-lg leading-snug text-emerald-100/90 break-words">{pair.actualAnswer || <span className="text-gray-500 italic text-sm">No actual answer</span>}</p>
                         </div>
                         <p className="text-xs text-gray-400">
                           Q by {questionAuthor}{pair.actualAnswer && <> · A by {actualAuthor}</>}
@@ -228,7 +228,7 @@ export default function SummaryPhase({
       </div>
 
       {showRoundHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h3 className="text-lg font-bold text-white">Round History</h3>
@@ -273,10 +273,10 @@ export default function SummaryPhase({
       {roundLeader && (
         <div className="summary-leader card">
           <div className="summary-leader__icon">🔥</div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-rose-200">{roundLeader.tied ? 'Current tie for top pairing' : 'Current top pairing'}</p>
-            <p className="text-base font-extrabold text-white leading-snug">{roundLeader.question}</p>
-            <p className="text-sm text-rose-100/80 leading-snug">Performed with: {roundLeader.pairedAnswer || 'No pairing was performed'}</p>
+            <p className="text-base md:text-lg font-extrabold text-white leading-snug break-words">{roundLeader.question}</p>
+            <p className="text-sm text-rose-100/80 leading-snug break-words">Performed with: {roundLeader.pairedAnswer || 'No pairing was performed'}</p>
           </div>
           <div className="summary-leader__badge">{roundLeader.voteCount} vote{roundLeader.voteCount === 1 ? '' : 's'}</div>
         </div>
@@ -285,9 +285,9 @@ export default function SummaryPhase({
       {fastestTyper && (
         <div className="summary-fastest card">
           <div className="summary-fastest__icon">🏆</div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
-            <p className="text-xl font-extrabold text-white">{fastestTyper}</p>
+            <p className="text-xl font-extrabold text-white truncate">{fastestTyper}</p>
             <p className="text-xs text-amber-100/70">First to submit both their question and answer!</p>
           </div>
           <div className="summary-fastest__badge">Fastest Typer!</div>
@@ -297,9 +297,9 @@ export default function SummaryPhase({
       {slowestTyper && (
         <div className="summary-slowest card">
           <div className="summary-slowest__icon">⏰</div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-sky-200">Slowest typer in both rounds</p>
-            <p className="text-xl font-extrabold text-white">{slowestTyper}</p>
+            <p className="text-xl font-extrabold text-white truncate">{slowestTyper}</p>
             <p className="text-xs text-sky-100/70">Last to finish both the question and the answer.</p>
           </div>
           <div className="summary-slowest__badge">Slowest Typer!</div>
@@ -309,16 +309,16 @@ export default function SummaryPhase({
       {mostAdoredWriter ? (
         <div className="summary-mvp card">
           <div className="summary-mvp__icon">💖</div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-yellow-200">Round's most-adored writer</p>
             {mostAdoredWriter.tied ? (
               <>
-                <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : mostAdoredWriter.names.join(' & ')}</p>
+                <p className="text-xl font-extrabold text-white truncate">{summaryAnonymousMode ? '???' : mostAdoredWriter.names.join(' & ')}</p>
                 <p className="text-xs text-yellow-100/70">Tied with {mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'} each!</p>
               </>
             ) : (
               <>
-                <p className="text-xl font-extrabold text-white">{summaryAnonymousMode ? '???' : (mostAdoredWriter.names[0] || 'Unknown')}</p>
+                <p className="text-xl font-extrabold text-white truncate">{summaryAnonymousMode ? '???' : (mostAdoredWriter.names[0] || 'Unknown')}</p>
                 <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
               </>
             )}
@@ -328,16 +328,16 @@ export default function SummaryPhase({
       ) : (
         <div className="summary-mvp card" style={{ opacity: 0.6 }}>
           <div className="summary-mvp__icon">💭</div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-yellow-200">Round's most-adored writer</p>
-            <p className="text-xl font-extrabold text-white">No reactions yet</p>
+            <p className="text-xl font-extrabold text-white truncate">No reactions yet</p>
             <p className="text-xs text-yellow-100/70">Send ❤️ and 😂 during the next round!</p>
           </div>
         </div>
       )}
 
       {voteConfirm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="vote-confirm-title">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" role="dialog" aria-modal="true" aria-labelledby="vote-confirm-title">
           <div className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-xs w-full text-center">
             <p id="vote-confirm-title" className="text-lg font-bold text-white mb-2">Lock in vote?</p>
             <p className="text-sm text-gray-400 mb-1">You're voting for:</p>

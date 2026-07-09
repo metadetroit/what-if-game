@@ -839,6 +839,10 @@ function App() {
     setHasRead(true)
   }, [socket])
 
+  const rewindPerformance = useCallback(() => {
+    socket.emit("rewind-performance")
+  }, [socket])
+
   const forceProgress = useCallback(() => {
     socket.emit("force-progress")
     setForceConfirm(false)
@@ -1196,7 +1200,7 @@ function App() {
         return (
           <div className="relative h-full">
             {reconnectPrompt && (
-              <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="reconnect-title">
+              <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4" role="dialog" aria-modal="true" aria-labelledby="reconnect-title">
                 <div ref={reconnectTrapRef} className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl">
                   <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-2xl">🎮</span>
@@ -1334,6 +1338,7 @@ function App() {
             socketRef={socketRef}
             hasRead={hasRead}
             completeReading={completeReading}
+            rewindPerformance={rewindPerformance}
             gameStats={gameStats}
             error={error}
             forceConfirm={forceConfirm}
@@ -1429,12 +1434,14 @@ function App() {
   }
 
   return (
-    <div className="h-dvh overflow-auto bg-gradient-to-br from-gray-950 to-gray-900 relative">
+    <div className="h-dvh overflow-hidden bg-gradient-to-br from-gray-950 to-gray-900 relative pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
       {notice && (
         <div
           className={"notice-banner " + (notice.tone === "success" ? "notice-banner--success" : notice.tone === "warn" ? "notice-banner--warn" : "notice-banner--info")}
           role="status"
           aria-live="polite"
+          onClick={() => setNotice(null)}
+          title="Tap to dismiss"
         >
           <span className="flex-1 text-center leading-tight">
             {notice.message}
@@ -1443,7 +1450,7 @@ function App() {
             )}
           </span>
           <button
-            onClick={() => setNotice(null)}
+            onClick={(e) => { e.stopPropagation(); setNotice(null) }}
             className="notice-banner__close"
             aria-label="Dismiss notice"
             title="Dismiss"
@@ -1453,7 +1460,7 @@ function App() {
         </div>
       )}
       {showCountdown && ["writing", "answering", "performing"].includes(gameState) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="countdown-title">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="countdown-title">
           <div ref={countdownTrapRef} className="bg-gray-900 border border-gray-700 rounded-2xl px-8 py-8 text-center shadow-2xl max-w-xs">
             <p id="countdown-title" className="text-sm text-indigo-300 uppercase tracking-widest font-bold mb-3">
               {gameState === 'writing' ? 'Starting new round…' : gameState === 'answering' ? 'Answer time!' : 'Reading time!'}
@@ -1468,7 +1475,7 @@ function App() {
         </div>
       )}
       {showDisconnectOverlay && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-labelledby="disconnect-title">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-labelledby="disconnect-title">
           <div ref={disconnectTrapRef} className="bg-gray-900 border border-amber-500/40 rounded-2xl px-6 py-8 text-center shadow-2xl max-w-sm w-full">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/15 flex items-center justify-center">
               <span className="text-3xl">⚠️</span>

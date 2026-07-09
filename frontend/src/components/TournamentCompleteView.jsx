@@ -19,12 +19,12 @@ export default function TournamentCompleteView({
         {isTie ? (
           <>
             <h2 className="font-bubble text-2xl font-black text-amber-300 leading-tight">Co-Champions!</h2>
-            <p className="text-lg font-bold text-white mt-2">{champions.join(" & ")}</p>
+            <p className="text-lg md:text-xl font-bold text-white mt-2 truncate px-2">{champions.join(" & ")}</p>
           </>
         ) : (
           <>
             <h2 className="font-bubble text-2xl font-black text-amber-300 leading-tight">Tournament Champion!</h2>
-            <p className="text-2xl font-black text-white mt-2">{champions[0]}</p>
+            <p className="text-2xl md:text-3xl font-black text-white mt-2 truncate px-2">{champions[0]}</p>
           </>
         )}
       </div>
@@ -47,16 +47,16 @@ export default function TournamentCompleteView({
                   {icon ? <span className="text-xl">{icon}</span> : <span className="text-sm font-bold text-gray-400">{s.rank}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={"text-sm font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
+                  <p className={"text-sm md:text-base font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
                     {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                   </p>
-                  <p className="text-[10px] text-gray-500">
+                  <p className="text-xs md:text-sm text-gray-500">
                     {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes
                   </p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xl font-black text-amber-300">{s.total}</p>
-                  <p className="text-[9px] text-gray-500">pts</p>
+                  <p className="text-xs md:text-sm text-gray-500">pts</p>
                 </div>
               </div>
             )
@@ -69,11 +69,11 @@ export default function TournamentCompleteView({
           <div className="summary-actions__cta">
             <button
               onClick={() => socketRef.current?.emit("new-tournament")}
-              className="btn-primary py-3 text-base"
+              className="btn-primary py-3 text-base min-h-[44px]"
             >
               🔁 New Tournament (same players)
             </button>
-            <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
+            <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight min-h-[44px]">
               🏠 New game (change players)
             </button>
           </div>
@@ -81,8 +81,8 @@ export default function TournamentCompleteView({
       ) : (
         <div className="summary-actions">
           <div className="card text-center py-5 px-6">
-            <p className="text-sm text-gray-200 mb-1">Waiting for host…</p>
-            <p className="text-xs text-gray-500">Host can start a new tournament or disband</p>
+            <p className="text-base md:text-lg text-gray-200 mb-1">Waiting for host…</p>
+            <p className="text-sm md:text-base text-gray-500">Host can start a new tournament or disband</p>
           </div>
         </div>
       )}

@@ -149,7 +149,7 @@ export default function ScoreboardView({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={"text-sm font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
+                    <p className={"text-sm md:text-base font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
                       {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -162,7 +162,7 @@ export default function ScoreboardView({
                   )}
                   <div className="text-right shrink-0">
                     <p className="text-xl font-black text-amber-300">{s.total}</p>
-                    <p className="text-xs text-gray-500">pts</p>
+                    <p className="text-xs md:text-sm text-gray-500">pts</p>
                   </div>
                 </div>
               </React.Fragment>
@@ -214,8 +214,8 @@ export default function ScoreboardView({
       {isHost ? (
         <div className="summary-actions">
           <button
-            onClick={() => socketRef.current?.emit(isFinalRound ? "next-round" : "next-round")}
-            className="btn-primary py-3 text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10"
+            onClick={() => socketRef.current?.emit("next-round")}
+            className="btn-primary py-3 text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
           >
             <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
             <span className="ml-2">{isFinalRound ? "🏆 See Final Results →" : "Next Round →"}</span>
@@ -224,7 +224,7 @@ export default function ScoreboardView({
       ) : (
         <div className="summary-actions">
           <div className="card text-center py-5 px-6 animate-pulse">
-            <p className="text-base text-gray-200 mb-1 font-semibold">Waiting for host or timer…</p>
+            <p className="text-base md:text-lg text-gray-200 mb-1 font-semibold">Waiting for host or timer…</p>
             <Countdown deadlineAt={deadlineAt} serverNow={serverNow} className="text-lg font-bold text-indigo-300" />
           </div>
         </div>

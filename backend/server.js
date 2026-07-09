@@ -1700,6 +1700,26 @@ io.on('connection', (socket) => {
     });
   }
 
+  // Host rewinds one step in the performance phase (presentation-only, no score impact)
+  socket.on('rewind-performance', () => {
+    let roomCode = socket.roomCode;
+    if (!roomCode && socket.rooms) {
+      const rooms = Array.from(socket.rooms);
+      const gameRoom = rooms.find(r => r !== socket.id);
+      if (gameRoom) roomCode = gameRoom;
+    }
+    const game = games[roomCode];
+    if (!game || game.host !== socket.id || game.phase !== 'performing') return;
+    if (game.currentReaderIndex > 0) {
+      game.currentReaderIndex--;
+      // Remove the turn log entry for the turn we are rewinding over so summaries stay clean.
+      if (Array.isArray(game.turnLog) && game.turnLog.length > 0) {
+        game.turnLog.pop();
+      }
+      startNextReading(roomCode);
+    }
+  });
+
   // Player confirms they finished reading
   socket.on('reading-complete', async () => {
     let roomCode = socket.roomCode;
