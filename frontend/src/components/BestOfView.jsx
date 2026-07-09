@@ -54,7 +54,7 @@ function BestOfView({
                   <div className="flex items-center gap-2 flex-wrap justify-end">
                     <button
                       onClick={() => onCopyLink(item.id)}
-                      className="text-xs text-indigo-300 hover:text-indigo-200 underline min-h-[32px]"
+                      className="text-xs text-indigo-300 hover:text-indigo-200 underline min-h-[44px]"
                       title="Copy shareable link"
                       aria-label="Copy shareable link"
                     >
@@ -66,7 +66,7 @@ function BestOfView({
                           <>
                             <button
                               onClick={() => onApproveSFW(item.id, index)}
-                              className="text-xs text-green-400 hover:text-green-300 underline min-h-[32px]"
+                              className="text-xs text-green-400 hover:text-green-300 underline min-h-[44px]"
                               title="Approve as SFW"
                               aria-label="Approve as SFW"
                             >
@@ -74,7 +74,7 @@ function BestOfView({
                             </button>
                             <button
                               onClick={() => onApproveNSFW(item.id, index)}
-                              className="text-xs text-orange-400 hover:text-orange-300 underline min-h-[32px]"
+                              className="text-xs text-orange-400 hover:text-orange-300 underline min-h-[44px]"
                               title="Approve as NSFW"
                               aria-label="Approve as NSFW"
                             >
@@ -83,7 +83,7 @@ function BestOfView({
                             {onRejectFactual && (
                               <button
                                 onClick={() => onRejectFactual(item.id, index)}
-                                className="text-xs text-gray-400 hover:text-gray-300 underline min-h-[32px]"
+                                className="text-xs text-gray-400 hover:text-gray-300 underline min-h-[44px]"
                                 title="Reject as factual Q&A"
                                 aria-label="Reject as factual Q&A"
                               >
@@ -95,7 +95,7 @@ function BestOfView({
                           <>
                             <button
                               onClick={() => onApproveSFW(item.id, index)}
-                              className="text-xs text-green-400 hover:text-green-300 underline min-h-[32px]"
+                              className="text-xs text-green-400 hover:text-green-300 underline min-h-[44px]"
                               title="Mark as SFW"
                               aria-label="Mark as SFW"
                             >
@@ -103,7 +103,7 @@ function BestOfView({
                             </button>
                             <button
                               onClick={() => onApproveNSFW(item.id, index)}
-                              className="text-xs text-orange-400 hover:text-orange-300 underline min-h-[32px]"
+                              className="text-xs text-orange-400 hover:text-orange-300 underline min-h-[44px]"
                               title="Mark as NSFW"
                               aria-label="Mark as NSFW"
                             >
@@ -113,7 +113,7 @@ function BestOfView({
                         )}
                         <button
                           onClick={() => onDeleteItem(item.type, item.id, index)}
-                          className="text-xs text-red-400 hover:text-red-300 underline min-h-[32px]"
+                          className="text-xs text-red-400 hover:text-red-300 underline min-h-[44px]"
                           title="Delete this item"
                           aria-label="Delete this item"
                         >
@@ -133,7 +133,7 @@ function BestOfView({
         ))}
         <div ref={bestOfSentinelRef} className="h-8" />
         {bestOfLoading && (
-          <div className="pt-2 text-center text-[12px] text-gray-400">Loading…</div>
+          <div className="pt-2 text-center text-xs text-gray-400">Loading…</div>
         )}
       </div>
     )
@@ -159,19 +159,19 @@ function BestOfView({
             <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-xs md:text-sm">
               <button
                 onClick={() => onContentFilterChange("all")}
-                className={`px-3 py-1 min-h-[32px] ${contentFilter === "all" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+                className={`px-3 py-1 min-h-[44px] ${contentFilter === "all" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               >
                 Show All
               </button>
               <button
                 onClick={() => onContentFilterChange("nsfw")}
-                className={`px-3 py-1 border-l border-gray-700 min-h-[32px] ${contentFilter === "nsfw" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+                className={`px-3 py-1 border-l border-gray-700 min-h-[44px] ${contentFilter === "nsfw" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               >
                 Only NSFW
               </button>
               <button
                 onClick={() => onContentFilterChange("sfw")}
-                className={`px-3 py-1 border-l border-gray-700 min-h-[32px] ${contentFilter === "sfw" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+                className={`px-3 py-1 border-l border-gray-700 min-h-[44px] ${contentFilter === "sfw" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               >
                 Only SFW
               </button>
@@ -181,13 +181,13 @@ function BestOfView({
             <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-xs md:text-sm">
               <button
                 onClick={() => onViewModeChange && onViewModeChange("approved")}
-                className={`px-3 py-1 min-h-[32px] ${viewMode === "approved" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+                className={`px-3 py-1 min-h-[44px] ${viewMode === "approved" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               >
                 Approved
               </button>
               <button
                 onClick={() => onViewModeChange && onViewModeChange("pending")}
-                className={`px-3 py-1 border-l border-gray-700 ${viewMode === "pending" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+                className={`px-3 py-1 border-l border-gray-700 min-h-[44px] ${viewMode === "pending" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               >
                 Pending
               </button>
@@ -197,13 +197,13 @@ function BestOfView({
             <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/60 overflow-hidden text-xs md:text-sm">
               <button
                 onClick={() => onSortChange("votes")}
-                className={`px-3 py-1 min-h-[32px] ${bestOfSort === "votes" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+                className={`px-3 py-1 min-h-[44px] ${bestOfSort === "votes" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               >
                 Most votes
               </button>
               <button
                 onClick={() => onSortChange("newest")}
-                className={`px-3 py-1 border-l border-gray-700 min-h-[32px] ${bestOfSort === "newest" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
+                className={`px-3 py-1 border-l border-gray-700 min-h-[44px] ${bestOfSort === "newest" ? "bg-indigo-600 text-white" : "text-gray-300 hover:bg-gray-700"}`}
               >
                 Newest
               </button>
@@ -211,7 +211,7 @@ function BestOfView({
           )}
           <button
             onClick={onToggleAdmin}
-            className={`text-xs md:text-sm px-2 py-1 rounded-lg border min-h-[32px] ${adminKey ? "border-amber-500/50 text-amber-400 bg-amber-500/10" : "border-gray-700 text-gray-500 hover:text-gray-300"}`}
+            className={`text-xs md:text-sm px-2 py-1 rounded-lg border min-h-[44px] ${adminKey ? "border-amber-500/50 text-amber-400 bg-amber-500/10" : "border-gray-700 text-gray-500 hover:text-gray-300"}`}
             title={adminKey ? "Admin mode active — click to disable" : "Enter admin key to enable delete"}
           >
             {adminKey ? "🔓 Admin" : "🔒"}

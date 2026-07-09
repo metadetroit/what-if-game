@@ -97,7 +97,7 @@
   }
   
   .game-container {
-    @apply w-full max-w-md mx-auto px-3 py-2 pb-4 flex flex-col overflow-hidden;
+    @apply w-full max-w-md mx-auto px-3 py-2 pb-4 flex flex-col overflow-hidden overflow-x-hidden;
     /* Explicit safe-area-aware height — not derived from % chain, can't be overridden by py-* utilities */
     height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
@@ -147,7 +147,7 @@
   }
 
   .summary-fastest__badge {
-    @apply ml-auto text-[10px] md:text-xs font-black tracking-widest uppercase bg-amber-400/20 text-amber-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-amber-400/60;
+    @apply ml-auto text-xs md:text-sm font-black tracking-widest uppercase bg-amber-400/20 text-amber-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-amber-400/60;
   }
 
   .summary-slowest {
@@ -159,7 +159,7 @@
   }
 
   .summary-slowest__badge {
-    @apply ml-auto text-[10px] md:text-xs font-black tracking-widest uppercase bg-sky-400/20 text-sky-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-sky-400/60;
+    @apply ml-auto text-xs md:text-sm font-black tracking-widest uppercase bg-sky-400/20 text-sky-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-sky-400/60;
   }
 
   .summary-mvp {
@@ -171,7 +171,7 @@
   }
 
   .summary-mvp__badge {
-    @apply ml-auto text-[10px] md:text-xs font-black tracking-widest uppercase bg-yellow-400/20 text-yellow-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-yellow-400/60;
+    @apply ml-auto text-xs md:text-sm font-black tracking-widest uppercase bg-yellow-400/20 text-yellow-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-yellow-400/60;
   }
 
   .summary-leader {
@@ -183,7 +183,7 @@
   }
 
   .summary-leader__badge {
-    @apply ml-auto text-[10px] md:text-xs font-black tracking-widest uppercase bg-rose-400/20 text-rose-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-rose-400/60;
+    @apply ml-auto text-xs md:text-sm font-black tracking-widest uppercase bg-rose-400/20 text-rose-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-rose-400/60;
   }
 
   .summary-meta-value {
@@ -293,7 +293,7 @@
   }
 
   .phase-banner em {
-    @apply hidden sm:block text-[10px] text-gray-400 not-italic;
+    @apply hidden sm:block text-xs text-gray-400 not-italic;
   }
 
   .waiting-panel {
@@ -586,7 +586,7 @@
   }
 
   .lobby-room-code-pill__label {
-    @apply text-[10px] font-black uppercase tracking-[0.2em];
+    @apply text-xs font-black uppercase tracking-[0.2em];
     color: #2A1200;
     line-height: 1;
   }
@@ -722,7 +722,7 @@
   }
 
   .lobby-badge {
-    @apply px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider;
+    @apply px-2 py-0.5 rounded-full text-xs font-black uppercase tracking-wider;
   }
   .lobby-badge--host {
     background: rgba(253, 224, 71, 0.9);
@@ -869,7 +869,7 @@
     @apply flex items-center gap-2 flex-wrap;
   }
   .lobby-house-rules__chip {
-    @apply px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider;
+    @apply px-2 py-0.5 rounded-full text-xs font-black uppercase tracking-wider;
     background: var(--glass-fill-strong);
     color: var(--text-muted);
     border: 1px solid var(--glass-border);
@@ -971,7 +971,7 @@
     color: var(--text-primary);
   }
   .lobby-drawer__label-sub {
-    @apply text-[10px] font-bold uppercase tracking-wider;
+    @apply text-xs font-bold uppercase tracking-wider;
     color: var(--text-muted);
   }
   .lobby-drawer__nested {

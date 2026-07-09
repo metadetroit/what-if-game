@@ -134,7 +134,7 @@ export default function LandingPage({
               onClick={() => scrollToSection("play")}
               className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
-              START GAME
+              START GAME / HAVE CODE?
             </button>
             <div className="grid grid-cols-3 gap-2 md:gap-3">
               <button

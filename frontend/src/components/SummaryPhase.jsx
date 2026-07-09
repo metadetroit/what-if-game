@@ -57,7 +57,7 @@ export default function SummaryPhase({
       )}
       <div className="summary-header card !p-3 md:!p-4">
         <div className="flex flex-col gap-0.5 md:gap-1">
-          <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
+          <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
           <h2 className="font-bubble text-xl md:text-2xl font-black text-white leading-tight">Vote for the best pair</h2>
           {tournament && tournament.votingDeadlineAt && (
             <div className="mt-0.5 flex items-center justify-center gap-2 text-xs md:text-sm text-gray-400">
@@ -66,7 +66,7 @@ export default function SummaryPhase({
             </div>
           )}
           <div className="mt-1.5 flex justify-center">
-            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-0.5 text-[10px] md:text-xs">
+            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-0.5 text-xs md:text-sm">
               <button
                 onClick={() => setViewMode("paired")}
                 className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
@@ -90,7 +90,7 @@ export default function SummaryPhase({
           {roundHistory.length > 0 && (
             <div>
               <p className="summary-pill">History</p>
-              <button onClick={() => setShowRoundHistory(true)} className="text-[10px] md:text-xs text-indigo-300 hover:text-indigo-200 underline">
+              <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline">
                 {roundHistory.length} past round{roundHistory.length === 1 ? '' : 's'}
               </button>
             </div>
@@ -366,11 +366,11 @@ export default function SummaryPhase({
                   onClick={() => socketRef.current?.emit("finish-voting")}
                   className="btn-primary py-2.5 md:py-3 text-sm md:text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
                 >
-                  <span className="text-[10px] md:text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                  <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
                   <span className="ml-2">⚡ Finish Voting & Tally</span>
                 </button>
                 <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]">
-                  <span className="text-[10px] md:text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                  <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
                   <span className="ml-2">🏠 Abandon Tournament</span>
                 </button>
               </div>
@@ -406,7 +406,7 @@ export default function SummaryPhase({
                 </button>
                 {adminKey && (
                   <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
-                    <span className="text-[10px] md:text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                    <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
                     <span className="ml-2">🚫 Hide from Best Of</span>
                   </button>
                 )}

@@ -44,10 +44,12 @@ function RoomCodePill({ roomCode, onClick }) {
 
 function PlayerRow({ player, meta, isHost, myId, onSpectatorToggle, onKick }) {
   const [secondsLeft, setSecondsLeft] = useState(0)
+  const [badgeHidden, setBadgeHidden] = useState(false)
 
   useEffect(() => {
     if (!meta) {
       setSecondsLeft(0)
+      setBadgeHidden(false)
       return
     }
     const update = () => {
@@ -59,7 +61,8 @@ function PlayerRow({ player, meta, isHost, myId, onSpectatorToggle, onKick }) {
     const interval = setInterval(() => {
       if (update() <= 0) clearInterval(interval)
     }, 1000)
-    return () => clearInterval(interval)
+    const badgeTimer = setTimeout(() => setBadgeHidden(true), 2000)
+    return () => { clearInterval(interval); clearTimeout(badgeTimer) }
   }, [meta])
 
   const isMe = player.id === myId
@@ -76,8 +79,8 @@ function PlayerRow({ player, meta, isHost, myId, onSpectatorToggle, onKick }) {
           {isMe && <span className="lobby-badge lobby-badge--you">you</span>}
           {player.isHost && <span className="lobby-badge lobby-badge--host">Host</span>}
           {isSpectator && <span className="lobby-badge lobby-badge--spectator">Spectator</span>}
-          {isReconnecting && <span className="lobby-badge lobby-badge--reconnecting">Reconnecting</span>}
-          {isDisconnected && <span className="lobby-badge lobby-badge--disconnected">Disconnected</span>}
+          {isReconnecting && !badgeHidden && <span className="lobby-badge lobby-badge--reconnecting">Reconnecting</span>}
+          {isDisconnected && !badgeHidden && <span className="lobby-badge lobby-badge--disconnected">Disconnected</span>}
         </div>
       </div>
       {isHost && !isMe && (

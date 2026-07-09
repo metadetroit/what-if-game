@@ -2,7 +2,7 @@ import React from "react"
 
 function SupportPage({ onBack }) {
   return (
-    <div className="game-container py-2">
+    <div className="game-container game-container--scroll py-2">
       <div className="flex items-center justify-between mb-2 md:mb-3">
         <h2 className="font-bubble text-xl md:text-3xl font-bold text-gradient-chaos">Support the Project</h2>
         <button onClick={onBack} className="flex items-center gap-1 text-white/60 hover:text-white text-sm md:text-base font-medium transition-colors min-h-[44px]">

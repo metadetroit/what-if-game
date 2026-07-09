@@ -7,8 +7,7 @@ import {
   saveDraft,
   loadDraft,
   clearDraft,
-  noticeFor,
-  waitingForLabel
+  noticeFor
 } from "../utils/gameUtils"
 
 const ACTIVE_GAMEPLAY = ['lobby', 'writing', 'answering', 'performing', 'ended', 'scoreboard', 'tournament_complete']
@@ -22,7 +21,6 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     prefillWhatIfRef,
     disconnectedPlayersRef,
     disconnectDeadlineRef,
-    disconnectNoticeTimerRef,
     playerNameRef,
     skipNextCountdownRef,
     pendingVoteRef,
@@ -447,7 +445,6 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setPlayers(data.players)
       playersRef.current = data.players
       const name = data.disconnectedPlayer
-      if (name === playerNameRef.current) return
       if (name && !disconnectedPlayersRef.current.includes(name)) {
         disconnectedPlayersRef.current = [...disconnectedPlayersRef.current, name]
       }
@@ -455,13 +452,8 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
         disconnectDeadlineRef.current = Date.now() + data.gracePeriod * 1000
       }
       const activeGameplay = ACTIVE_GAMEPLAY.includes(gameStateRef.current)
-      if (activeGameplay) {
-        if (disconnectNoticeTimerRef.current) clearTimeout(disconnectNoticeTimerRef.current)
-        disconnectNoticeTimerRef.current = setTimeout(() => {
-          setNotice(prev => (prev && prev.expiresAt == null && prev.tone === "warn" ? null : prev))
-          disconnectNoticeTimerRef.current = null
-        }, 150000)
-        setNotice(noticeFor(waitingForLabel(disconnectedPlayersRef.current), "warn", null))
+      if (activeGameplay && name && name !== playerNameRef.current) {
+        setNotice(noticeFor(`${name} disconnected`, "warn", 2000))
       }
     })
 
@@ -475,18 +467,11 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       disconnectedPlayersRef.current = disconnectedPlayersRef.current.filter((n) => n !== data.playerName)
       if (data.playerName === playerNameRef.current) return
       const activeGameplay = ACTIVE_GAMEPLAY.includes(gameStateRef.current)
-      const remaining = disconnectedPlayersRef.current
-      if (remaining.length === 0) {
+      if (disconnectedPlayersRef.current.length === 0) {
         disconnectDeadlineRef.current = null
-        if (disconnectNoticeTimerRef.current) {
-          clearTimeout(disconnectNoticeTimerRef.current)
-          disconnectNoticeTimerRef.current = null
-        }
-        if (activeGameplay) {
-          setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2500))
-        }
-      } else if (activeGameplay) {
-        setNotice(noticeFor(`${data.playerName} reconnected — still waiting for ${remaining.join(", ")}…`, "info", null))
+      }
+      if (activeGameplay) {
+        setNotice(noticeFor(`${data.playerName} reconnected`, "success", 2000))
       }
     })
 
@@ -494,10 +479,10 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       if (data.hostId) setHostId(data.hostId)
       if (newSocket.id === data.hostId) {
         setIsHost(true)
-        setNotice(noticeFor("You're the host now", "info", 3000))
+        setNotice(noticeFor("You're the host now", "info", 2000))
       } else {
         setIsHost(false)
-        setNotice(noticeFor(`${data.hostName} is now the host`, "info", 2500))
+        setNotice(noticeFor(`${data.hostName} is now the host`, "info", 2000))
       }
     })
 
