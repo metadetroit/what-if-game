@@ -225,8 +225,6 @@ export default function SummaryPhase({
             <p className="text-sm text-gray-400">No pairings available. Finish a round to unlock voting.</p>
           </div>
         )}
-      </div>
-
       {showRoundHistory && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl">
@@ -366,13 +364,13 @@ export default function SummaryPhase({
               <div className="summary-actions__cta">
                 <button
                   onClick={() => socketRef.current?.emit("finish-voting")}
-                  className="btn-primary py-3 text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10"
+                  className="btn-primary py-2.5 md:py-3 text-sm md:text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
                 >
-                  <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                  <span className="text-[10px] md:text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
                   <span className="ml-2">⚡ Finish Voting & Tally</span>
                 </button>
-                <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
-                  <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]">
+                  <span className="text-[10px] md:text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
                   <span className="ml-2">🏠 Abandon Tournament</span>
                 </button>
               </div>
@@ -403,12 +401,12 @@ export default function SummaryPhase({
                 </button>
               </div>
               <div className="summary-actions__cta">
-                <button onClick={disbandGame} className="btn-secondary py-3 text-sm whitespace-normal leading-tight">
+                <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight min-h-[44px]">
                   🏠 New game (change number of players)
                 </button>
                 {adminKey && (
                   <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
-                    <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                    <span className="text-[10px] md:text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
                     <span className="ml-2">🚫 Hide from Best Of</span>
                   </button>
                 )}
@@ -419,20 +417,20 @@ export default function SummaryPhase({
       ) : (
         <div className="summary-actions">
           {tournament && tournament.enabled ? (
-            <div className="card text-center py-5 px-6 animate-pulse">
-              <p className="text-base text-gray-200 mb-1 font-semibold">Waiting for votes or timer…</p>
+            <div className="summary-guest animate-pulse">
+              <p className="text-sm md:text-base text-gray-200 mb-1 font-semibold">Waiting for votes or timer…</p>
               {tournament.votingDeadlineAt && (
-                <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="text-lg font-bold text-indigo-300" />
+                <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="text-base md:text-lg font-bold text-indigo-300" />
               )}
-              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-sm w-full max-w-xs mt-3">
+              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs md:text-sm w-full max-w-xs mt-2 min-h-[44px]">
                 Abandon game (exit to main screen)
               </button>
             </div>
           ) : (
-            <div className="card text-center py-5 px-6 animate-pulse">
-              <p className="text-base text-gray-200 mb-1 font-semibold">Please wait for the host to start a new round</p>
-              <p className="text-sm text-gray-500 mb-5 font-semibold">Your screen will automatically refresh</p>
-              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-sm w-full max-w-xs">
+            <div className="summary-guest animate-pulse">
+              <p className="text-sm md:text-base text-gray-200 mb-1 font-semibold">Please wait for the host to start a new round</p>
+              <p className="text-xs md:text-sm text-gray-500 mb-3 md:mb-5 font-semibold">Your screen will automatically refresh</p>
+              <button onClick={handleAbandonGame} className="btn-secondary py-2.5 text-xs md:text-sm w-full max-w-xs min-h-[44px]">
                 Abandon game (exit to main screen)
               </button>
             </div>
@@ -459,6 +457,7 @@ export default function SummaryPhase({
           </button>
         </div>
       )}
+      </div>
     </div>
   )
 }
