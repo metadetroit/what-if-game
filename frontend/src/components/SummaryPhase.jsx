@@ -85,16 +85,16 @@ export default function SummaryPhase({
           </div>
         </div>
       )}
-      <div className="summary-header card !p-3 md:!p-4">
+      <div className="summary-header card !p-2 md:!p-3">
         <span aria-live="polite" className="sr-only">{liveText}</span>
         <div className="summary-header__collapsed">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
-            <div className="flex items-center gap-2">
-              <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-0.5 text-xs md:text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-1 md:gap-2">
+            <p className="text-xs md:text-sm uppercase tracking-[0.2em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
+            <div className="flex items-center gap-1 md:gap-2">
+              <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-[2px] text-xs md:text-sm">
                 <button
                   onClick={() => setViewMode("paired")}
-                  className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
+                  className={`w-[5.25rem] sm:w-24 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[44px] flex items-center justify-center ${
                     viewMode === "paired" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                   }`}
                 >
@@ -102,7 +102,7 @@ export default function SummaryPhase({
                 </button>
                 <button
                   onClick={() => setViewMode("actual")}
-                  className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
+                  className={`w-[5.25rem] sm:w-24 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[44px] flex items-center justify-center ${
                     viewMode === "actual" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                   }`}
                 >
@@ -110,7 +110,7 @@ export default function SummaryPhase({
                 </button>
               </div>
               {roundHistory.length > 0 && (
-                <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline">
+                <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline min-h-[44px] inline-flex items-center px-1">
                   {roundHistory.length} past round{roundHistory.length === 1 ? '' : 's'}
                 </button>
               )}
