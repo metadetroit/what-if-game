@@ -365,25 +365,25 @@ export default function LandingPage({
           </span>
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
         </p>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1">
+        <div className="mt-3 flex flex-wrap md:flex-nowrap items-center justify-center gap-x-2 gap-y-1 md:gap-x-3">
+          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1">
             How to play →
           </button>
-          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1">
+          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1">
             Best Of →
           </button>
           {showInstallLink && (
             <button
               onClick={() => (isIOS ? setShowIOSHelp(true) : promptInstall())}
-              className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1"
+              className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1"
             >
               Play fullscreen (Install app) →
             </button>
           )}
-          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-2 py-1">
+          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1">
             Support this project →
           </button>
-          <span className="text-purple-300 text-sm min-h-[44px] px-2 py-1">
+          <span className="text-purple-300 text-sm min-h-[44px] px-1 md:px-2 py-1">
             Copyright Fluke Games
           </span>
         </div>
