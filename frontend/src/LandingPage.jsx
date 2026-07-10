@@ -246,8 +246,21 @@ export default function LandingPage({
                   className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={20}
                 />
-                {/* Invisible spacer matching room-code input height so rows align on desktop */}
-                <input className="input-field py-3 text-base font-semibold invisible hidden md:block" tabIndex={-1} aria-hidden="true" readOnly />
+                {showInstallLink ? (
+                  <button
+                    onClick={() => (isIOS ? setShowIOSHelp(true) : promptInstall())}
+                    className="w-full text-center text-sm text-fuchsia-300 hover:text-fuchsia-200 underline underline-offset-4 min-h-[44px] px-2 py-1"
+                  >
+                    Play fullscreen (Install app) →
+                  </button>
+                ) : (
+                  <input
+                    className="input-field py-3 text-base font-semibold invisible hidden md:block"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    readOnly
+                  />
+                )}
                 <button
                   onClick={createRoom}
                   disabled={!socket}
@@ -302,7 +315,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <footer className="border-t border-white/5 px-4 py-6 text-center text-sm text-[#E6E1FF]/50 overflow-hidden md:py-10">
+      <footer className="border-t border-white/5 px-4 py-4 text-center text-sm text-[#E6E1FF]/50 overflow-hidden md:py-6">
         {typeof navigator !== "undefined" && (
           <div className="flex justify-center gap-3 mb-4">
             <a
@@ -365,25 +378,18 @@ export default function LandingPage({
           </span>
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
         </p>
-        <div className="mt-3 flex flex-wrap md:flex-nowrap items-center justify-center gap-x-2 gap-y-1 md:gap-x-3">
-          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-1 gap-y-0 md:flex-nowrap md:gap-x-2">
+          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1.5 py-1 whitespace-nowrap">
             How to play →
           </button>
-          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1">
+          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1.5 py-1 whitespace-nowrap">
             Best Of →
           </button>
-          {showInstallLink && (
-            <button
-              onClick={() => (isIOS ? setShowIOSHelp(true) : promptInstall())}
-              className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1"
-            >
-              Play fullscreen (Install app) →
-            </button>
-          )}
-          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1 md:px-2 py-1">
+          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] px-1.5 py-1 whitespace-nowrap">
             Support this project →
           </button>
-          <span className="text-purple-300 text-sm min-h-[44px] px-1 md:px-2 py-1">
+          <span className="hidden md:block h-4 w-px bg-purple-400/30" aria-hidden="true" />
+          <span className="text-purple-300/80 text-sm min-h-[44px] px-1.5 py-1">
             Copyright Fluke Games
           </span>
         </div>
