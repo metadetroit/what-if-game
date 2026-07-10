@@ -378,7 +378,7 @@ export default function LandingPage({
           </span>
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
         </p>
-        <div className="mt-2 flex flex-nowrap items-center justify-center gap-x-1 md:gap-x-2">
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-x-0.5 md:gap-x-1">
           <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap">
             How to play →
           </button>
