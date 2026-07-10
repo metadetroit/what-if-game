@@ -235,7 +235,13 @@ export default function LandingPage({
 
           <div className="mt-3 grid w-full gap-3 overflow-y-auto md:mt-6 md:max-w-4xl md:grid-cols-2 md:items-stretch md:overflow-visible" style={{ maxHeight: '100%' }}>
             <PanelCard title="Start a game (3–15 players)">
-              <div className="w-full flex flex-col gap-3 flex-1">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (socket && playerName.trim()) createRoom()
+                }}
+                className="w-full flex flex-col gap-3 flex-1"
+              >
                 <input
                   type="text"
                   autoComplete="off"
@@ -245,9 +251,11 @@ export default function LandingPage({
                   aria-label="Your name"
                   className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={20}
+                  enterKeyHint="go"
                 />
                 {showInstallLink ? (
                   <button
+                    type="button"
                     onClick={() => (isIOS ? setShowIOSHelp(true) : promptInstall())}
                     className="w-full text-center text-sm text-fuchsia-300 hover:text-fuchsia-200 underline underline-offset-4 min-h-[44px] px-2 py-1"
                   >
@@ -262,17 +270,23 @@ export default function LandingPage({
                   />
                 )}
                 <button
-                  onClick={createRoom}
-                  disabled={!socket}
+                  type="submit"
+                  disabled={!socket || !playerName.trim()}
                   className="btn-primary w-full rounded-full px-5 py-4 text-base font-bold transition-transform duration-150 active:scale-95 md:py-3 md:text-sm"
                 >
                   {socket ? "START NOW" : "..."}
                 </button>
-              </div>
+              </form>
             </PanelCard>
 
             <PanelCard title="Join a game">
-              <div className="w-full flex flex-col gap-3 flex-1">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (socket && playerName.trim() && roomCode.trim()) joinRoom()
+                }}
+                className="w-full flex flex-col gap-3 flex-1"
+              >
                 <input
                   type="text"
                   autoComplete="off"
@@ -282,6 +296,7 @@ export default function LandingPage({
                   aria-label="Your name"
                   className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={20}
+                  enterKeyHint="go"
                 />
                 <input
                   type="text"
@@ -290,20 +305,19 @@ export default function LandingPage({
                   autoComplete="off"
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  onKeyDown={(e) => { if (e.key === "Enter" && roomCode.trim().length === 4) joinRoom() }}
                   placeholder="4-digit code"
                   aria-label="Room code"
                   className="input-field py-4 text-lg font-semibold placeholder:text-gray-500 text-[#E6E1FF] md:py-3 md:text-base"
                   maxLength={4}
                 />
                 <button
-                  onClick={joinRoom}
-                  disabled={!socket}
+                  type="submit"
+                  disabled={!socket || !playerName.trim() || !roomCode.trim()}
                   className="btn-primary w-full rounded-full px-5 py-4 text-base font-bold transition-transform duration-150 active:scale-95 md:py-3 md:text-sm"
                 >
                   {socket ? "JOIN NOW" : "..."}
                 </button>
-              </div>
+              </form>
             </PanelCard>
           </div>
 
