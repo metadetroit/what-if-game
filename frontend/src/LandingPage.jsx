@@ -392,7 +392,7 @@ export default function LandingPage({
             href="https://www.playfluke.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap"
+            className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap inline-flex items-center leading-none"
           >
             © Fluke Games
           </a>
