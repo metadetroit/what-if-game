@@ -141,68 +141,7 @@ export default function SummaryPhase({
         )}
       </div>
 
-      {isHost && (
-        <div
-          className="summary-host-controls card"
-          onFocus={handleHostControlsFocus}
-          onBlur={handleHostControlsBlur}
-        >
-          {tournament && tournament.enabled ? (
-            <div className="summary-actions__cta">
-              <button
-                onClick={() => socketRef.current?.emit("finish-voting")}
-                className="btn-primary py-2.5 md:py-3 text-sm md:text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
-              >
-                <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-                <span className="ml-2">⚡ Finish Voting & Tally</span>
-              </button>
-              <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]">
-                <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-                <span className="ml-2">🏠 Abandon Tournament</span>
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="summary-actions__toggles">
-                <div className="summary-toggle card">
-                  <div>
-                    <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                    <p className="text-xs text-gray-400">Hide names in next game's summary + Best Of.</p>
-                  </div>
-                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
-                    <span />
-                  </button>
-                </div>
-                <div className="summary-toggle card">
-                  <div>
-                    <p className="text-xs text-white font-semibold">No Self-Reading</p>
-                    <p className="text-xs text-gray-400">Players won't read their own content next round.</p>
-                  </div>
-                  <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
-                    <span />
-                  </button>
-                </div>
-                <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
-                  🔄 Replay (same players)
-                </button>
-              </div>
-              <div className="summary-actions__cta">
-                <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight min-h-[44px]">
-                  🏠 New game (change number of players)
-                </button>
-                {adminKey && (
-                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
-                    <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-                    <span className="ml-2">🚫 Hide from Best Of</span>
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="summary-scroll">
+      <div className="summary-scroll pb-10">
         {gameSummary && gameSummary.length > 0 ? (
           <div className="summary-grid content-visibility-auto">
             {gameSummary.map((pair, i) => {
@@ -470,8 +409,68 @@ export default function SummaryPhase({
           )}
         </div>
       )}
+      {isHost && (
+        <div
+          className="summary-host-controls card mb-4"
+          onFocus={handleHostControlsFocus}
+          onBlur={handleHostControlsBlur}
+        >
+          {tournament && tournament.enabled ? (
+            <div className="summary-actions__cta">
+              <button
+                onClick={() => socketRef.current?.emit("finish-voting")}
+                className="btn-primary py-2.5 md:py-3 text-sm md:text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
+              >
+                <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                <span className="ml-2">⚡ Finish Voting & Tally</span>
+              </button>
+              <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]">
+                <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                <span className="ml-2">🏠 Abandon Tournament</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="summary-actions__toggles">
+                <div className="summary-toggle card">
+                  <div>
+                    <p className="text-xs text-white font-semibold">Anonymous Results</p>
+                    <p className="text-xs text-gray-400">Hide names in next game's summary + Best Of.</p>
+                  </div>
+                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
+                    <span />
+                  </button>
+                </div>
+                <div className="summary-toggle card">
+                  <div>
+                    <p className="text-xs text-white font-semibold">No Self-Reading</p>
+                    <p className="text-xs text-gray-400">Players won't read their own content next round.</p>
+                  </div>
+                  <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
+                    <span />
+                  </button>
+                </div>
+                <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
+                  🔄 Replay (same players)
+                </button>
+              </div>
+              <div className="summary-actions__cta">
+                <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight min-h-[44px]">
+                  🏠 New game (change number of players)
+                </button>
+                {adminKey && (
+                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
+                    <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                    <span className="ml-2">🚫 Hide from Best Of</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
       {gameSummary && gameSummary.length > 0 && (
-        <div className="flex justify-center">
+        <div className="flex justify-center mt-4">
           <button
             onClick={() => {
               const lines = gameSummary.map((pair, i) => {
