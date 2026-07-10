@@ -388,9 +388,14 @@ export default function LandingPage({
           <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap">
             Support this project →
           </button>
-          <span className="shrink-0 text-purple-300/80 text-sm min-h-[44px] px-1.5 py-1 whitespace-nowrap">
-            Copyright Fluke Games
-          </span>
+          <a
+            href="https://www.playfluke.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap"
+          >
+            © Fluke Games
+          </a>
         </div>
       </footer>
 
