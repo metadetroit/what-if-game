@@ -378,21 +378,21 @@ export default function LandingPage({
           </span>
           <span className="font-sans text-sm font-normal italic text-[#E6E1FF]/60">chaos that connects.</span>
         </p>
-        <div className="mt-2 flex flex-nowrap items-center justify-center gap-x-0.5 md:gap-x-1">
-          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap">
-            How to play →
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-x-1">
+          <button onClick={() => setGameState("help")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1 py-1 whitespace-nowrap">
+            How to play
           </button>
-          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap">
-            Best Of →
+          <button onClick={() => setGameState("best-of")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1 py-1 whitespace-nowrap">
+            Best Of
           </button>
-          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap">
-            Support this project →
+          <button onClick={() => setGameState("support")} className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1 py-1 whitespace-nowrap">
+            Support this project
           </button>
           <a
             href="https://www.playfluke.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1.5 py-1 whitespace-nowrap inline-flex items-center leading-none"
+            className="text-purple-300 hover:text-purple-200 text-sm min-h-[44px] shrink-0 px-1 py-1 whitespace-nowrap inline-flex items-center leading-none"
           >
             © Fluke Games
           </a>
