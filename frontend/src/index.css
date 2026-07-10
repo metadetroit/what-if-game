@@ -409,7 +409,7 @@
   }
 
   .notice-banner {
-    @apply fixed z-40 px-4 py-3 pr-10 rounded-2xl shadow-md text-sm font-semibold tracking-wide flex items-center gap-2 transition-transform duration-200 border bg-gray-900/95 cursor-pointer;
+    @apply fixed z-toast px-4 py-3 pr-10 rounded-2xl shadow-md text-sm font-semibold tracking-wide flex items-center gap-2 transition-transform duration-200 border bg-gray-900/95 cursor-pointer;
     @apply left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md;
     top: max(1rem, env(safe-area-inset-top));
   }
@@ -1058,7 +1058,7 @@
   }
 
   .lobby-toast {
-    @apply fixed top-4 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-full text-sm font-bold shadow-2xl animate-bounce-soft;
+    @apply fixed top-4 left-1/2 -translate-x-1/2 z-toast px-5 py-3 rounded-full text-sm font-bold shadow-2xl animate-bounce-soft;
     background: linear-gradient(90deg, var(--color-purple), var(--color-pink));
     color: var(--text-primary);
   }

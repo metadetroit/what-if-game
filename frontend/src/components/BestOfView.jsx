@@ -44,7 +44,7 @@ function BestOfView({
     }
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 content-visibility-auto">
         {bestOfData.map((item, index) => (
           <div key={`${item.type}-${item.id}-${index}`} id={`bestof-${item.id}`} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
             {item.type === "qa_pair" && (

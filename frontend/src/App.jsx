@@ -21,7 +21,6 @@ import {
   saveDraft,
   loadDraft,
   clearDraft,
-  waitingForLabel,
   formatTimeLeft,
   getPrefillWhatIf,
   setPrefillWhatIfStorage,
@@ -124,7 +123,6 @@ function App() {
   // Names of OTHER players currently disconnected (within their reconnect grace window).
   const disconnectedPlayersRef = useRef([])
   const disconnectDeadlineRef = useRef(null)
-  const disconnectNoticeTimerRef = useRef(null)
   const prefillWhatIfRef = useRef(getPrefillWhatIf())
   const skipNextCountdownRef = useRef(false)
   const wakeLockNoticeShownRef = useRef(false)
@@ -147,10 +145,6 @@ function App() {
       disconnectedPlayersRef.current = []
       disconnectDeadlineRef.current = null
       setDisconnectedPlayerMeta({})
-      if (disconnectNoticeTimerRef.current) {
-        clearTimeout(disconnectNoticeTimerRef.current)
-        disconnectNoticeTimerRef.current = null
-      }
     }
   }, [gameState])
 
@@ -609,7 +603,6 @@ function App() {
       prefillWhatIfRef,
       disconnectedPlayersRef,
       disconnectDeadlineRef,
-      disconnectNoticeTimerRef,
       playerNameRef,
       skipNextCountdownRef,
       pendingVoteRef,

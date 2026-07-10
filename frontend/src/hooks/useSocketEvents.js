@@ -197,10 +197,6 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       if (disconnectedPlayersRef.current.length > 0) {
         disconnectedPlayersRef.current = []
         disconnectDeadlineRef.current = null
-        if (disconnectNoticeTimerRef.current) {
-          clearTimeout(disconnectNoticeTimerRef.current)
-          disconnectNoticeTimerRef.current = null
-        }
         setNotice(prev => (prev && prev.expiresAt == null && (prev.tone === "warn" || prev.tone === "info") ? null : prev))
       }
     })

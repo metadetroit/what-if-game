@@ -109,7 +109,7 @@ export default function SummaryPhase({
 
       <div className="summary-scroll">
         {gameSummary && gameSummary.length > 0 ? (
-          <div className="summary-grid">
+          <div className="summary-grid content-visibility-auto">
             {gameSummary.map((pair, i) => {
               const maskNames = typeof summaryAnonymousMode === 'boolean' ? summaryAnonymousMode : anonymousMode
               const isTournamentVoting = tournament && tournament.enabled

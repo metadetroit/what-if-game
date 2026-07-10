@@ -30,7 +30,7 @@ export default function TournamentCompleteView({
       </div>
 
       <div className="summary-scroll">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 content-visibility-auto">
           {standings.map(s => {
             const icon = RANK_ICONS[s.rank] || null
             const isMe = s.name === playerName

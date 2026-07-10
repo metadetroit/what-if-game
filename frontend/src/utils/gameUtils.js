@@ -57,12 +57,6 @@ export function clearDraft(roomCode, phase) {
   try { localStorage.removeItem(draftKey(roomCode, phase)) } catch (e) { /* ignore */ }
 }
 
-export function waitingForLabel(names) {
-  if (!names || names.length === 0) return ""
-  if (names.length === 1) return `${names[0]} disconnected — waiting for them to reconnect…`
-  return `${names.join(", ")} disconnected — waiting for them to reconnect…`
-}
-
 export function formatTimeLeft(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
   const m = Math.floor(totalSeconds / 60)

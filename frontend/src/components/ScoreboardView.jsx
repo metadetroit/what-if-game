@@ -121,7 +121,7 @@ export default function ScoreboardView({
       )}
 
       <div className="summary-scroll">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 content-visibility-auto">
           {visibleStandings.map((s, idx) => {
             const icon = RANK_ICONS[s.rank] || null
             const isMe = s.name === playerName
