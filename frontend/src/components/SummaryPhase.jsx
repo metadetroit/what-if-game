@@ -170,16 +170,16 @@ export default function SummaryPhase({
                         <div className="summary-paired">
                           <p className="summary-paired__answer">{pair.pairedAnswer || 'No pairing was performed'}</p>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="summary-authors">
                           Q by {questionAuthor}{pair.pairedAnswer && <> · Paired by {pairedAuthor}</>}
                         </p>
                       </>
                     ) : (
                       <>
-                        <div className="summary-paired">
-                          <p className="font-hand text-base md:text-lg leading-snug text-emerald-100/90 break-words">{pair.actualAnswer || <span className="text-gray-500 italic text-sm">No actual answer</span>}</p>
+                        <div className="summary-actual">
+                          <p className="summary-actual__text">{pair.actualAnswer || <span className="text-gray-500 italic text-sm">No actual answer</span>}</p>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="summary-authors">
                           Q by {questionAuthor}{pair.actualAnswer && <> · A by {actualAuthor}</>}
                         </p>
                       </>
@@ -195,18 +195,18 @@ export default function SummaryPhase({
                   {viewMode === "paired" ? (
                     <div className="summary-card__footer">
                       <div className="summary-vote-meta">
-                        <span className="text-gray-400 text-xs uppercase tracking-widest">Votes</span>
-                        <p className="text-2xl font-black text-amber-300">{voteCount}</p>
+                        <span className="text-gray-400 text-xs uppercase tracking-widest leading-none">Votes</span>
+                        <p className="text-xl font-black text-amber-300 leading-none">{voteCount}</p>
                         {userVotedForPair && (<span className="you-badge">You</span>)}
                       </div>
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-1.5 flex-1 justify-end">
                         {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
-                          <div className="flex flex-wrap gap-1 text-xs">
+                          <div className="flex flex-wrap gap-0.5 text-xs">
                             {pair.questionReactions && Object.entries(pair.questionReactions).map(([emoji, count]) => (
-                              <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
+                              <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
                             ))}
                             {pair.answerReactions && Object.entries(pair.answerReactions).map(([emoji, count]) => (
-                              <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
+                              <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
                             ))}
                           </div>
                         )}
@@ -219,30 +219,31 @@ export default function SummaryPhase({
                                 handleVote('qa_pair', pair.pairDbId)
                               }
                             }}
-                            className={`summary-vote-btn ${
-                              userVotedForPair ? 'summary-vote-btn--active' : ''
-                            } ${voteDisabled ? 'summary-vote-btn--disabled' : ''}`}
-                            title="Vote for best game pairing"
+                            className={`summary-vote-icon ${
+                              userVotedForPair ? 'summary-vote-icon--active' : ''
+                            } ${voteDisabled ? 'summary-vote-icon--disabled' : ''}`}
+                            title={userVotedForPair ? 'You voted for this pair' : userLockedToDifferentPair ? 'Locked to another pair' : inFlight ? 'Submitting…' : 'Vote for best pairing'}
                             disabled={voteDisabled}
                             aria-busy={inFlight ? 'true' : 'false'}
+                            aria-label={userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Locked' : inFlight ? 'Submitting' : 'Vote'}
                           >
-                            {inFlight ? '…' : userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Locked' : 'Vote'}
+                            {inFlight ? '…' : userVotedForPair ? '✓' : userLockedToDifferentPair ? '🔒' : '👍'}
                           </button>
                         ) : (
-                          <button disabled className="summary-vote-btn summary-vote-btn--disabled">Unavailable</button>
+                          <button disabled className="summary-vote-icon summary-vote-icon--disabled" title="Unavailable" aria-label="Unavailable">−</button>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="summary-card__footer">
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-1.5 flex-1">
                         {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
-                          <div className="flex flex-wrap gap-1 text-xs">
+                          <div className="flex flex-wrap gap-0.5 text-xs">
                             {pair.questionReactions && Object.entries(pair.questionReactions).map(([emoji, count]) => (
-                              <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
+                              <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
                             ))}
                             {pair.answerReactions && Object.entries(pair.answerReactions).map(([emoji, count]) => (
-                              <span key={emoji} className="bg-gray-800 rounded-full px-2 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
+                              <span key={emoji} className="bg-gray-800 rounded-full px-1.5 py-0.5 flex items-center gap-1 text-gray-300">{emoji} {count}</span>
                             ))}
                           </div>
                         )}

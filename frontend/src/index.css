@@ -233,7 +233,7 @@
   }
 
   .summary-grid {
-    @apply grid gap-4 md:grid-cols-2;
+    @apply grid gap-2 md:gap-3 md:grid-cols-2;
   }
 
   .summary-card {
@@ -241,7 +241,7 @@
   }
 
   .summary-card__body {
-    @apply p-3 md:p-4 space-y-2 md:space-y-3;
+    @apply p-2.5 md:p-3 space-y-1.5 md:space-y-2;
   }
 
   .summary-question {
@@ -249,59 +249,51 @@
   }
 
   .summary-paired {
-    @apply bg-indigo-950/40 border border-indigo-700/40 rounded-xl px-3 py-2 md:px-4 md:py-3;
-  }
-
-  .summary-paired__label {
-    @apply text-xs uppercase tracking-[0.3em] text-indigo-300 mb-1;
+    @apply border-l-2 border-indigo-500/50 pl-2.5 py-0.5;
   }
 
   .summary-paired__answer {
-    @apply text-sm md:text-base text-indigo-50 break-words;
+    @apply text-sm md:text-base text-indigo-50 break-words leading-snug;
   }
 
   .summary-authors {
-    @apply text-xs text-gray-400 flex flex-wrap gap-2;
+    @apply text-xs text-gray-400 flex flex-wrap gap-x-2 gap-y-0.5 leading-tight;
   }
 
   .summary-actual {
-    @apply px-4 py-3 border-t border-gray-800 bg-gray-950/40;
-  }
-
-  .summary-actual__label {
-    @apply text-xs text-emerald-300 uppercase tracking-[0.3em];
+    @apply border-l-2 border-emerald-500/50 pl-2.5 py-0.5;
   }
 
   .summary-actual__text {
-    @apply text-sm text-white leading-relaxed;
+    @apply text-sm md:text-base text-emerald-50 break-words leading-snug;
   }
 
   .summary-actual__author {
-    @apply text-xs text-gray-500 mt-1;
+    @apply text-xs text-gray-500 mt-0.5 leading-tight;
   }
 
   .summary-card__footer {
-    @apply p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-2 md:gap-3 border-t border-white/10 bg-black/20;
+    @apply p-2.5 md:p-3 flex items-center justify-between gap-2 border-t border-white/10 bg-black/20;
   }
 
   .summary-vote-meta {
-    @apply flex items-baseline gap-2;
+    @apply flex items-center gap-1.5;
   }
 
-  .summary-vote-btn {
-    @apply flex-1 bg-white/5 text-white font-semibold text-sm md:text-base rounded-2xl py-2 md:py-3 px-4 border border-white/10 transition-all min-h-[44px] focus:ring-2 focus:ring-amber-400/70 focus:ring-offset-2 focus:ring-offset-gray-950;
+  .summary-vote-icon {
+    @apply flex-none w-10 h-10 rounded-xl bg-white/5 text-white font-semibold text-base border border-white/10 transition-all flex items-center justify-center focus:ring-2 focus:ring-amber-400/70 focus:ring-offset-2 focus:ring-offset-gray-950;
   }
 
-  .summary-vote-btn--active {
-    @apply bg-gradient-to-r from-amber-400 to-orange-500 text-gray-950 border-amber-300 shadow-lg shadow-amber-900/40;
+  .summary-vote-icon--active {
+    @apply bg-gradient-to-r from-amber-400 to-orange-500 text-gray-950 border-amber-300 shadow-md shadow-amber-900/40;
   }
 
-  .summary-vote-btn--disabled {
+  .summary-vote-icon--disabled {
     @apply opacity-50 cursor-not-allowed border-dashed border-white/20;
   }
 
   .you-badge {
-    @apply text-xs bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded-full border border-amber-400/40;
+    @apply text-[10px] bg-amber-500/20 text-amber-200 px-1.5 py-0 rounded-full border border-amber-400/40 leading-tight;
   }
 
   .summary-card--active {
