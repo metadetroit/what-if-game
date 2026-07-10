@@ -536,7 +536,7 @@ function LobbyView({
               </div>
             </div>
           </div>
-          <div className="px-4 py-4 z-40 bg-black/40 backdrop-blur-xl border-t border-white/10">
+          <div className="px-4 py-3 z-40 bg-black/40 backdrop-blur-xl border-t border-white/10">
             {isHost ? <StartButton players={players} onStart={startGame} /> : <WaitingIndicator />}
           </div>
         </div>
@@ -565,7 +565,7 @@ function LobbyView({
               </div>
             </div>
           </div>
-          <div className="px-4 py-6 z-40 bg-black/40 backdrop-blur-xl border-t border-white/10 rounded-t-3xl">
+          <div className="px-4 py-3 z-40 bg-black/40 backdrop-blur-xl border-t border-white/10 rounded-t-2xl">
             {isHost ? <StartButton players={players} onStart={startGame} /> : <WaitingIndicator />}
           </div>
         </div>

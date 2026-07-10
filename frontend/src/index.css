@@ -830,10 +830,11 @@
   }
 
   .lobby-cta {
-    @apply w-full font-black uppercase tracking-widest py-4 px-6 rounded-2xl transition-all duration-200 active:scale-95;
+    @apply w-full font-black uppercase tracking-widest py-2.5 px-6 rounded-xl transition-all duration-200 active:scale-95;
     background: linear-gradient(135deg, var(--color-orange), var(--color-yellow));
     color: #2A1200;
-    box-shadow: 0 15px 40px -10px rgba(249, 115, 22, 0.55);
+    box-shadow: 0 10px 28px -8px rgba(249, 115, 22, 0.5);
+    min-height: 48px;
   }
   .lobby-cta:hover {
     transform: scale(1.02);
@@ -842,8 +843,8 @@
   .lobby-cta:disabled {
     @apply cursor-not-allowed;
     transform: none;
-    filter: none;
-    opacity: 0.55;
+    filter: brightness(0.85);
+    opacity: 0.85;
     background: var(--glass-fill-strong);
     color: var(--text-muted);
     box-shadow: none;
