@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { noticeFor } from "../utils/gameUtils"
 import Countdown from "./Countdown"
 
@@ -40,6 +40,36 @@ export default function SummaryPhase({
 }) {
   const [viewMode, setViewMode] = useState("paired")
   const [voteConfirm, setVoteConfirm] = useState(null) // { pairDbId, question } when confirming a vote
+  const [hostControlsFocused, setHostControlsFocused] = useState(false)
+  const [liveText, setLiveText] = useState("")
+  const prevCountdownActiveRef = useRef(false)
+
+  const countdownActive = Boolean(tournament?.votingDeadlineAt)
+  const headerExpanded = countdownActive || hostControlsFocused
+
+  const currentRound = tournament?.currentRound
+  const targetRounds = tournament?.targetRounds
+
+  useEffect(() => {
+    if (countdownActive && !prevCountdownActiveRef.current) {
+      setLiveText(
+        currentRound && targetRounds
+          ? `Voting countdown started for round ${currentRound} of ${targetRounds}.`
+          : "Voting countdown started."
+      )
+    } else if (!countdownActive && prevCountdownActiveRef.current) {
+      setLiveText("")
+    }
+    prevCountdownActiveRef.current = countdownActive
+  }, [countdownActive, currentRound, targetRounds])
+
+  const handleHostControlsFocus = () => setHostControlsFocused(true)
+  const handleHostControlsBlur = (e) => {
+    const next = e.relatedTarget
+    if (!next || !e.currentTarget.contains(next)) {
+      setHostControlsFocused(false)
+    }
+  }
 
   return (
     <div className="game-container game-container--summary py-4">
@@ -56,56 +86,121 @@ export default function SummaryPhase({
         </div>
       )}
       <div className="summary-header card !p-3 md:!p-4">
-        <div className="flex flex-col gap-0.5 md:gap-1">
-          <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
-          <h2 className="font-bubble text-xl md:text-2xl font-black text-white leading-tight">Vote for the best pair</h2>
-          {tournament && tournament.votingDeadlineAt && (
-            <div className="mt-0.5 flex items-center justify-center gap-2 text-xs md:text-sm text-gray-400">
-              <span>Time to vote:</span>
-              <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="font-bold text-base" />
-            </div>
-          )}
-          <div className="mt-1.5 flex justify-center">
-            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-0.5 text-xs md:text-sm">
-              <button
-                onClick={() => setViewMode("paired")}
-                className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
-                  viewMode === "paired" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
-                }`}
-              >
-                Pairings
-              </button>
-              <button
-                onClick={() => setViewMode("actual")}
-                className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
-                  viewMode === "actual" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
-                }`}
-              >
-                Actual Q/A
-              </button>
+        <span aria-live="polite" className="sr-only">{liveText}</span>
+        <div className="summary-header__collapsed">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-emerald-300">{tournament ? `Tournament — Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}</p>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-0.5 text-xs md:text-sm">
+                <button
+                  onClick={() => setViewMode("paired")}
+                  className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
+                    viewMode === "paired" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
+                  }`}
+                >
+                  Pairings
+                </button>
+                <button
+                  onClick={() => setViewMode("actual")}
+                  className={`w-24 sm:w-28 rounded-full px-2.5 py-1 font-semibold text-center transition-colors duration-200 ${
+                    viewMode === "actual" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
+                  }`}
+                >
+                  Actual Q/A
+                </button>
+              </div>
+              {roundHistory.length > 0 && (
+                <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline">
+                  {roundHistory.length} past round{roundHistory.length === 1 ? '' : 's'}
+                </button>
+              )}
             </div>
           </div>
         </div>
-        <div className="summary-header__meta !py-2 md:!py-3 !px-3 md:!px-4">
-          {roundHistory.length > 0 && (
-            <div>
-              <p className="summary-pill">History</p>
-              <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline">
-                {roundHistory.length} past round{roundHistory.length === 1 ? '' : 's'}
-              </button>
+        {headerExpanded && (
+          <div className="summary-header__expanded">
+            <h2 className="font-bubble text-xl md:text-2xl font-black text-white leading-tight text-center">Vote for the best pair</h2>
+            {countdownActive && (
+              <div className="mt-0.5 flex items-center justify-center gap-2 text-xs md:text-sm text-gray-400">
+                <span>Time to vote:</span>
+                <Countdown deadlineAt={tournament.votingDeadlineAt} serverNow={tournament.serverNow} className="font-bold text-base" />
+              </div>
+            )}
+            <div className="summary-header__meta !py-2 md:!py-3 !px-3 md:!px-4">
+              <div>
+                <p className="summary-pill">Players</p>
+                <p className="summary-meta-value text-base md:text-lg">{players.length}</p>
+              </div>
+              <div>
+                <p className="summary-pill">Votes</p>
+                <p className={"summary-meta-value text-base md:text-lg " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ All" : `${votersCount}/${players.length}`}</p>
+                <p className="summary-meta-note">{votersCount >= players.length ? "Ready" : "Waiting"}</p>
+              </div>
             </div>
-          )}
-          <div>
-            <p className="summary-pill">Players</p>
-            <p className="summary-meta-value text-base md:text-lg">{players.length}</p>
           </div>
-          <div>
-            <p className="summary-pill">Votes</p>
-            <p className={"summary-meta-value text-base md:text-lg " + (votersCount >= players.length ? "text-emerald-300" : "text-amber-300")}>{votersCount >= players.length ? "✓ All" : `${votersCount}/${players.length}`}</p>
-            <p className="summary-meta-note">{votersCount >= players.length ? "Ready" : "Waiting"}</p>
-          </div>
-        </div>
+        )}
       </div>
+
+      {isHost && (
+        <div
+          className="summary-host-controls card"
+          onFocus={handleHostControlsFocus}
+          onBlur={handleHostControlsBlur}
+        >
+          {tournament && tournament.enabled ? (
+            <div className="summary-actions__cta">
+              <button
+                onClick={() => socketRef.current?.emit("finish-voting")}
+                className="btn-primary py-2.5 md:py-3 text-sm md:text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
+              >
+                <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                <span className="ml-2">⚡ Finish Voting & Tally</span>
+              </button>
+              <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]">
+                <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                <span className="ml-2">🏠 Abandon Tournament</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="summary-actions__toggles">
+                <div className="summary-toggle card">
+                  <div>
+                    <p className="text-xs text-white font-semibold">Anonymous Results</p>
+                    <p className="text-xs text-gray-400">Hide names in next game's summary + Best Of.</p>
+                  </div>
+                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
+                    <span />
+                  </button>
+                </div>
+                <div className="summary-toggle card">
+                  <div>
+                    <p className="text-xs text-white font-semibold">No Self-Reading</p>
+                    <p className="text-xs text-gray-400">Players won't read their own content next round.</p>
+                  </div>
+                  <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
+                    <span />
+                  </button>
+                </div>
+                <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
+                  🔄 Replay (same players)
+                </button>
+              </div>
+              <div className="summary-actions__cta">
+                <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight min-h-[44px]">
+                  🏠 New game (change number of players)
+                </button>
+                {adminKey && (
+                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
+                    <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
+                    <span className="ml-2">🚫 Hide from Best Of</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="summary-scroll">
         {gameSummary && gameSummary.length > 0 ? (
@@ -280,57 +375,52 @@ export default function SummaryPhase({
         </div>
       )}
 
-      {fastestTyper && (
-        <div className="summary-fastest card">
-          <div className="summary-fastest__icon">🏆</div>
-          <div className="min-w-0">
-            <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
-            <p className="text-xl font-extrabold text-white truncate">{fastestTyper}</p>
-            <p className="text-xs text-amber-100/70">First to submit both their question and answer!</p>
-          </div>
-          <div className="summary-fastest__badge">Fastest Typer!</div>
-        </div>
-      )}
+      {(fastestTyper || slowestTyper || mostAdoredWriter) && (
+        <div className="summary-awards card">
+          {fastestTyper && (
+            <div className="summary-awards__row summary-fastest">
+              <div className="summary-fastest__icon">🏆</div>
+              <div className="min-w-0">
+                <p className="text-sm text-amber-200">Fastest typer in both rounds</p>
+                <p className="text-xl font-extrabold text-white truncate">{fastestTyper}</p>
+                <p className="text-xs text-amber-100/70">First to submit both their question and answer!</p>
+              </div>
+              <div className="summary-fastest__badge">Fastest Typer!</div>
+            </div>
+          )}
 
-      {slowestTyper && (
-        <div className="summary-slowest card">
-          <div className="summary-slowest__icon">⏰</div>
-          <div className="min-w-0">
-            <p className="text-sm text-sky-200">Slowest typer in both rounds</p>
-            <p className="text-xl font-extrabold text-white truncate">{slowestTyper}</p>
-            <p className="text-xs text-sky-100/70">Last to finish both the question and the answer.</p>
-          </div>
-          <div className="summary-slowest__badge">Slowest Typer!</div>
-        </div>
-      )}
+          {slowestTyper && (
+            <div className="summary-awards__row summary-slowest">
+              <div className="summary-slowest__icon">⏰</div>
+              <div className="min-w-0">
+                <p className="text-sm text-sky-200">Slowest typer in both rounds</p>
+                <p className="text-xl font-extrabold text-white truncate">{slowestTyper}</p>
+                <p className="text-xs text-sky-100/70">Last to finish both the question and the answer.</p>
+              </div>
+              <div className="summary-slowest__badge">Slowest Typer!</div>
+            </div>
+          )}
 
-      {mostAdoredWriter ? (
-        <div className="summary-mvp card">
-          <div className="summary-mvp__icon">💖</div>
-          <div className="min-w-0">
-            <p className="text-sm text-yellow-200">Round's most-adored writer</p>
-            {mostAdoredWriter.tied ? (
-              <>
-                <p className="text-xl font-extrabold text-white truncate">{summaryAnonymousMode ? '???' : mostAdoredWriter.names.join(' & ')}</p>
-                <p className="text-xs text-yellow-100/70">Tied with {mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'} each!</p>
-              </>
-            ) : (
-              <>
-                <p className="text-xl font-extrabold text-white truncate">{summaryAnonymousMode ? '???' : (mostAdoredWriter.names[0] || 'Unknown')}</p>
-                <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
-              </>
-            )}
-          </div>
-          <div className="summary-mvp__badge">{mostAdoredWriter.tied ? 'Tied!' : 'Adored!'}</div>
-        </div>
-      ) : (
-        <div className="summary-mvp card" style={{ opacity: 0.6 }}>
-          <div className="summary-mvp__icon">💭</div>
-          <div className="min-w-0">
-            <p className="text-sm text-yellow-200">Round's most-adored writer</p>
-            <p className="text-xl font-extrabold text-white truncate">No reactions yet</p>
-            <p className="text-xs text-yellow-100/70">Send ❤️ and 😂 during the next round!</p>
-          </div>
+          {mostAdoredWriter && (
+            <div className="summary-awards__row summary-mvp">
+              <div className="summary-mvp__icon">💖</div>
+              <div className="min-w-0">
+                <p className="text-sm text-yellow-200">Round's most-adored writer</p>
+                {mostAdoredWriter.tied ? (
+                  <>
+                    <p className="text-xl font-extrabold text-white truncate">{summaryAnonymousMode ? '???' : mostAdoredWriter.names.join(' & ')}</p>
+                    <p className="text-xs text-yellow-100/70">Tied with {mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'} each!</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xl font-extrabold text-white truncate">{summaryAnonymousMode ? '???' : (mostAdoredWriter.names[0] || 'Unknown')}</p>
+                    <p className="text-xs text-yellow-100/70">{mostAdoredWriter.total} adored reaction{mostAdoredWriter.total === 1 ? '' : 's'}!</p>
+                  </>
+                )}
+              </div>
+              <div className="summary-mvp__badge">{mostAdoredWriter.tied ? 'Tied!' : 'Adored!'}</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -357,64 +447,7 @@ export default function SummaryPhase({
         </div>
       )}
 
-      {isHost ? (
-        <div className="summary-actions">
-          {tournament && tournament.enabled ? (
-            <>
-              <div className="summary-actions__cta">
-                <button
-                  onClick={() => socketRef.current?.emit("finish-voting")}
-                  className="btn-primary py-2.5 md:py-3 text-sm md:text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
-                >
-                  <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-                  <span className="ml-2">⚡ Finish Voting & Tally</span>
-                </button>
-                <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]">
-                  <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-                  <span className="ml-2">🏠 Abandon Tournament</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="summary-actions__toggles">
-                <div className="summary-toggle card">
-                  <div>
-                    <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                    <p className="text-xs text-gray-400">Hide names in next game's summary + Best Of.</p>
-                  </div>
-                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
-                    <span />
-                  </button>
-                </div>
-                <div className="summary-toggle card">
-                  <div>
-                    <p className="text-xs text-white font-semibold">No Self-Reading</p>
-                    <p className="text-xs text-gray-400">Players won't read their own content next round.</p>
-                  </div>
-                  <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
-                    <span />
-                  </button>
-                </div>
-                <button onClick={() => { setNotice(noticeFor('Starting new game…', 'info', 1000)); socketRef.current?.emit("replay-game", { noSelfReading }) }} className="summary-quick-btn order-first">
-                  🔄 Replay (same players)
-                </button>
-              </div>
-              <div className="summary-actions__cta">
-                <button onClick={disbandGame} className="btn-secondary py-2.5 md:py-3 text-xs md:text-sm whitespace-normal leading-tight min-h-[44px]">
-                  🏠 New game (change number of players)
-                </button>
-                {adminKey && (
-                  <button onClick={() => setHideGameConfirm(true)} className="summary-hide-btn border-2 border-fuchsia-500/30 bg-fuchsia-950/10">
-                    <span className="text-xs md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-                    <span className="ml-2">🚫 Hide from Best Of</span>
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
+      {!isHost && (
         <div className="summary-actions">
           {tournament && tournament.enabled ? (
             <div className="summary-guest animate-pulse">

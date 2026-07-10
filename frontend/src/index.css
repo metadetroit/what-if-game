@@ -118,12 +118,33 @@
     @apply bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent;
   }
 
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+    clip: rect(0, 0, 0, 0);
+  }
+
   .game-container--summary {
     @apply w-full max-w-5xl mx-auto px-3 md:px-8 gap-2 md:gap-4 overflow-hidden;
   }
 
   .summary-header {
-    @apply flex flex-col gap-4 md:flex-row md:items-center md:justify-between;
+    @apply flex flex-col gap-2 md:gap-3;
+  }
+
+  .summary-header__expanded {
+    @apply flex flex-col gap-2 md:gap-3;
+    animation: summary-header-fade-in 200ms ease-out;
+  }
+
+  @keyframes summary-header-fade-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .summary-header__expanded {
+      animation: none;
+    }
   }
 
   .summary-header__meta {
@@ -139,7 +160,7 @@
   }
 
   .summary-fastest {
-    @apply card flex items-center gap-3 md:gap-4 bg-gradient-to-r from-amber-600/15 to-orange-500/10 border-amber-400/40 !p-3 md:!p-4;
+    @apply flex items-center gap-3 md:gap-4 bg-gradient-to-r from-amber-600/15 to-orange-500/10 border border-amber-400/40 rounded-2xl p-3 md:p-4;
   }
 
   .summary-fastest__icon {
@@ -151,7 +172,7 @@
   }
 
   .summary-slowest {
-    @apply card flex items-center gap-3 md:gap-4 bg-gradient-to-r from-sky-600/15 to-blue-500/10 border-sky-400/40 !p-3 md:!p-4;
+    @apply flex items-center gap-3 md:gap-4 bg-gradient-to-r from-sky-600/15 to-blue-500/10 border border-sky-400/40 rounded-2xl p-3 md:p-4;
   }
 
   .summary-slowest__icon {
@@ -163,7 +184,7 @@
   }
 
   .summary-mvp {
-    @apply card flex items-center gap-3 md:gap-4 bg-gradient-to-r from-yellow-600/15 to-amber-500/10 border-yellow-400/40 !p-3 md:!p-4;
+    @apply flex items-center gap-3 md:gap-4 bg-gradient-to-r from-yellow-600/15 to-amber-500/10 border border-yellow-400/40 rounded-2xl p-3 md:p-4;
   }
 
   .summary-mvp__icon {
@@ -184,6 +205,18 @@
 
   .summary-leader__badge {
     @apply ml-auto text-xs md:text-sm font-black tracking-widest uppercase bg-rose-400/20 text-rose-100 px-2.5 py-1 md:px-4 md:py-2 rounded-full border border-rose-400/60;
+  }
+
+  .summary-awards {
+    @apply card !p-3 md:!p-4 space-y-3 md:space-y-4;
+  }
+
+  .summary-awards__row {
+    @apply flex items-center gap-3 md:gap-4;
+  }
+
+  .summary-host-controls {
+    @apply card !p-3 md:!p-4 flex flex-col gap-2 md:gap-3;
   }
 
   .summary-meta-value {
