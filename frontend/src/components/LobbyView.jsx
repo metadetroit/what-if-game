@@ -210,6 +210,16 @@ function GameSettingsDrawer({
   const panelRef = useRef(null)
   const closeBtnRef = useRef(null)
   const touchStartY = useRef(null)
+  const tournamentOptionsRef = useRef(null)
+  const prevTournamentEnabledRef = useRef(tournamentConfig.enabled)
+
+  useEffect(() => {
+    if (tournamentConfig.enabled && !prevTournamentEnabledRef.current && tournamentOptionsRef.current) {
+      const reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      tournamentOptionsRef.current.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" })
+    }
+    prevTournamentEnabledRef.current = tournamentConfig.enabled
+  }, [tournamentConfig.enabled])
 
   const handleTouchStart = (e) => {
     touchStartY.current = e.touches?.[0]?.clientY ?? null
@@ -343,7 +353,7 @@ function GameSettingsDrawer({
               </div>
 
               {tournamentConfig.enabled && (
-                <div className="lobby-drawer__nested">
+                <div ref={tournamentOptionsRef} className="lobby-drawer__nested">
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="lobby-drawer__nested-label">Rounds</span>
