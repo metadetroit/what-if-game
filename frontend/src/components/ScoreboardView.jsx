@@ -33,12 +33,13 @@ export default function ScoreboardView({
   const showRelative = standings.length > 8 && !showAll
   let visibleStandings = standings
   if (showRelative && myIndex >= 0) {
-    const top3 = standings.slice(0, 3)
-    const aroundMe = standings.filter((s, i) => {
-      if (i < 3) return false
-      return Math.abs(i - myIndex) <= 1
-    })
-    visibleStandings = [...top3, ...aroundMe]
+    const indices = new Set([0, 1, 2])
+    const start = Math.max(3, myIndex - 1)
+    const end = Math.min(standings.length - 1, myIndex + 1)
+    for (let i = start; i <= end; i++) {
+      indices.add(i)
+    }
+    visibleStandings = Array.from(indices).sort((a, b) => a - b).map(i => standings[i])
   }
 
   return (

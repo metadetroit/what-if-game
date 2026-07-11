@@ -356,6 +356,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setSummaryVotes({})
       setSummaryPairVoteId(null)
       setMostAdoredWriter(null)
+      setAuthorReveals({})
       if (data?.tournament) {
         setTournament({ enabled: true, currentRound: data.tournament.currentRound, targetRounds: data.tournament.targetRounds })
       }
@@ -394,6 +395,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setSummaryPairVoteId(null)
       setMostAdoredWriter(null)
       setRoundHistory([])
+      setAuthorReveals({})
     })
 
     newSocket.on("promotion-queued", (data) => {
@@ -425,6 +427,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setSummaryVotes({})
       setSummaryPairVoteId(null)
       setMostAdoredWriter(null)
+      setAuthorReveals({})
     })
 
     newSocket.on("anonymous-toggled", (data) => {

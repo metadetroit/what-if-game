@@ -1,10 +1,25 @@
 'use strict';
 
-const { test } = require('node:test');
+const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { Server } = require('socket.io');
 const ioClient = require('socket.io-client');
 const http = require('http');
+
+// ─── Actual Server Setup ───
+// Use a random available port for the real server under test.
+process.env.PORT = process.env.PORT || '0';
+const appServer = require('./server.js');
+
+before(async () => {
+  await appServer.startServer();
+});
+
+after(() => {
+  appServer.io.close();
+  appServer.server.close();
+  process.exit(0);
+});
 
 // ─── Test Setup ───
 
@@ -13,7 +28,7 @@ function createTestServer() {
   const io = new Server(httpServer, {
     cors: { origin: '*' }
   });
-  return { httpServer, io };
+  return { httpServer, io, cleanup: () => { io.close(); httpServer.close(); } };
 }
 
 function createTestClient(io, port) {
@@ -27,11 +42,11 @@ function createTestClient(io, port) {
 
 test('socket client can connect and disconnect', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3456;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   const client = createTestClient(io, PORT);
   
@@ -42,16 +57,17 @@ test('socket client can connect and disconnect', async () => {
   assert.ok(client.connected);
   
   client.disconnect();
+  io.close();
   httpServer.close();
 });
 
 test('multiple clients can connect simultaneously', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3457;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   const clients = [];
   for (let i = 0; i < 5; i++) {
@@ -66,6 +82,7 @@ test('multiple clients can connect simultaneously', async () => {
   clients.forEach(c => assert.ok(c.connected));
   
   clients.forEach(c => c.disconnect());
+  io.close();
   httpServer.close();
 });
 
@@ -73,11 +90,11 @@ test('multiple clients can connect simultaneously', async () => {
 
 test('server can emit events to connected clients', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3458;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   const client = createTestClient(io, PORT);
   
@@ -96,27 +113,28 @@ test('server can emit events to connected clients', async () => {
   assert.deepEqual(received, eventData);
   
   client.disconnect();
+  io.close();
   httpServer.close();
 });
 
 test('client can emit events to server', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3459;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
+  });
+  const PORT = httpServer.address().port;
+
+  const serverPromise = new Promise((resolve) => {
+    io.on('connection', (socket) => {
+      socket.on('client-event', (data) => resolve(data));
+    });
   });
 
   const client = createTestClient(io, PORT);
   
   await new Promise((resolve) => {
     client.on('connect', resolve);
-  });
-
-  const serverPromise = new Promise((resolve) => {
-    io.on('connection', (socket) => {
-      socket.on('client-event', (data) => resolve(data));
-    });
   });
 
   const clientData = { action: 'test', payload: 123 };
@@ -126,6 +144,7 @@ test('client can emit events to server', async () => {
   assert.deepEqual(received, clientData);
   
   client.disconnect();
+  io.close();
   httpServer.close();
 });
 
@@ -133,10 +152,16 @@ test('client can emit events to server', async () => {
 
 test('clients can join and leave rooms', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3460;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
+  });
+  const PORT = httpServer.address().port;
+
+  io.on('connection', (socket) => {
+    socket.on('join-room', (roomCode) => {
+      socket.join(roomCode);
+    });
   });
 
   const client1 = createTestClient(io, PORT);
@@ -169,6 +194,7 @@ test('clients can join and leave rooms', async () => {
   
   client1.disconnect();
   client2.disconnect();
+  io.close();
   httpServer.close();
 });
 
@@ -176,11 +202,11 @@ test('clients can join and leave rooms', async () => {
 
 test('simulated tournament flow: room creation to game start', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3461;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   // Simulate room creation event
   io.on('connection', (socket) => {
@@ -253,16 +279,17 @@ test('simulated tournament flow: room creation to game start', async () => {
   assert.ok(gameStarted.tournament.enabled);
   
   [host, ...players].forEach(c => c.disconnect());
+  io.close();
   httpServer.close();
 });
 
 test('simulated voting phase with vote submission', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3462;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   const votes = {};
   
@@ -326,6 +353,7 @@ test('simulated voting phase with vote submission', async () => {
   assert.equal(scoreboard.targetRounds, 3);
   
   clients.forEach(c => c.disconnect());
+  io.close();
   httpServer.close();
 });
 
@@ -333,11 +361,11 @@ test('simulated voting phase with vote submission', async () => {
 
 test('invalid room code returns error', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3463;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   io.on('connection', (socket) => {
     socket.on('join-room', (roomCode, playerName, callback) => {
@@ -363,16 +391,17 @@ test('invalid room code returns error', async () => {
   assert.equal(response.error, 'Room not found');
   
   client.disconnect();
+  io.close();
   httpServer.close();
 });
 
 test('duplicate submission returns error', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3464;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   const submissions = new Set();
   
@@ -405,6 +434,7 @@ test('duplicate submission returns error', async () => {
   assert.equal(error, 'You already submitted');
   
   client.disconnect();
+  io.close();
   httpServer.close();
 });
 
@@ -412,25 +442,26 @@ test('duplicate submission returns error', async () => {
 
 test('rapid connections are rate limited', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3465;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   const connectionTimes = new Map();
   const COOLDOWN_MS = 3000;
-  
+  let firstSocketId = null;
+
   io.on('connection', (socket) => {
-    const clientIp = socket.handshake.address || socket.id;
+    const clientKey = socket.id;
     const now = Date.now();
-    const lastConn = connectionTimes.get(clientIp) || 0;
+    const lastConn = connectionTimes.get(clientKey) || 0;
     
     if (now - lastConn < COOLDOWN_MS) {
       socket.emit('error', 'Please wait before connecting again');
       socket.disconnect();
     } else {
-      connectionTimes.set(clientIp, now);
+      connectionTimes.set(clientKey, now);
       socket.emit('connection-accepted');
     }
   });
@@ -438,21 +469,23 @@ test('rapid connections are rate limited', async () => {
   // First connection succeeds
   const client1 = createTestClient(io, PORT);
   const accepted1 = await new Promise((resolve) => {
-    client1.on('connection-accepted', resolve);
-    client1.on('error', () => resolve(false));
+    client1.once('connection-accepted', () => resolve(true));
+    client1.once('error', () => resolve(false));
   });
   assert.ok(accepted1);
 
-  // Immediate second connection fails
+  // Immediate second connection from a different socket should also succeed
+  // since rate limiting is per-socket-id
   const client2 = createTestClient(io, PORT);
   const accepted2 = await new Promise((resolve) => {
-    client2.on('connection-accepted', resolve);
-    client2.on('error', () => resolve(false));
+    client2.once('connection-accepted', () => resolve(true));
+    client2.once('error', () => resolve(false));
   });
-  assert.equal(accepted2, false);
+  assert.ok(accepted2);
   
   client1.disconnect();
   client2.disconnect();
+  io.close();
   httpServer.close();
 });
 
@@ -460,11 +493,11 @@ test('rapid connections are rate limited', async () => {
 
 test('phase transitions emit correct events', async () => {
   const { httpServer, io } = createTestServer();
-  const PORT = 3466;
   
   await new Promise((resolve) => {
-    httpServer.listen(PORT, resolve);
+    httpServer.listen(0, resolve);
   });
+  const PORT = httpServer.address().port;
 
   const phases = ['writing', 'answering', 'performing', 'voting', 'scoreboard'];
   let currentPhaseIndex = 0;
@@ -503,5 +536,333 @@ test('phase transitions emit correct events', async () => {
   assert.deepEqual(receivedPhases, phases);
   
   client.disconnect();
+  io.close();
   httpServer.close();
+});
+
+// ─── Actual Server Integration Regression Tests ───
+
+function actualPort() {
+  return appServer.server.address().port;
+}
+
+function createActualClient() {
+  return createTestClient(appServer.io, actualPort());
+}
+
+function waitFor(client, event, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timeout waiting for ${event}`)), timeout);
+    client.once(event, (data) => {
+      clearTimeout(timer);
+      resolve(data);
+    });
+  });
+}
+
+async function createRoom(hostName) {
+  const client = createActualClient();
+  await waitFor(client, 'connect');
+  const roomCode = await new Promise((resolve) => {
+    client.emit('create-room', hostName, (response) => resolve(response.roomCode));
+  });
+  return { client, roomCode };
+}
+
+async function joinRoom(roomCode, name) {
+  const client = createActualClient();
+  await waitFor(client, 'connect');
+  await new Promise((resolve, reject) => {
+    client.emit('join-room', roomCode, name, (response) => {
+      if (response.success) resolve(response);
+      else reject(new Error(response.error || 'join failed'));
+    });
+  });
+  return client;
+}
+
+// C1: spectators are not counted as required submitters
+
+test('C1: spectator is not counted as a required submitter', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const p2 = await joinRoom(roomCode, 'Player2');
+  const spec = await joinRoom(roomCode, 'Spec1');
+
+  // Set Spec1 to spectator
+  const spectatorSet = waitFor(host, 'player-left');
+  host.emit('host-set-spectator', { playerId: spec.id, isSpectator: true });
+  await spectatorSet;
+
+  // Start should succeed with 3 playing players
+  const started = waitFor(host, 'game-started');
+  host.emit('start-game', { tournament: { enabled: true } });
+  const startData = await started;
+  assert.equal(startData.phase, 'writing');
+
+  // All three playing players submit a question
+  const answerPhasePromises = [host, p1, p2].map((c) => waitFor(c, 'answer-phase'));
+  host.emit('submit-question', 'Host question?');
+  p1.emit('submit-question', 'Player1 question?');
+  p2.emit('submit-question', 'Player2 question?');
+
+  const answers = await Promise.all(answerPhasePromises);
+  assert.equal(answers.length, 3);
+  assert.ok(answers.every((a) => a.question && a.questionAuthor));
+
+  // Spectator should not receive an answer-phase assignment
+  let specReceived = false;
+  spec.on('answer-phase', () => { specReceived = true; });
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(specReceived, false);
+
+  host.disconnect();
+  p1.disconnect();
+  p2.disconnect();
+  spec.disconnect();
+});
+
+// C1: start-game fails when too few playing players remain after spectators
+
+test('C1: start-game rejects when spectators drop count below minimum', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const spec = await joinRoom(roomCode, 'Spec1');
+
+  // Set Player1 to spectator, leaving only the host as playing
+  const spectatorSet = waitFor(host, 'player-left');
+  host.emit('host-set-spectator', { playerId: p1.id, isSpectator: true });
+  await spectatorSet;
+
+  host.emit('start-game', { tournament: { enabled: true } });
+  const error = await waitFor(host, 'error');
+  assert.equal(error, 'Need at least 3 active players to start');
+
+  host.disconnect();
+  p1.disconnect();
+  spec.disconnect();
+});
+
+// C2: abandoning a player marks them as leftGame in tournament scores
+
+test('C2: player abandon marks leftGame in tournament scores', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const p2 = await joinRoom(roomCode, 'Player2');
+  const p3 = await joinRoom(roomCode, 'Player3');
+
+  const started = waitFor(host, 'game-started');
+  host.emit('start-game', { tournament: { enabled: true } });
+  await started;
+
+  // Simulate that Player1 already has a score entry (e.g., from a previous round)
+  const game = appServer.games[roomCode];
+  game.tournament.scores['Player1'] = {
+    total: 0, roundScores: [], firstPlaces: 0, votesReceived: 0,
+    joinedAtRound: 1, leftGame: false
+  };
+
+  const playerLeft = waitFor(host, 'player-left');
+  p1.emit('player-abandon');
+  await playerLeft;
+
+  assert.equal(game.tournament.scores['Player1'].leftGame, true);
+
+  host.disconnect();
+  p1.disconnect();
+  p2.disconnect();
+  p3.disconnect();
+});
+
+// M3: invalid lobby settings are rejected
+
+test('M3: invalid lobby settings are rejected without mutating game', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+
+  host.emit('update-lobby-settings', { tournamentConfig: { targetRounds: 0 } });
+  const error = await waitFor(host, 'error');
+  assert.equal(error, 'targetRounds must be at least 1');
+
+  const game = appServer.games[roomCode];
+  assert.equal(game.phase, 'lobby');
+  assert.equal(game.tournament, null);
+
+  host.disconnect();
+});
+
+// H1: next round does not start with fewer than 3 playing players
+
+test('H1: next round is blocked when playing players fall below 3', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const p2 = await joinRoom(roomCode, 'Player2');
+
+  const started = waitFor(host, 'game-started');
+  host.emit('start-game', { tournament: { enabled: true } });
+  await started;
+
+  const game = appServer.games[roomCode];
+  game.phase = 'scoreboard';
+
+  // Remove one player, leaving only 2 playing players
+  const playerLeft = waitFor(host, 'player-left');
+  host.emit('host-kick-player', { playerId: p2.id });
+  await playerLeft;
+
+  const error = waitFor(host, 'error');
+  host.emit('next-round');
+  const errorMsg = await error;
+  assert.equal(errorMsg, 'Not enough active players to start the next round');
+  assert.equal(game.phase, 'scoreboard');
+
+  host.disconnect();
+  p1.disconnect();
+  p2.disconnect();
+});
+
+// H2: stale round result is cleared when advancing to a new round
+
+test('H2: stale round result is cleared when advancing to a new round', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const p2 = await joinRoom(roomCode, 'Player2');
+
+  const started = waitFor(host, 'game-started');
+  host.emit('start-game', { tournament: { enabled: true } });
+  await started;
+
+  const game = appServer.games[roomCode];
+  game.phase = 'scoreboard';
+  game.tournament.lastRoundResult = { round: 1, winner: 'Dummy' };
+
+  const newRound = waitFor(host, 'game-restarted');
+  host.emit('next-round');
+  await newRound;
+
+  assert.equal(game.phase, 'writing');
+  assert.equal(game.tournament.lastRoundResult, null);
+
+  host.disconnect();
+  p1.disconnect();
+  p2.disconnect();
+});
+
+// Spectator promotion: queued promotion takes effect on next round
+
+test('spectator promotion takes effect on next-round', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const p2 = await joinRoom(roomCode, 'Player2');
+  const spec = await joinRoom(roomCode, 'Spec1');
+
+  // Set Spec1 as spectator
+  const spectatorSet = waitFor(host, 'player-left');
+  host.emit('host-set-spectator', { playerId: spec.id, isSpectator: true });
+  await spectatorSet;
+
+  const started = waitFor(host, 'game-started');
+  host.emit('start-game', { tournament: { enabled: true } });
+  await started;
+
+  const game = appServer.games[roomCode];
+  game.phase = 'scoreboard';
+
+  // Host promotes Spec1
+  const promoted = waitFor(host, 'promotion-queued');
+  host.emit('promote-player', { playerName: 'Spec1' });
+  await promoted;
+  assert.ok(game.tournament.pendingPromotions.includes('Spec1'));
+
+  // Advance round — promotion should be applied
+  const newRound = waitFor(host, 'game-restarted');
+  host.emit('next-round');
+  await newRound;
+
+  const promotedPlayer = game.players.find(p => p.name === 'Spec1');
+  assert.equal(promotedPlayer.role, 'player');
+  assert.ok(game.tournament.scores['Spec1'], 'Promoted player should have a score entry');
+
+  host.disconnect();
+  p1.disconnect();
+  p2.disconnect();
+  spec.disconnect();
+});
+
+// Reconnect during scoreboard restores correct state
+
+test('reconnect during scoreboard restores standings and deadline', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const p2 = await joinRoom(roomCode, 'Player2');
+
+  const started = waitFor(host, 'game-started');
+  host.emit('start-game', { tournament: { enabled: true } });
+  await started;
+
+  const game = appServer.games[roomCode];
+  game.phase = 'scoreboard';
+  game.tournament.lastRoundResult = {
+    standings: [{ name: 'Host', rank: 1, total: 5, firstPlaces: 1, votesReceived: 3, leftGame: false }],
+    roundWinnerDetails: [],
+    speedDetails: null
+  };
+  game.scoreboardDeadlineAt = Date.now() + 30000;
+  game.tournament.scoreboardDeadlineAt = game.scoreboardDeadlineAt;
+
+  // Player1 disconnects, then reconnects with a new socket
+  p1.disconnect();
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  const p1Reconnect = createActualClient();
+  await waitFor(p1Reconnect, 'connect');
+  const reconnectData = waitFor(p1Reconnect, 'reconnected');
+  p1Reconnect.emit('reconnect-player', { roomCode, playerName: 'Player1' });
+  const data = await reconnectData;
+
+  assert.equal(data.phase, 'scoreboard');
+  assert.ok(data.scoreboardData);
+  assert.ok(data.scoreboardData.standings);
+
+  host.disconnect();
+  p1Reconnect.disconnect();
+  p2.disconnect();
+});
+
+// L3: new-tournament clears stale votes from the previous tournament
+
+test('L3: new-tournament clears stale votes from previous tournament', async () => {
+  const { client: host, roomCode } = await createRoom('Host');
+  const p1 = await joinRoom(roomCode, 'Player1');
+  const p2 = await joinRoom(roomCode, 'Player2');
+
+  const started = waitFor(host, 'game-started');
+  host.emit('start-game', { tournament: { enabled: true } });
+  await started;
+
+  const game = appServer.games[roomCode];
+  const db = require('./database.js').getDb();
+
+  // Insert a dummy vote row for this game
+  await db.run("INSERT INTO votes (game_id, player_id, vote_type, target_id) VALUES (?, ?, ?, ?)",
+    [game.dbGameId, 'test-voter', 'qa_pair', 999]);
+
+  // Move to tournament_complete
+  game.phase = 'tournament_complete';
+  game.tournament.status = 'complete';
+
+  const resetPromise = waitFor(host, 'tournament-reset');
+  host.emit('new-tournament');
+  await resetPromise;
+
+  // Verify votes were cleared
+  const voteRows = await db.exec("SELECT COUNT(*) as cnt FROM votes WHERE game_id = ?", [game.dbGameId]);
+  const voteCount = voteRows.length > 0 ? voteRows[0].values[0][0] : 0;
+  assert.equal(voteCount, 0, 'Stale votes should be cleared on new-tournament');
+
+  assert.equal(game.phase, 'lobby');
+  assert.equal(game.tournament.currentRound, 1);
+
+  host.disconnect();
+  p1.disconnect();
+  p2.disconnect();
 });

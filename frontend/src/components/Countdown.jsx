@@ -14,18 +14,11 @@ import React, { useState, useEffect, useRef } from "react"
  */
 export default function Countdown({ deadlineAt, serverNow, onExpire, className = "", warnAt = 10 }) {
   const skewRef = useRef(0)
-  const skewSetRef = useRef(false)
   const [remaining, setRemaining] = useState(0)
 
   useEffect(() => {
-    if (deadlineAt && serverNow && !skewSetRef.current) {
-      skewRef.current = serverNow - Date.now()
-      skewSetRef.current = true
-    }
-  }, [deadlineAt, serverNow])
-
-  useEffect(() => {
-    if (!deadlineAt) return
+    if (!deadlineAt || !serverNow) return
+    skewRef.current = serverNow - Date.now()
     const update = () => {
       const ms = deadlineAt - (Date.now() + skewRef.current)
       setRemaining(Math.max(0, ms))
@@ -34,7 +27,7 @@ export default function Countdown({ deadlineAt, serverNow, onExpire, className =
     update()
     const interval = setInterval(update, 250)
     return () => clearInterval(interval)
-  }, [deadlineAt, onExpire])
+  }, [deadlineAt, serverNow, onExpire])
 
   const totalSeconds = Math.ceil(remaining / 1000)
   const minutes = Math.floor(totalSeconds / 60)

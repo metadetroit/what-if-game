@@ -1,12 +1,22 @@
 const { createClient } = require('@libsql/client');
+const { DatabaseSync } = require('node:sqlite');
 
 let client = null;
+let localDb = null;
 let lastInsertRowid = 0;
 
 // Wrapper that mimics sql.js API ({ columns, values } shape) so server.js
 // doesn't need to change its result-parsing patterns.
 class DbWrapper {
   async run(sql, params = []) {
+    if (localDb) {
+      const stmt = localDb.prepare(sql);
+      const result = stmt.run(...params);
+      if (result.lastInsertRowid !== undefined && result.lastInsertRowid !== null) {
+        lastInsertRowid = Number(result.lastInsertRowid);
+      }
+      return;
+    }
     const result = await client.execute({ sql, args: params });
     if (result.lastInsertRowid !== undefined && result.lastInsertRowid !== null) {
       lastInsertRowid = Number(result.lastInsertRowid);
@@ -14,6 +24,20 @@ class DbWrapper {
   }
 
   async exec(sql, params = []) {
+    if (localDb) {
+      const stmt = localDb.prepare(sql);
+      const rows = stmt.all(...params);
+      if (sql.includes('last_insert_rowid()')) {
+        return [{ columns: ['id'], values: [[lastInsertRowid]] }];
+      }
+      const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+      const values = (rows || []).map(row => columns.map(col => {
+        const v = row[col];
+        if (typeof v === 'bigint') return Number(v);
+        return v;
+      }));
+      return [{ columns, values }];
+    }
     const result = await client.execute({ sql, args: params });
     if (result.lastInsertRowid !== undefined && result.lastInsertRowid !== null) {
       lastInsertRowid = Number(result.lastInsertRowid);
@@ -40,14 +64,23 @@ async function initDatabase() {
   const url = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
 
-  if (!url) {
-    throw new Error('TURSO_DATABASE_URL env var is required');
+  if (url) {
+    client = createClient({ url, authToken });
+  } else {
+    console.warn('[database] TURSO_DATABASE_URL not set; using in-memory SQLite fallback for testing.');
+    localDb = new DatabaseSync(':memory:');
   }
 
-  client = createClient({ url, authToken });
+  const exec = async (sql) => {
+    if (localDb) {
+      localDb.exec(sql);
+    } else {
+      await client.execute(sql);
+    }
+  };
 
   // Create tables
-  await client.execute(`
+  await exec(`
     CREATE TABLE IF NOT EXISTS games (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       room_code TEXT UNIQUE,
@@ -57,7 +90,7 @@ async function initDatabase() {
     )
   `);
 
-  await client.execute(`
+  await exec(`
     CREATE TABLE IF NOT EXISTS questions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
@@ -70,7 +103,7 @@ async function initDatabase() {
     )
   `);
 
-  await client.execute(`
+  await exec(`
     CREATE TABLE IF NOT EXISTS answers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
@@ -83,7 +116,7 @@ async function initDatabase() {
     )
   `);
 
-  await client.execute(`
+  await exec(`
     CREATE TABLE IF NOT EXISTS qa_pairs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
@@ -97,7 +130,7 @@ async function initDatabase() {
     )
   `);
 
-  await client.execute(`
+  await exec(`
     CREATE TABLE IF NOT EXISTS votes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_id INTEGER,
@@ -111,21 +144,21 @@ async function initDatabase() {
 
   // Add hidden column to qa_pairs for moderation
   try {
-    await client.execute("ALTER TABLE qa_pairs ADD COLUMN hidden BOOLEAN DEFAULT 0");
+    await exec("ALTER TABLE qa_pairs ADD COLUMN hidden BOOLEAN DEFAULT 0");
   } catch (e) { /* already exists */ }
   try {
-    await client.execute("ALTER TABLE questions ADD COLUMN hidden BOOLEAN DEFAULT 0");
+    await exec("ALTER TABLE questions ADD COLUMN hidden BOOLEAN DEFAULT 0");
   } catch (e) { /* already exists */ }
   try {
-    await client.execute("ALTER TABLE answers ADD COLUMN hidden BOOLEAN DEFAULT 0");
+    await exec("ALTER TABLE answers ADD COLUMN hidden BOOLEAN DEFAULT 0");
   } catch (e) { /* already exists */ }
 
   // Add approval and NSFW flags to qa_pairs for content curation
   try {
-    await client.execute("ALTER TABLE qa_pairs ADD COLUMN is_approved BOOLEAN DEFAULT 0");
+    await exec("ALTER TABLE qa_pairs ADD COLUMN is_approved BOOLEAN DEFAULT 0");
   } catch (e) { /* already exists */ }
   try {
-    await client.execute("ALTER TABLE qa_pairs ADD COLUMN is_nsfw BOOLEAN DEFAULT 0");
+    await exec("ALTER TABLE qa_pairs ADD COLUMN is_nsfw BOOLEAN DEFAULT 0");
   } catch (e) { /* already exists */ }
 
   const db = new DbWrapper();
@@ -137,7 +170,7 @@ function saveDatabase() {}
 
 // Get database instance
 function getDb() {
-  if (!client) throw new Error('Database not initialized. Call initDatabase() first.');
+  if (!client && !localDb) throw new Error('Database not initialized. Call initDatabase() first.');
   return new DbWrapper();
 }
 

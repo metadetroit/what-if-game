@@ -155,8 +155,8 @@ function calculateRoundPoints(pairs, votesByPair, settings = {}) {
       speedDetails.fastestQ = fastest.name;
       addSpeed(fastest.name, 1);
 
-      // Slowest question author (-1, only if 4+ players and >20s)
-      if (activePlayerCount >= SLOWEST_MIN_PLAYERS && sorted.length > 0) {
+      // Slowest question author (-1, only if 4+ players, >20s, and at least 2 submissions)
+      if (activePlayerCount >= SLOWEST_MIN_PLAYERS && sorted.length > 1) {
         const slowest = sorted[sorted.length - 1];
         if (slowest.ms > SLOWEST_THRESHOLD_MS) {
           speedDetails.slowestQ = slowest.name;
@@ -172,8 +172,8 @@ function calculateRoundPoints(pairs, votesByPair, settings = {}) {
       speedDetails.fastestA = fastest.name;
       addSpeed(fastest.name, 1);
 
-      // Slowest answer author (-1, only if 4+ players and >20s)
-      if (activePlayerCount >= SLOWEST_MIN_PLAYERS && sorted.length > 0) {
+      // Slowest answer author (-1, only if 4+ players, >20s, and at least 2 submissions)
+      if (activePlayerCount >= SLOWEST_MIN_PLAYERS && sorted.length > 1) {
         const slowest = sorted[sorted.length - 1];
         if (slowest.ms > SLOWEST_THRESHOLD_MS) {
           speedDetails.slowestA = slowest.name;
@@ -186,8 +186,8 @@ function calculateRoundPoints(pairs, votesByPair, settings = {}) {
     for (const detail of roundWinnerDetails) {
       const qSpeed = speedBonuses[detail.questionAuthor] || 0;
       const aSpeed = speedBonuses[detail.answerAuthor] || 0;
-      // Each author's speed bonus is tracked separately; we attach the Q author's speed to the detail
-      detail.pointsBreakdown.speed = qSpeed;
+      // The pair's speed contribution is the combined bonus of both authors
+      detail.pointsBreakdown.speed = qSpeed + aSpeed;
     }
   }
 
@@ -283,7 +283,10 @@ function resolveStandings(tournamentScores) {
   entries.sort((a, b) => {
     if (b.total !== a.total) return b.total - a.total;
     if (b.firstPlaces !== a.firstPlaces) return b.firstPlaces - a.firstPlaces;
-    return b.votesReceived - a.votesReceived;
+    if (b.votesReceived !== a.votesReceived) return b.votesReceived - a.votesReceived;
+    // Players still present outrank players who left the game
+    if (a.leftGame !== b.leftGame) return a.leftGame ? 1 : -1;
+    return 0;
   });
 
   const standings = [];
@@ -291,7 +294,7 @@ function resolveStandings(tournamentScores) {
     if (i > 0) {
       const prev = entries[i - 1];
       const cur = entries[i];
-      if (cur.total === prev.total && cur.firstPlaces === prev.firstPlaces && cur.votesReceived === prev.votesReceived) {
+      if (cur.total === prev.total && cur.firstPlaces === prev.firstPlaces && cur.votesReceived === prev.votesReceived && cur.leftGame === prev.leftGame) {
         entries[i].rank = entries[i - 1].rank;
       } else {
         entries[i].rank = i + 1;

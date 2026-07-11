@@ -11,6 +11,14 @@ const ADMIN_KEY = 'fluke-admin-2024';
 
 const app = express();
 
+function getPlayingPlayers(game) {
+  return game.players.filter(p => p.isActive && p.role !== 'spectator');
+}
+
+function getPlayingPlayersCount(game) {
+  return getPlayingPlayers(game).length;
+}
+
 // CORS configuration for production
 const corsOrigin = process.env.CORS_ORIGIN || "*";
 app.use(cors({ origin: corsOrigin }));
@@ -523,21 +531,44 @@ function removePlayerFromGame(roomCode, socketId) {
   }
   if (Array.isArray(game.cardPairs)) {
     for (const pair of game.cardPairs) {
-      if (pair.question && pair.question.authorId === socketId) pair.question.authorId = null;
-      if (pair.answer && pair.answer.authorId === socketId) pair.answer.authorId = null;
+      if (pair.question && pair.question.authorId === socketId) {
+        pair.question.authorId = null;
+        pair.question.authorName = 'Unknown';
+      }
+      if (pair.answer && pair.answer.authorId === socketId) {
+        pair.answer.authorId = null;
+        pair.answer.authorName = 'Unknown';
+      }
     }
   }
   if (Array.isArray(game.turnLog)) {
     for (const entry of game.turnLog) {
-      if (entry.questionAuthorId === socketId) entry.questionAuthorId = null;
-      if (entry.actualAnswerAuthorId === socketId) entry.actualAnswerAuthorId = null;
-      if (entry.pairedAnswerAuthorId === socketId) entry.pairedAnswerAuthorId = null;
+      if (entry.questionAuthorId === socketId) {
+        entry.questionAuthorId = null;
+        entry.questionAuthor = 'Unknown';
+      }
+      if (entry.actualAnswerAuthorId === socketId) {
+        entry.actualAnswerAuthorId = null;
+        entry.actualAnswerAuthor = 'Unknown';
+      }
+      if (entry.pairedAnswerAuthorId === socketId) {
+        entry.pairedAnswerAuthorId = null;
+        entry.pairedAnswerAuthor = 'Unknown';
+      }
     }
   }
   if (Array.isArray(game.playerOrder)) {
     const idx = game.playerOrder.indexOf(socketId);
     if (idx !== -1) game.playerOrder[idx] = null;
   }
+
+  // C2: Mark the removed player's score as leftGame so they cannot be champion
+  if (game.tournament && game.tournament.scores && player.name) {
+    if (game.tournament.scores[player.name]) {
+      game.tournament.scores[player.name].leftGame = true;
+    }
+  }
+
   return player;
 }
 
@@ -579,7 +610,7 @@ function ensureHost(roomCode) {
 function disbandIfBelowMinimum(roomCode) {
   const game = games[roomCode];
   if (!game) return false;
-  const active = game.players.filter(p => p.isActive).length;
+  const active = getPlayingPlayersCount(game);
   let minimum = 0;
   if (game.phase === 'writing') minimum = 3;
   else if (game.phase === 'answering') minimum = 2;
@@ -647,15 +678,15 @@ io.on('connection', (socket) => {
 
   // Create new game room
   socket.on('create-room', async (playerName, callback) => {
-    // Connection rate limit: 3s cooldown per IP
-    const clientIp = socket.handshake.address || socket.id;
+    // Connection rate limit: 3s cooldown per socket
+    const clientKey = socket.id;
     const nowConn = Date.now();
-    const lastConn = connectionRateLimits.get(clientIp) || 0;
+    const lastConn = connectionRateLimits.get(clientKey) || 0;
     if (nowConn - lastConn < CONNECTION_COOLDOWN_MS) {
       callback({ success: false, error: 'Please wait before trying to create or join a room again' });
       return;
     }
-    connectionRateLimits.set(clientIp, nowConn);
+    connectionRateLimits.set(clientKey, nowConn);
 
     if (typeof playerName !== 'string' || !playerName.trim()) {
       callback({ success: false, error: 'Name cannot be empty' });
@@ -705,15 +736,15 @@ io.on('connection', (socket) => {
 
   // Join existing room
   socket.on('join-room', (roomCode, playerName, callback) => {
-    // Connection rate limit: 3s cooldown per IP
-    const clientIp = socket.handshake.address || socket.id;
+    // Connection rate limit: 3s cooldown per socket
+    const clientKey = socket.id;
     const nowConn = Date.now();
-    const lastConn = connectionRateLimits.get(clientIp) || 0;
+    const lastConn = connectionRateLimits.get(clientKey) || 0;
     if (nowConn - lastConn < CONNECTION_COOLDOWN_MS) {
       callback({ success: false, error: 'Please wait before trying to create or join a room again' });
       return;
     }
-    connectionRateLimits.set(clientIp, nowConn);
+    connectionRateLimits.set(clientKey, nowConn);
 
     if (typeof playerName !== 'string' || !playerName.trim()) {
       callback({ success: false, error: 'Name cannot be empty' });
@@ -786,11 +817,12 @@ io.on('connection', (socket) => {
     
     // CRITICAL FIX: Use active players count for minimum check
     const activePlayers = game.players.filter(p => p.isActive);
-    if (activePlayers.length < 3) {
+    const playingPlayers = getPlayingPlayers(game);
+    if (playingPlayers.length < 3) {
       socket.emit('error', 'Need at least 3 active players to start');
       return;
     }
-    
+
     // Store noSelfReading setting for use in performance phase
     game.noSelfReading = noSelfReading;
     console.log(`Room ${roomCode}: No Self-Reading ${noSelfReading ? 'ON' : 'OFF'}`);
@@ -871,7 +903,27 @@ io.on('connection', (socket) => {
 
     // Update tournament config if provided
     if (settings.tournamentConfig) {
-      game.tournament = { ...game.tournament, ...settings.tournamentConfig };
+      const config = settings.tournamentConfig;
+      if (config.targetRounds !== undefined) {
+        const targetRounds = parseInt(config.targetRounds, 10);
+        if (isNaN(targetRounds) || targetRounds < 1) {
+          socket.emit('error', 'targetRounds must be at least 1');
+          return;
+        }
+        config.targetRounds = targetRounds;
+      }
+      if (config.votingTimerSeconds !== undefined) {
+        const votingTimerSeconds = parseInt(config.votingTimerSeconds, 10);
+        if (isNaN(votingTimerSeconds) || votingTimerSeconds < 5) {
+          socket.emit('error', 'votingTimerSeconds must be at least 5');
+          return;
+        }
+        config.votingTimerSeconds = votingTimerSeconds;
+      }
+      if (config.speedScoringEnabled !== undefined) {
+        config.speedScoringEnabled = !!config.speedScoringEnabled;
+      }
+      game.tournament = { ...game.tournament, ...config };
     }
 
     // Update no-self-reading if provided
@@ -978,13 +1030,13 @@ io.on('connection', (socket) => {
     socket.emit('question-submitted');
     console.log('question-submitted emitted to socket:', socket.id);
 
-    // CRITICAL FIX: Check if all ACTIVE players submitted (not including disconnected)
-    const activePlayers = game.players.filter(p => p.isActive);
-    const allSubmitted = activePlayers.every(p => game.questions[p.id]);
-    console.log(`Question submission check: ${Object.keys(game.questions).length}/${activePlayers.length} active players submitted`);
+    // CRITICAL FIX: Check if all ACTIVE players submitted (not including disconnected or spectators)
+    const playingPlayers = getPlayingPlayers(game);
+    const allSubmitted = playingPlayers.every(p => game.questions[p.id]);
+    console.log(`Question submission check: ${Object.keys(game.questions).length}/${playingPlayers.length} playing players submitted`);
 
     if (allSubmitted) {
-      console.log('All active players submitted questions - distributing...');
+      console.log('All playing players submitted questions - distributing...');
       // Shuffle and distribute questions (no one gets their own)
       distributeQuestions(roomCode);
     } else {
@@ -992,8 +1044,8 @@ io.on('connection', (socket) => {
       console.log('Emitting progress-update to room:', roomCode);
       io.to(roomCode).emit('progress-update', {
         submitted: Object.keys(game.questions).length,
-        total: activePlayers.length,
-        playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.questions[p.id] })),
+        total: playingPlayers.length,
+        playerStatuses: playingPlayers.map(p => ({ name: p.name, submitted: !!game.questions[p.id] })),
         firstSubmitter: game.firstQuestionSubmitter
       });
     }
@@ -1011,20 +1063,20 @@ io.on('connection', (socket) => {
       }
       
       // CRITICAL FIX: Only use active players for question distribution
-      const activePlayers = game.players.filter(p => p.isActive);
-      console.log(`[distributeQuestions] Active players (${activePlayers.length}):`, activePlayers.map(p => ({ name: p.name, id: p.id })));
+      const activePlayers = getPlayingPlayers(game);
+      console.log(`[distributeQuestions] Playing players (${activePlayers.length}):`, activePlayers.map(p => ({ name: p.name, id: p.id })));
       console.log(`[distributeQuestions] Questions available:`, Object.keys(game.questions || {}));
-      
+
       if (activePlayers.length === 0) {
         console.error(`[distributeQuestions] ERROR: No active players in room ${roomCode}`);
         return;
       }
-      
+
       if (activePlayers.length < 3) {
         console.error(`[distributeQuestions] ERROR: Need at least 3 active players, have ${activePlayers.length}`);
         return;
       }
-      
+
       // Only distribute to active players
       const playerIds = activePlayers.map(p => p.id);
       
@@ -1242,10 +1294,10 @@ io.on('connection', (socket) => {
       socket.emit('answer-submitted');
 
       // Check if all ACTIVE players submitted answers
-      const activePlayers = game.players.filter(p => p.isActive);
-      const missingAnswers = activePlayers.filter(p => !game.answers[p.id]).map(p => ({ name: p.name, id: p.id }));
-      console.log(`Answer check: ${activePlayers.length - missingAnswers.length}/${activePlayers.length} submitted (active players only)`);
-      console.log('Active players:', activePlayers.map(p => ({ name: p.name, id: p.id, hasAnswer: !!game.answers[p.id] })));
+      const playingPlayers = getPlayingPlayers(game);
+      const missingAnswers = playingPlayers.filter(p => !game.answers[p.id]).map(p => ({ name: p.name, id: p.id }));
+      console.log(`Answer check: ${playingPlayers.length - missingAnswers.length}/${playingPlayers.length} submitted (playing players only)`);
+      console.log('Playing players:', playingPlayers.map(p => ({ name: p.name, id: p.id, hasAnswer: !!game.answers[p.id] })));
       if (missingAnswers.length > 0) {
         console.log('Missing answers from:', missingAnswers);
       }
@@ -1264,8 +1316,8 @@ io.on('connection', (socket) => {
       } else {
         io.to(roomCode).emit('progress-update', {
           submitted: Object.keys(game.answers).length,
-          total: activePlayers.length,
-          playerStatuses: activePlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] })),
+          total: playingPlayers.length,
+          playerStatuses: playingPlayers.map(p => ({ name: p.name, submitted: !!game.answers[p.id] })),
           firstSubmitter: game.firstAnswerSubmitter,
           lastQuestionSubmitter: game.lastQuestionSubmitter
         });
@@ -1449,7 +1501,7 @@ io.on('connection', (socket) => {
     const game = games[roomCode];
     
     // CRITICAL FIX: Only use active players (not spectators) for performance phase
-    const activePlayers = game.players.filter(p => p.isActive && p.role !== 'spectator');
+    const activePlayers = getPlayingPlayers(game);
     const playerIds = activePlayers.map(p => p.id);
     
     // Shuffle playerOrder for randomized reading order
@@ -1556,7 +1608,7 @@ io.on('connection', (socket) => {
     const game = games[roomCode];
     // CRITICAL FIX: Use stable playerOrder set at start of performing phase, not current player list
     // Filter out null entries from permanently removed players to avoid phantom turns
-    const playerIds = (game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id)).filter(id => id !== null);
+    const playerIds = (game.playerOrder || getPlayingPlayers(game).map(p => p.id)).filter(id => id !== null);
     const totalTurns = playerIds.length * 2;
     
     if (game.currentReaderIndex >= totalTurns) {
@@ -1737,7 +1789,7 @@ io.on('connection', (socket) => {
     
     // CRITICAL FIX: Use stable playerOrder for reader validation
     // Filter out null entries from permanently removed players
-    const playerIds = (game.playerOrder || game.players.filter(p => p.isActive).map(p => p.id)).filter(id => id !== null);
+    const playerIds = (game.playerOrder || getPlayingPlayers(game).map(p => p.id)).filter(id => id !== null);
     const isQuestionTurn = game.currentReaderIndex % 2 === 0;
     let expectedReaderId;
     
@@ -1818,8 +1870,8 @@ io.on('connection', (socket) => {
     game.phase = 'tallying';
     clearTimeout(game.votingTimer);
 
-    // Drain in-flight vote DB writes
-    await game.voteWriteQueue;
+    // Drain in-flight vote DB writes (L2: defensive guard)
+    if (game.voteWriteQueue) await game.voteWriteQueue;
 
     // Fetch current pair vote counts from DB
     const db = getDb();
@@ -1835,17 +1887,17 @@ io.on('connection', (socket) => {
     }
 
     // Build pairs array for calculateRoundPoints from cardPairs
-    const pairsForTally = (game.cardPairs || []).filter(p => p.dbId).map(p => ({
+    const pairsForTally = (game.cardPairs || []).filter(p => p.dbId && p.question?.authorName && p.question.authorName !== 'Unknown' && p.answer?.authorName && p.answer.authorName !== 'Unknown').map(p => ({
       pairDbId: p.dbId,
-      questionAuthor: p.question?.authorName || 'Unknown',
-      answerAuthor: p.answer?.authorName || 'Unknown'
+      questionAuthor: p.question.authorName,
+      answerAuthor: p.answer.authorName
     }));
 
     // Build speed data from submission timestamps (if speed scoring is enabled)
     const speedScoringEnabled = !!game.tournament.speedScoringEnabled;
     let scoringSettings = {};
     if (speedScoringEnabled) {
-      const activePlayerCount = game.players.filter(p => p.isActive && p.role !== 'spectator').length;
+      const activePlayerCount = getPlayingPlayersCount(game);
       const writingStart = game.writingPhaseStartedAt || 0;
       const answeringStart = game.answeringPhaseStartedAt || 0;
 
@@ -1953,6 +2005,13 @@ io.on('connection', (socket) => {
     }
     game.tournament.pendingPromotions = [];
 
+    // H1: do not start a new round if too few active players remain
+    if (getPlayingPlayersCount(game) < 3) {
+      io.to(roomCode).emit('error', 'Not enough active players to start the next round');
+      console.log(`[advanceRound] Not enough playing players to start round ${game.tournament.currentRound + 1}, remaining in scoreboard`);
+      return;
+    }
+
     // Increment round
     game.tournament.currentRound++;
 
@@ -1975,6 +2034,13 @@ io.on('connection', (socket) => {
     game.lastAnswerSubmitter = null;
     game.isTransitioning = false;
     game.voteWriteQueue = Promise.resolve();
+
+    // H2: clear stale round result and scoreboard deadline so reconnects don't leak old data
+    game.scoreboardDeadlineAt = null;
+    if (game.tournament) {
+      game.tournament.lastRoundResult = null;
+      game.tournament.scoreboardDeadlineAt = null;
+    }
 
     for (const p of game.players) {
       p.hasSubmittedQuestion = false;
@@ -2019,7 +2085,7 @@ io.on('connection', (socket) => {
   });
 
   // Host starts a new tournament (from tournament-complete screen)
-  socket.on('new-tournament', () => {
+  socket.on('new-tournament', async () => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
     if (!game || game.host !== socket.id) return;
@@ -2046,6 +2112,14 @@ io.on('connection', (socket) => {
     game.currentReaderIndex = 0;
     game.playerOrder = [];
     game.isTransitioning = false;
+
+    // L3: Clear stale votes from the previous tournament's final round
+    try {
+      const db = getDb();
+      await db.run("DELETE FROM votes WHERE game_id = ?", [game.dbGameId]);
+    } catch (e) {
+      console.error('[new-tournament] Failed to clear stale votes:', e.message);
+    }
 
     io.to(roomCode).emit('tournament-reset', { tournament: { enabled: true, targetRounds: game.tournament.targetRounds } });
     io.to(roomCode).emit('player-joined', { players: game.players.filter(p => p.isActive), hostId: game.host });
@@ -2326,7 +2400,7 @@ io.on('connection', (socket) => {
         socket.emit('error', 'You must submit your question before force-advancing');
         return;
       }
-      const activePlayers = game.players.filter(p => p.isActive);
+      const activePlayers = getPlayingPlayers(game);
       // Remove players who haven't submitted from the active list
       const submitted = activePlayers.filter(p => game.questions[p.id]);
       if (submitted.length < 3) {
@@ -2371,7 +2445,7 @@ io.on('connection', (socket) => {
         socket.emit('error', 'You must submit your answer before force-advancing');
         return;
       }
-      const activePlayers = game.players.filter(p => p.isActive);
+      const activePlayers = getPlayingPlayers(game);
       const submitted = activePlayers.filter(p => game.answers[p.id]);
       if (submitted.length < 2) {
         socket.emit('error', 'Need at least 2 answers to advance');
@@ -2455,31 +2529,32 @@ io.on('connection', (socket) => {
     if (disbandIfBelowMinimum(roomCode)) return;
 
     const activePlayers = game.players.filter(p => p.isActive);
+    const playingPlayers = getPlayingPlayers(game);
     io.to(roomCode).emit('player-left', { players: activePlayers, hostId: game.host });
 
     // Re-emit progress so any submission UIs update
     if (game.phase === 'writing') {
       io.to(roomCode).emit('progress-update', {
-        submitted: activePlayers.filter(p => game.questions[p.id]).length,
-        total: activePlayers.length,
-        playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.questions[p.id], isActive: true }))
+        submitted: playingPlayers.filter(p => game.questions[p.id]).length,
+        total: playingPlayers.length,
+        playerStatuses: playingPlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.questions[p.id], isActive: true }))
       });
       // If all remaining have submitted, advance
-      if (activePlayers.length >= 3 && activePlayers.every(p => game.questions[p.id])) {
+      if (playingPlayers.length >= 3 && playingPlayers.every(p => game.questions[p.id])) {
         distributeQuestions(roomCode);
       }
     } else if (game.phase === 'answering') {
       io.to(roomCode).emit('progress-update', {
-        submitted: activePlayers.filter(p => game.answers[p.id]).length,
-        total: activePlayers.length,
-        playerStatuses: activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.answers[p.id], isActive: true }))
+        submitted: playingPlayers.filter(p => game.answers[p.id]).length,
+        total: playingPlayers.length,
+        playerStatuses: playingPlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.answers[p.id], isActive: true }))
       });
-      if (activePlayers.length >= 2 && activePlayers.every(p => game.answers[p.id])) {
+      if (playingPlayers.length >= 2 && playingPlayers.every(p => game.answers[p.id])) {
         preparePerformancePhase(roomCode);
       }
     } else if (game.phase === 'performing') {
       // If kicked player was the active reader, advance the turn
-      const playerIds = (game.playerOrder || activePlayers.map(p => p.id)).filter(id => id !== null);
+      const playerIds = (game.playerOrder || playingPlayers.map(p => p.id)).filter(id => id !== null);
       const isQuestionTurn = game.currentReaderIndex % 2 === 0;
       let expectedReaderId;
       if (isQuestionTurn) {
@@ -2843,17 +2918,18 @@ io.on('connection', (socket) => {
     
     // Calculate progress + statuses for current phase
     const activePlayers = game.players.filter(p => p.isActive);
+    const playingPlayers = getPlayingPlayers(game);
     let progress = null;
     let playerStatuses = null;
     if (game.phase === 'writing') {
-      const submitted = activePlayers.filter(p => game.questions[p.id]).length;
-      progress = { submitted, total: activePlayers.length };
-      playerStatuses = activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.questions[p.id], isActive: true }));
+      const submitted = playingPlayers.filter(p => game.questions[p.id]).length;
+      progress = { submitted, total: playingPlayers.length };
+      playerStatuses = playingPlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.questions[p.id], isActive: true }));
       progress.playerStatuses = playerStatuses;
     } else if (game.phase === 'answering') {
-      const submitted = activePlayers.filter(p => game.answers[p.id]).length;
-      progress = { submitted, total: activePlayers.length };
-      playerStatuses = activePlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.answers[p.id], isActive: true }));
+      const submitted = playingPlayers.filter(p => game.answers[p.id]).length;
+      progress = { submitted, total: playingPlayers.length };
+      playerStatuses = playingPlayers.map(p => ({ id: p.id, name: p.name, submitted: !!game.answers[p.id], isActive: true }));
       progress.playerStatuses = playerStatuses;
     }
 
@@ -3287,10 +3363,18 @@ const PORT = process.env.PORT || 3001;
 async function startServer() {
   await initDatabase();
   console.log('Database initialized');
-  
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+
+  return new Promise((resolve, reject) => {
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      resolve();
+    });
+    server.once('error', reject);
   });
 }
 
-startServer();
+module.exports = { app, server, io, games, startServer };
+
+if (require.main === module) {
+  startServer();
+}
