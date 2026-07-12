@@ -24,7 +24,7 @@ describe('TournamentCompleteView', () => {
         }}
       />
     )
-    expect(screen.getByText('Tournament Champion!')).toBeInTheDocument()
+    expect(screen.getByText('Tournament Champion')).toBeInTheDocument()
     expect(screen.getByText('Alice')).toBeInTheDocument()
     expect(screen.getByText('🥇')).toBeInTheDocument()
     expect(screen.getByText('15')).toBeInTheDocument()
@@ -45,7 +45,7 @@ describe('TournamentCompleteView', () => {
         }}
       />
     )
-    expect(screen.getByText('Co-Champions!')).toBeInTheDocument()
+    expect(screen.getByText('Co-Champions')).toBeInTheDocument()
     expect(screen.getByText('Alice & Bob')).toBeInTheDocument()
   })
 
@@ -106,7 +106,7 @@ describe('TournamentCompleteView', () => {
         }}
       />
     )
-    expect(screen.getByText('Waiting for host…')).toBeInTheDocument()
+    expect(screen.getByText(/Waiting for host/)).toBeInTheDocument()
   })
 
   it('returns null when tournamentCompleteData is missing', () => {

@@ -44,85 +44,61 @@ export default function ScoreboardView({
 
   return (
     <div className="game-container game-container--summary py-4">
-      <div className="summary-header card">
-        <div className="flex flex-col gap-1 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Round {currentRound} of {targetRounds}</p>
-          <h2 className="font-bubble text-2xl font-black text-white leading-tight">Scoreboard</h2>
-          <div className="mt-1 flex items-center justify-center gap-2 text-sm text-gray-400">
-            <span>Next {isFinalRound ? "results" : "round"} in</span>
-            <Countdown deadlineAt={deadlineAt} serverNow={serverNow} className="font-bold text-lg" />
+      <div className="summary-header--compact" data-testid="scoreboard-header">
+        <div className="summary-header--compact__row">
+          <div className="flex items-center gap-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Round {currentRound} of {targetRounds}</p>
+            <span className="text-xs text-gray-500">·</span>
+            <h2 className="text-sm md:text-base font-black text-white">Scoreboard</h2>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs md:text-sm text-gray-400">
+            <span>Next {isFinalRound ? "results" : "round"}</span>
+            <Countdown deadlineAt={deadlineAt} serverNow={serverNow} className="font-bold text-sm md:text-base" />
           </div>
         </div>
       </div>
 
       {roundWinnerDetails && roundWinnerDetails.length > 0 && (
-        <div className="card mb-3 py-3 px-4">
-          <p className="text-xs text-amber-300 uppercase tracking-widest mb-2 text-center">Round Winner{roundWinnerDetails.length > 1 ? "s" : ""}</p>
+        <div className="summary-winner-banner" data-testid="winner-banner">
           {roundWinnerDetails.map((winner, i) => {
             const base = winner.pointsBreakdown?.base ?? (winner.isFluke ? winner.votes * 2 + 2 + 3 : winner.votes + 2)
             const speed = winner.pointsBreakdown?.speed ?? 0
+            const speedText = speed !== 0 ? ` · ⚡${speed > 0 ? "+" : ""}${speed}` : ""
             return (
-              <div key={i} className="text-center">
+              <p key={i} className="leading-snug">
                 {winner.isFluke ? (
-                  <div className="inline-flex items-center gap-2 bg-purple-900/40 border border-purple-700/50 rounded-full px-3 py-1">
-                    <span className="text-sm font-bold text-purple-200">🎯 FLUKE! +{base}</span>
-                    <span className="text-xs text-purple-300">{winner.questionAuthor}</span>
-                  </div>
+                  <span className="summary-winner-banner__fluke">
+                    🎯 FLUKE! +{base} pts — {winner.questionAuthor}
+                  </span>
                 ) : (
-                  <div className="inline-flex items-center gap-2 bg-indigo-900/40 border border-indigo-700/50 rounded-full px-3 py-1">
-                    <span className="text-sm font-bold text-indigo-200">+{base} each</span>
-                    <span className="text-xs text-indigo-300">{winner.questionAuthor} & {winner.answerAuthor}</span>
-                  </div>
+                  <span className="summary-winner-banner__normal">
+                    🏆 Winner: +{base} pts — {winner.questionAuthor} & {winner.answerAuthor}
+                  </span>
                 )}
-                <p className="text-xs text-gray-500 mt-1">{winner.votes} vote{winner.votes === 1 ? "" : "s"}{speed !== 0 && <span className="text-amber-400"> · ⚡{speed > 0 ? "+" : ""}{speed} speed</span>}</p>
-              </div>
+                <span className="text-gray-500 ml-1">({winner.votes} vote{winner.votes === 1 ? "" : "s"}{speedText})</span>
+              </p>
             )
           })}
         </div>
       )}
 
-      {/* Round Highlights — Speed badges (only if blitz was enabled for this round) */}
-      {speedEnabled && speedDetails && (
-        <div className="card mb-3 py-2 px-3">
-          <p className="text-xs text-amber-400 uppercase tracking-widest mb-1.5 text-center">⚡ Round Highlights</p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {speedDetails.fastestQ && (
-              <div className="inline-flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5">
-                <span className="text-xs">⚡</span>
-                <span className="text-xs text-amber-300 font-semibold">Fastest Q</span>
-                <span className="text-xs text-amber-200">{speedDetails.fastestQ}</span>
-              </div>
-            )}
-            {speedDetails.fastestA && (
-              <div className="inline-flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5">
-                <span className="text-xs">⚡</span>
-                <span className="text-xs text-amber-300 font-semibold">Fastest A</span>
-                <span className="text-xs text-amber-200">{speedDetails.fastestA}</span>
-              </div>
-            )}
-            {speedDetails.slowestQ && (
-              <div className="inline-flex items-center gap-1 bg-gray-800 border border-gray-600/40 rounded-full px-2 py-0.5">
-                <span className="text-xs">🐢</span>
-                <span className="text-xs text-gray-400 font-semibold">Slowest Q</span>
-                <span className="text-xs text-gray-300">{speedDetails.slowestQ}</span>
-              </div>
-            )}
-            {speedDetails.slowestA && (
-              <div className="inline-flex items-center gap-1 bg-gray-800 border border-gray-600/40 rounded-full px-2 py-0.5">
-                <span className="text-xs">🐢</span>
-                <span className="text-xs text-gray-400 font-semibold">Slowest A</span>
-                <span className="text-xs text-gray-300">{speedDetails.slowestA}</span>
-              </div>
-            )}
-            {!speedDetails.fastestQ && !speedDetails.fastestA && !speedDetails.slowestQ && !speedDetails.slowestA && (
-              <span className="text-xs text-gray-500">No speed data this round</span>
-            )}
-          </div>
+      {speedEnabled && speedDetails && !roundWinnerDetails?.length && (
+        <div className="summary-winner-banner" data-testid="speed-banner">
+          <p className="leading-snug">
+            <span className="text-amber-300">⚡</span>
+            <span className="ml-1">
+              {speedDetails.fastestQ && <>Fastest Q: {speedDetails.fastestQ} </>}
+              {speedDetails.fastestA && <>· Fastest A: {speedDetails.fastestA} </>}
+              {speedDetails.slowestQ && <>· Slowest Q: {speedDetails.slowestQ} </>}
+              {speedDetails.slowestA && <>· Slowest A: {speedDetails.slowestA}</>}
+              {!speedDetails.fastestQ && !speedDetails.fastestA && !speedDetails.slowestQ && !speedDetails.slowestA && "No speed data this round"}
+            </span>
+          </p>
         </div>
       )}
 
       <div className="summary-scroll">
-        <div className="space-y-1.5 content-visibility-auto">
+        <div className="space-y-1 content-visibility-auto">
           {visibleStandings.map((s, idx) => {
             const icon = RANK_ICONS[s.rank] || null
             const isMe = s.name === playerName
@@ -138,15 +114,18 @@ export default function ScoreboardView({
                   <div className="text-center text-xs text-gray-600 py-1">· · ·</div>
                 )}
                 <div className={
-                  "flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all duration-300 " +
+                  "flex items-center gap-3 py-2 px-3 rounded-xl transition-all duration-300 " +
                   (isMe ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800/60") +
                   (s.leftGame ? " opacity-50" : "")
                 }>
-                  <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                  <div className="flex flex-col items-center justify-center w-8 h-8 shrink-0">
                     {icon ? (
                       <span className="text-xl">{icon}</span>
                     ) : (
                       <span className="text-sm font-bold text-gray-400">{s.rank}</span>
+                    )}
+                    {delta && (
+                      <span className={"text-[10px] leading-none " + (delta === "▲" ? "text-emerald-400" : "text-rose-400")}>{delta}</span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -158,9 +137,6 @@ export default function ScoreboardView({
                       {speedEnabled && speedBonus !== 0 && <span className={"ml-1 " + (speedBonus > 0 ? "text-amber-400" : "text-gray-500")}>· ⚡{speedBonus > 0 ? "+" : ""}{speedBonus}</span>}
                     </p>
                   </div>
-                  {delta && (
-                    <span className={"text-xs " + (delta === "▲" ? "text-emerald-400" : "text-rose-400")}>{delta}</span>
-                  )}
                   <div className="text-right shrink-0">
                     <p className="text-xl font-black text-amber-300">{s.total}</p>
                     <p className="text-xs md:text-sm text-gray-500">pts</p>
@@ -181,10 +157,10 @@ export default function ScoreboardView({
 
       {/* Scoring History — expandable breakdown */}
       {speedEnabled && (
-        <div className="mt-2">
+        <div className="text-center">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="w-full text-center text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-1"
+            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-0.5"
           >
             {showHistory ? "▾ Hide Scoring History" : "▸ Show Scoring History"}
           </button>
@@ -216,18 +192,14 @@ export default function ScoreboardView({
         <div className="summary-actions">
           <button
             onClick={() => socketRef.current?.emit("next-round")}
-            className="btn-primary py-3 text-base border-2 border-fuchsia-500/30 bg-fuchsia-950/10 min-h-[44px]"
+            className="btn-primary py-2.5 md:py-3 text-sm md:text-base min-h-[44px]"
           >
-            <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-            <span className="ml-2">{isFinalRound ? "🏆 See Final Results →" : "Next Round →"}</span>
+            {isFinalRound ? "🏆 See Final Results →" : "Next Round →"}
           </button>
         </div>
       ) : (
-        <div className="summary-actions">
-          <div className="card text-center py-5 px-6 animate-pulse">
-            <p className="text-base md:text-lg text-gray-200 mb-1 font-semibold">Waiting for host or timer…</p>
-            <Countdown deadlineAt={deadlineAt} serverNow={serverNow} className="text-lg font-bold text-indigo-300" />
-          </div>
+        <div className="summary-actions--compact">
+          <p className="summary-guest--compact">Waiting for host or timer…</p>
         </div>
       )}
     </div>

@@ -12,6 +12,7 @@ import PerformancePhase from "./components/PerformancePhase"
 import SummaryPhase from "./components/SummaryPhase"
 import ScoreboardView from "./components/ScoreboardView"
 import TournamentCompleteView from "./components/TournamentCompleteView"
+import PersonalRankReveal from "./components/PersonalRankReveal"
 import {
   noticeFor,
   loadSession,
@@ -58,6 +59,7 @@ function App() {
   const [tournament, setTournament] = useState(null) // server-side tournament state { enabled, currentRound, targetRounds, votingDeadlineAt, serverNow }
   const [scoreboardData, setScoreboardData] = useState(null)
   const [tournamentCompleteData, setTournamentCompleteData] = useState(null)
+  const [rankRevealData, setRankRevealData] = useState(null)
   const [authorReveals, setAuthorReveals] = useState({}) // { pairDbId: { qAuthor, aAuthor } } revealed after voting in tournament
   const [reconnectInfo, setReconnectInfo] = useState(null)
   const [playerStatuses, setPlayerStatuses] = useState([])
@@ -655,6 +657,7 @@ function App() {
       setTournament,
       setScoreboardData,
       setTournamentCompleteData,
+      setRankRevealData,
       setAuthorReveals
     },
     helpers: { applySummaryData, playSound },
@@ -1397,6 +1400,16 @@ function App() {
           />
         )
 
+      case "rank_reveal":
+        return (
+          <PersonalRankReveal
+            rankRevealData={rankRevealData}
+            isHost={isHost}
+            socketRef={socketRef}
+            playerName={playerName}
+          />
+        )
+
       case "tournament_complete":
         return (
           <TournamentCompleteView
@@ -1504,8 +1517,8 @@ function App() {
       {reactions.map(r => (
         <div
           key={r.id}
-          className="fixed z-40 text-3xl pointer-events-none animate-bounce"
-          style={{ left: `${r.x}%`, top: `${r.y}%`, transform: 'translate(-50%, -50%)' }}
+          className="fixed z-40 text-3xl pointer-events-none animate-reaction-float"
+          style={{ left: `${r.x}%`, top: `${r.y}%` }}
           aria-hidden="true"
         >
           {r.emoji}

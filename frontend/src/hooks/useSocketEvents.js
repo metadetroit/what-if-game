@@ -74,6 +74,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     setTournament,
     setScoreboardData,
     setTournamentCompleteData,
+    setRankRevealData,
     setAuthorReveals
   } = actions
 
@@ -300,9 +301,6 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
         if (pendingVote?.type === 'qa_pair') {
           setSummaryPairVoteId(isVoted ? data.targetId : null)
         }
-        if (data.authorReveal && isVoted) {
-          setAuthorReveals(prev => ({ ...prev, [data.targetId]: data.authorReveal }))
-        }
         setNotice(noticeFor(isVoted ? 'Vote saved' : 'Vote removed', 'success', 1200))
       } else {
         setNotice(noticeFor(data.message || 'Vote failed', 'warn', 2000))
@@ -365,6 +363,9 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     newSocket.on("scoreboard", (data) => {
       setGameState("scoreboard")
       setScoreboardData(data)
+      if (data.authorsReveal) {
+        setAuthorReveals(data.authorsReveal)
+      }
       setTournament({
         enabled: true,
         currentRound: data.currentRound,
@@ -372,9 +373,15 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       })
     })
 
+    newSocket.on("rank-reveal", (data) => {
+      setGameState("rank_reveal")
+      setRankRevealData(data)
+    })
+
     newSocket.on("tournament-complete", (data) => {
       setGameState("tournament_complete")
       setTournamentCompleteData(data)
+      setRankRevealData(null)
     })
 
     newSocket.on("tournament-reset", (data) => {
@@ -590,7 +597,16 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
         if (data.summaryPairVoteId) setSummaryPairVoteId(data.summaryPairVoteId)
         if (Array.isArray(data.roundHistory)) setRoundHistory(data.roundHistory)
         if (data.tournament) setTournament(data.tournament)
-        if (data.scoreboardData) setScoreboardData(data.scoreboardData)
+        if (data.scoreboardData) {
+          setScoreboardData(data.scoreboardData)
+          if (data.scoreboardData.authorsReveal) {
+            setAuthorReveals(data.scoreboardData.authorsReveal)
+          }
+        }
+        if (data.rankRevealData) {
+          setRankRevealData(data.rankRevealData)
+          setGameState('rank_reveal')
+        }
         if (data.tournamentCompleteData) setTournamentCompleteData(data.tournamentCompleteData)
         // Map server 'voting' phase to frontend 'ended' gameState (SummaryPhase handles voting UI)
         if (data.phase === 'voting') {

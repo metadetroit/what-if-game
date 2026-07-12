@@ -1655,10 +1655,17 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Classic mode: unchanged behavior
+      // Classic mode: mask author names server-side if anonymousMode is ON
+      const classicIsAnonymous = typeof game.currentRoundAnonymousMode === 'boolean' ? game.currentRoundAnonymousMode : game.anonymousMode;
+      const classicSummary = classicIsAnonymous ? summary.map(p => ({
+        ...p,
+        questionAuthorName: '???',
+        actualAnswerAuthorName: '???',
+        pairedAnswerAuthorName: '???'
+      })) : summary;
       io.to(roomCode).emit('game-ended', {
         message: 'Thanks for playing!',
-        summary: summary,
+        summary: classicSummary,
         votersCount: votersCount,
         firstQuestionSubmitter: game.firstQuestionSubmitter,
         firstAnswerSubmitter: game.firstAnswerSubmitter,
@@ -1945,14 +1952,42 @@ io.on('connection', (socket) => {
 
     const { standings } = resolveStandings(game.tournament.scores);
     const isFinalRound = game.tournament.currentRound >= game.tournament.targetRounds;
-    const scoreboardMs = 20000;
+    const scoreboardMs = isFinalRound ? 5000 : 20000;
     const scoreboardDeadlineAt = Date.now() + scoreboardMs;
 
     game.phase = 'scoreboard';
     game.scoreboardDeadlineAt = scoreboardDeadlineAt;
     game.tournament.lastRoundResult = { standings, roundWinnerDetails: roundResult.roundWinnerDetails, speedDetails: roundResult.speedDetails };
     game.tournament.scoreboardDeadlineAt = scoreboardDeadlineAt;
-    game.scoreboardTimer = setTimeout(() => advanceRound(roomCode, 'timer'), scoreboardMs);
+
+    if (isFinalRound) {
+      // Final round: short scoreboard hold, then rank-reveal, then tournament-complete
+      game.scoreboardTimer = setTimeout(() => {
+        // Emit personalized rank-reveal to each player
+        const activePlayers = game.players.filter(p => p.isActive);
+        for (const p of activePlayers) {
+          const myStanding = standings.find(s => s.name === p.name);
+          const myRank = myStanding ? myStanding.rank : null;
+          const myTotal = myStanding ? myStanding.total : 0;
+          const totalPlayers = standings.length;
+          const isChampion = myRank === 1;
+          io.to(p.id).emit('rank-reveal', {
+            rank: myRank,
+            total: myTotal,
+            totalPlayers,
+            isChampion,
+            isTie: standings.filter(s => s.rank === 1).length > 1,
+            champions: standings.filter(s => s.rank === 1).map(s => s.name)
+          });
+        }
+        game.phase = 'rank_reveal';
+        game.tournament.rankRevealDeadlineAt = Date.now() + 8000;
+        // After 8s of rank-reveal, advance to tournament-complete
+        game.scoreboardTimer = setTimeout(() => advanceRound(roomCode, 'rank-reveal-timer'), 8000);
+      }, scoreboardMs);
+    } else {
+      game.scoreboardTimer = setTimeout(() => advanceRound(roomCode, 'timer'), scoreboardMs);
+    }
 
     io.to(roomCode).emit('scoreboard', {
       standings,
@@ -1973,7 +2008,7 @@ io.on('connection', (socket) => {
   // ─── Tournament: advance to next round or complete ───
   async function advanceRound(roomCode, trigger) {
     const game = games[roomCode];
-    if (!game || game.phase !== 'scoreboard') return; // idempotent guard
+    if (!game || (game.phase !== 'scoreboard' && game.phase !== 'rank_reveal')) return; // idempotent guard
     clearTimeout(game.scoreboardTimer);
 
     const isFinalRound = game.tournament.currentRound >= game.tournament.targetRounds;
@@ -2080,7 +2115,7 @@ io.on('connection', (socket) => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
     if (!game || game.host !== socket.id) return;
-    if (game.phase !== 'scoreboard') return;
+    if (game.phase !== 'scoreboard' && game.phase !== 'rank_reveal') return;
     advanceRound(roomCode, 'host');
   });
 
@@ -2196,6 +2231,19 @@ io.on('connection', (socket) => {
 
     const db = getDb();
 
+    // Self-vote prevention: check if the voter is an author of the target pair
+    if (type === 'qa_pair') {
+      const pair = (game.cardPairs || []).find(p => p.dbId === targetId);
+      if (pair) {
+        const qAuthorName = pair.question?.authorName || null;
+        const aAuthorName = pair.answer?.authorName || null;
+        if (stableVoterId === qAuthorName || stableVoterId === aAuthorName) {
+          socket.emit('vote-submitted', { success: false, message: 'You cannot vote for your own pairing' });
+          return;
+        }
+      }
+    }
+
     // Resolve target table by vote type
     let tableName = null;
     if (type === 'question') tableName = 'questions';
@@ -2252,19 +2300,8 @@ io.on('connection', (socket) => {
     const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
     const votersCount = voterResult.length > 0 && voterResult[0].values.length > 0 ? voterResult[0].values[0][0] : 0;
 
-    // Tournament: include author reveal in vote-submitted ack
-    let authorReveal = null;
-    if (game.tournament && game.tournament.enabled && type === 'qa_pair') {
-      const pair = (game.cardPairs || []).find(p => p.dbId === targetId);
-      if (pair) {
-        authorReveal = {
-          qAuthor: pair.question?.authorName || 'Unknown',
-          aAuthor: pair.answer?.authorName || 'Unknown'
-        };
-      }
-    }
-
-    socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: true, authorReveal });
+    // Tournament: do NOT include authorReveal — names must stay masked until scoreboard
+    socket.emit('vote-submitted', { success: true, targetId, voteCount, isVoted: true });
     io.to(roomCode).emit('vote-update', { type, targetId, voteCount, votersCount });
 
     // Tournament: auto-close voting when all active players have voted
@@ -2961,7 +2998,19 @@ io.on('connection', (socket) => {
 
     // If reconnecting during ended phase, include the game summary and current vote state
     if (game.phase === 'ended' || game.phase === 'voting') {
-      reconnectData.summary = await buildGameSummary(roomCode);
+      let reconnectSummary = await buildGameSummary(roomCode);
+      // Mask author names server-side: tournament voting always masks; classic masks if anonymous
+      const isTournamentVoting = game.tournament && game.tournament.enabled && game.phase === 'voting';
+      const isClassicAnonymous = !isTournamentVoting && (typeof game.currentRoundAnonymousMode === 'boolean' ? game.currentRoundAnonymousMode : game.anonymousMode);
+      if (isTournamentVoting || isClassicAnonymous) {
+        reconnectSummary = reconnectSummary.map(p => ({
+          ...p,
+          questionAuthorName: '???',
+          actualAnswerAuthorName: '???',
+          pairedAnswerAuthorName: '???'
+        }));
+      }
+      reconnectData.summary = reconnectSummary;
       reconnectData.mostAdoredWriter = computeMostAdoredWriter(roomCode);
       const db = getDb();
       const voterResult = await db.exec("SELECT COUNT(DISTINCT player_id) FROM votes WHERE game_id = ? AND vote_type = 'qa_pair'", [game.dbGameId]);
@@ -3016,13 +3065,26 @@ io.on('connection', (socket) => {
       }
     }
 
-    // Tournament: reconnect into scoreboard or tournament_complete phase
-    if (game.tournament && game.tournament.enabled && (game.phase === 'scoreboard' || game.phase === 'tournament_complete')) {
-      if (game.phase === 'scoreboard' && game.tournament.lastRoundResult) {
+    // Tournament: reconnect into scoreboard, rank_reveal, or tournament_complete phase
+    if (game.tournament && game.tournament.enabled && (game.phase === 'scoreboard' || game.phase === 'rank_reveal' || game.phase === 'tournament_complete')) {
+      if ((game.phase === 'scoreboard' || game.phase === 'rank_reveal') && game.tournament.lastRoundResult) {
         const roundSettings = game.tournament.roundSettings[game.tournament.currentRound] || {};
+        // Build unmasked summary and authorsReveal for reconnecting players
+        const reconnectFullSummary = await buildGameSummary(roomCode);
+        const reconnectAuthorsReveal = {};
+        for (const pair of (game.cardPairs || [])) {
+          if (pair.dbId) {
+            reconnectAuthorsReveal[pair.dbId] = {
+              qAuthor: pair.question?.authorName || 'Unknown',
+              aAuthor: pair.answer?.authorName || 'Unknown'
+            };
+          }
+        }
         reconnectData.scoreboardData = {
           standings: game.tournament.lastRoundResult.standings,
           roundWinnerDetails: game.tournament.lastRoundResult.roundWinnerDetails,
+          summary: reconnectFullSummary,
+          authorsReveal: reconnectAuthorsReveal,
           speedDetails: game.tournament.lastRoundResult.speedDetails || null,
           scoringRules: { speedScoringEnabled: !!roundSettings.speedScoringEnabled },
           currentRound: game.tournament.currentRound,
@@ -3030,6 +3092,19 @@ io.on('connection', (socket) => {
           isFinalRound: game.tournament.currentRound >= game.tournament.targetRounds,
           deadlineAt: game.tournament.scoreboardDeadlineAt || null,
           serverNow: Date.now()
+        };
+      }
+      // If reconnecting during rank_reveal, send personalized rank data
+      if (game.phase === 'rank_reveal') {
+        const standings = game.tournament.lastRoundResult?.standings || [];
+        const myStanding = standings.find(s => s.name === player.name);
+        reconnectData.rankRevealData = {
+          rank: myStanding ? myStanding.rank : null,
+          total: myStanding ? myStanding.total : 0,
+          totalPlayers: standings.length,
+          isChampion: myStanding && myStanding.rank === 1,
+          isTie: standings.filter(s => s.rank === 1).length > 1,
+          champions: standings.filter(s => s.rank === 1).map(s => s.name)
         };
       }
       if (game.phase === 'tournament_complete' && game.tournament.finalStandings) {

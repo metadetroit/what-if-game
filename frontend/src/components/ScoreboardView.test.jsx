@@ -85,6 +85,6 @@ describe('ScoreboardView round winner', () => {
       />
     )
     expect(screen.getByText(/A & B/)).toBeInTheDocument()
-    expect(screen.getByText(/⚡\+2 speed/)).toBeInTheDocument()
+    expect(screen.getByText(/⚡\+2/)).toBeInTheDocument()
   })
 })
