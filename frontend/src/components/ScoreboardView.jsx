@@ -118,28 +118,28 @@ export default function ScoreboardView({
                   (isMe ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800/60") +
                   (s.leftGame ? " opacity-50" : "")
                 }>
-                  <div className="flex flex-col items-center justify-center w-8 h-8 shrink-0">
+                  <div className="flex flex-col items-center justify-center w-10 h-10 shrink-0">
                     {icon ? (
                       <span className="text-xl">{icon}</span>
                     ) : (
-                      <span className="text-sm font-bold text-gray-400">{s.rank}</span>
+                      <span className="text-base font-bold text-gray-400">{s.rank}</span>
                     )}
                     {delta && (
                       <span className={"text-[10px] leading-none " + (delta === "▲" ? "text-emerald-400" : "text-rose-400")}>{delta}</span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={"text-sm md:text-base font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
+                    <p className={"text-base md:text-lg font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
                       {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm md:text-sm text-gray-500">
                       {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes
                       {speedEnabled && speedBonus !== 0 && <span className={"ml-1 " + (speedBonus > 0 ? "text-amber-400" : "text-gray-500")}>· ⚡{speedBonus > 0 ? "+" : ""}{speedBonus}</span>}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xl font-black text-amber-300">{s.total}</p>
-                    <p className="text-xs md:text-sm text-gray-500">pts</p>
+                    <p className="text-2xl font-black text-amber-300">{s.total}</p>
+                    <p className="text-sm text-gray-500">pts</p>
                   </div>
                 </div>
               </React.Fragment>
@@ -148,7 +148,7 @@ export default function ScoreboardView({
         </div>
         {showRelative && (
           <div className="text-center mt-3">
-            <button onClick={() => setShowAll(true)} className="text-xs text-indigo-300 hover:text-indigo-200 underline">
+            <button onClick={() => setShowAll(true)} className="text-sm text-indigo-300 hover:text-indigo-200 underline py-1">
               Show all {standings.length} players
             </button>
           </div>
@@ -160,7 +160,7 @@ export default function ScoreboardView({
         <div className="text-center">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-0.5"
+            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors py-1"
           >
             {showHistory ? "▾ Hide Scoring History" : "▸ Show Scoring History"}
           </button>
@@ -173,8 +173,8 @@ export default function ScoreboardView({
                 const baseScore = roundScore - speedBonus
                 const isMe = s.name === playerName
                 return (
-                  <div key={s.name} className={"flex items-center justify-between text-xs py-0.5 " + (isMe ? "text-indigo-300" : "text-gray-400")}>
-                    <span className="truncate max-w-[80px]">{s.name}</span>
+                  <div key={s.name} className={"flex items-center justify-between text-xs md:text-sm py-1 " + (isMe ? "text-indigo-300" : "text-gray-400")}>
+                    <span className="truncate max-w-[120px] md:max-w-[160px]">{s.name}</span>
                     <span className="flex items-center gap-2">
                       <span className="text-gray-500">Base: {baseScore > 0 ? "+" : ""}{baseScore}</span>
                       {speedBonus !== 0 && <span className={speedBonus > 0 ? "text-amber-400" : "text-gray-500"}>⚡ {speedBonus > 0 ? "+" : ""}{speedBonus}</span>}

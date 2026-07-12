@@ -47,7 +47,7 @@ export default function PersonalRankReveal({
   }
 
   return (
-    <div className="game-container game-container--summary py-4 flex flex-col items-center justify-center min-h-[60vh]">
+    <div className="game-container game-container--summary py-4 flex flex-col items-center justify-center min-h-[50vh]">
       {isChampion && (
         <div className="confetti-container" aria-hidden="true">
           {Array.from({ length: 30 }).map((_, i) => (
@@ -75,8 +75,8 @@ export default function PersonalRankReveal({
         </h2>
         <p className="text-lg text-gray-300 mb-4">{subtext}</p>
         <div className="inline-flex items-center gap-2 bg-gray-800/60 border border-gray-700 rounded-full px-4 py-2">
-          <span className="text-2xl font-black text-amber-300">{total}</span>
-          <span className="text-sm text-gray-400">total points</span>
+          <span className="text-3xl font-black text-amber-300">{total}</span>
+          <span className="text-base text-gray-400">total points</span>
         </div>
       </div>
       {isHost ? (

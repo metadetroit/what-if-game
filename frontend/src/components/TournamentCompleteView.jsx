@@ -44,20 +44,20 @@ export default function TournamentCompleteView({
                   (s.leftGame ? " opacity-50" : "")
                 }
               >
-                <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                  {icon ? <span className="text-xl">{icon}</span> : <span className="text-sm font-bold text-gray-400">{s.rank}</span>}
+                <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                  {icon ? <span className="text-xl">{icon}</span> : <span className="text-base font-bold text-gray-400">{s.rank}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={"text-sm md:text-base font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
+                  <p className={"text-base md:text-lg font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
                     {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm md:text-sm text-gray-500">
                     {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xl font-black text-amber-300">{s.total}</p>
-                  <p className="text-xs md:text-sm text-gray-500">pts</p>
+                  <p className="text-2xl font-black text-amber-300">{s.total}</p>
+                  <p className="text-sm text-gray-500">pts</p>
                 </div>
               </div>
             )

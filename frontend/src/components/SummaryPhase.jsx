@@ -102,7 +102,7 @@ export default function SummaryPhase({
             <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-[2px] text-xs md:text-sm">
               <button
                 onClick={() => setViewMode("paired")}
-                className={`w-20 sm:w-24 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[36px] md:min-h-[40px] flex items-center justify-center ${
+                className={`w-24 sm:w-28 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[40px] md:min-h-[44px] flex items-center justify-center ${
                   viewMode === "paired" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
@@ -110,7 +110,7 @@ export default function SummaryPhase({
               </button>
               <button
                 onClick={() => setViewMode("actual")}
-                className={`w-20 sm:w-24 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[36px] md:min-h-[40px] flex items-center justify-center ${
+                className={`w-24 sm:w-28 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[40px] md:min-h-[44px] flex items-center justify-center ${
                   viewMode === "actual" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
@@ -118,7 +118,7 @@ export default function SummaryPhase({
               </button>
             </div>
             {roundHistory.length > 0 && (
-              <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline min-h-[36px] md:min-h-[40px] inline-flex items-center px-1">
+              <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline min-h-[40px] md:min-h-[44px] inline-flex items-center px-1">
                 {roundHistory.length} past
               </button>
             )}
@@ -395,7 +395,7 @@ export default function SummaryPhase({
                 <div className="summary-toggle card !p-2.5 md:!p-3">
                   <div>
                     <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                    <p className="text-[10px] md:text-xs text-gray-400 leading-tight">Hide names in summary + Best Of.</p>
+                    <p className="text-xs md:text-xs text-gray-400 leading-tight">Hide names in summary + Best Of.</p>
                   </div>
                   <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
                     <span />
@@ -404,7 +404,7 @@ export default function SummaryPhase({
                 <div className="summary-toggle card !p-2.5 md:!p-3">
                   <div>
                     <p className="text-xs text-white font-semibold">No Self-Reading</p>
-                    <p className="text-[10px] md:text-xs text-gray-400 leading-tight">Players won't read their own content.</p>
+                    <p className="text-xs md:text-xs text-gray-400 leading-tight">Players won't read their own content.</p>
                   </div>
                   <button onClick={() => setNoSelfReading(!noSelfReading)} aria-pressed={noSelfReading} aria-label="Toggle no self-reading" className={"toggle-switch " + (noSelfReading ? "toggle-switch--on" : "")}>
                     <span />
