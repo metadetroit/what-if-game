@@ -10,11 +10,11 @@ export default function IOSInstallHelp({ onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border border-purple-700 rounded-xl p-6 max-w-xs w-full text-center shadow-2xl shadow-purple-900/30"
+        className="bg-black/50 border border-white/10 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl shadow-purple-900/30 backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <p id="ios-install-title" className="text-lg font-bold text-white mb-2">Add Fluke to Home Screen</p>
-        <p className="text-sm text-gray-300 mb-4">
+        <p id="ios-install-title" className="font-bubble text-lg font-bold text-gradient-chaos mb-2">Add Fluke to Home Screen</p>
+        <p className="text-sm text-[#E6E1FF]/85 mb-4">
           Tap the <span className="font-semibold text-white">Share</span> button in Safari, then choose{" "}
           <span className="font-semibold text-white">Add to Home Screen</span>.
         </p>

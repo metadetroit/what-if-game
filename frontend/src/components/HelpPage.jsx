@@ -23,24 +23,24 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`px-2.5 py-1.5 md:px-3 md:py-2 text-xs md:text-sm font-bold rounded-full border whitespace-nowrap min-h-[40px] md:min-h-[44px] ${helpTab === tab.id ? "border-indigo-500 bg-indigo-500/20 text-white" : "border-gray-700 text-gray-400"}`}
+              className={`px-2.5 py-1.5 md:px-3 md:py-2 text-xs md:text-sm font-bold rounded-full border whitespace-nowrap min-h-[40px] md:min-h-[44px] ${helpTab === tab.id ? "border-fuchsia-500/50 bg-fuchsia-500/15 text-white" : "border-white/10 text-[#E6E1FF]/50"}`}
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="font-sans text-base md:text-lg text-gray-300 space-y-4 md:space-y-5">
+        <div className="font-sans text-base md:text-lg text-[#E6E1FF]/85 space-y-4 md:space-y-5">
           {helpTab === "how-to-play" && (
             <div className="space-y-3 md:space-y-4">
               <div>
                 <div className="text-center mb-2 md:mb-3">
-                  <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
                     <span className="text-lg md:text-xl">🎲</span>
                   </div>
-                  <h3 className="font-bubble text-lg md:text-xl font-bold text-white">How Fluke Works</h3>
+                  <h3 className="font-bubble text-lg md:text-xl font-bold text-gradient-chaos">How Fluke Works</h3>
                 </div>
-                <ol className="list-decimal list-inside space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+                <ol className="list-decimal list-inside space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>Everyone writes a “What if…” question.</li>
                   <li>Prompts are shuffled.</li>
                   <li>Each player answers someone else’s prompt.</li>
@@ -50,9 +50,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 </ol>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Player Tips</h4>
-                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-3 md:pt-4">
+                <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2 md:mb-3">Player Tips</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>• Keep prompts short and specific.</li>
                   <li>• One strong idea beats three weak ones.</li>
                   <li>• Read loudly and commit to the bit.</li>
@@ -61,10 +61,10 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 </ul>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Host Controls</h4>
-                <p className="text-base md:text-lg text-gray-500 mb-2">(Only the host sees these)</p>
-                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-3 md:pt-4">
+                <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2 md:mb-3">Host Controls</h4>
+                <p className="text-base md:text-lg text-[#E6E1FF]/50 mb-2">(Only the host sees these)</p>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>• <strong>Anonymous Results</strong> - Hide names in the summary.</li>
                   <li>• <strong>No Self-Reading</strong> - Reduce self-assigned content.</li>
                   <li>• <strong>Force Advance</strong> - Move on when the room is ready.</li>
@@ -77,10 +77,10 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
           {helpTab === "faq" && (
             <div className="space-y-3 md:space-y-4">
               <div className="text-center mb-3 md:mb-4">
-                <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center">
                   <span className="text-lg md:text-xl">❓</span>
                 </div>
-                <h3 className="font-bubble text-lg md:text-xl font-bold text-white">Frequently Asked Questions</h3>
+                <h3 className="font-bubble text-lg md:text-xl font-bold text-gradient-chaos">Frequently Asked Questions</h3>
               </div>
 
               {[
@@ -129,9 +129,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                   answer: "Top pairing is the most-voted combo. Most-adored writer comes from ❤️ + 😂."
                 }
               ].map(item => (
-                <div className="bg-gray-800/50 rounded-lg p-3 md:p-4" key={item.question}>
-                  <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2">{item.question}</h4>
-                  <p className="text-base md:text-lg text-gray-300 leading-relaxed">{item.answer}</p>
+                <div className="support-card p-3 md:p-4" key={item.question}>
+                  <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2">{item.question}</h4>
+                  <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">{item.answer}</p>
                 </div>
               ))}
             </div>
@@ -140,15 +140,15 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
           {helpTab === "tips" && (
             <div className="space-y-3 md:space-y-4">
               <div className="text-center mb-3 md:mb-4">
-                <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
+                <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl flex items-center justify-center">
                   <span className="text-lg md:text-xl">💡</span>
                 </div>
-                <h3 className="font-bubble text-lg md:text-xl font-bold text-white">Tips & Tricks</h3>
+                <h3 className="font-bubble text-lg md:text-xl font-bold text-gradient-chaos">Tips & Tricks</h3>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Writing Good Questions 🖊️</h4>
-                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-3 md:pt-4">
+                <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2 md:mb-3">Writing Good Questions 🖊️</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>• Start with a clear "What if".</li>
                   <li>• Leave room for a funny answer.</li>
                   <li>• One strong idea usually beats many small ones.</li>
@@ -156,9 +156,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 </ul>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Writing Good Answers 💡</h4>
-                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-3 md:pt-4">
+                <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2 md:mb-3">Writing Good Answers 💡</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>• Make it easy to read aloud.</li>
                   <li>• Be specific; details beat vague punchlines.</li>
                   <li>• Give the reader something fun to say.</li>
@@ -166,9 +166,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 </ul>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Performing 🎭</h4>
-                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-3 md:pt-4">
+                <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2 md:mb-3">Performing 🎭</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>• Read both parts clearly.</li>
                   <li>• Commit to the bit.</li>
                   <li>• Pause before the punchline.</li>
@@ -176,9 +176,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 </ul>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Hosting 🎮</h4>
-                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-3 md:pt-4">
+                <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2 md:mb-3">Hosting 🎮</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>• Set expectations early.</li>
                   <li>• Use anonymity intentionally.</li>
                   <li>• Force advance only when needed.</li>
@@ -186,9 +186,9 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
                 </ul>
               </div>
 
-              <div className="border-t border-gray-700 pt-3 md:pt-4">
-                <h4 className="text-base md:text-lg font-bold text-indigo-400 mb-2 md:mb-3">Winning the Room 🌟</h4>
-                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-3 md:pt-4">
+                <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-2 md:mb-3">Winning the Room 🌟</h4>
+                <ul className="space-y-3 md:space-y-4 text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   <li>• Vote for the pairing you want remembered.</li>
                   <li>• Send ❤️ and 😂 to reward good writing.</li>
                   <li>• Use ❓ for delicious chaos.</li>
@@ -201,25 +201,25 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
           {helpTab === "about" && (
             <div className="space-y-3 md:space-y-4">
               <div className="text-center mb-3 md:mb-4">
-                <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center">
                   <span className="text-lg md:text-xl">📖</span>
                 </div>
-                <h3 className="text-lg md:text-xl font-bold text-white">About Fluke</h3>
+                <h3 className="font-bubble text-lg md:text-xl font-bold text-gradient-chaos">About Fluke</h3>
               </div>
 
-              <div className="border-t border-gray-700 pt-4 md:pt-5 space-y-3 md:space-y-4">
-                <p className="text-base md:text-lg text-gray-300 leading-relaxed">
+              <div className="border-t border-white/10 pt-4 md:pt-5 space-y-3 md:space-y-4">
+                <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   Fluke is a browser-based party game built around “What if…?” prompts.
                 </p>
-                <p className="text-base md:text-lg text-gray-300 leading-relaxed">
+                <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   You write a question, answer someone else’s, and read the mashups aloud together.
                 </p>
-                <p className="text-base md:text-lg text-gray-300 leading-relaxed">
+                <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
                   It works best when people move quickly, commit to the bit, and lean into the chaos.
                 </p>
               </div>
 
-              <div className="border-t border-gray-700 pt-4 md:pt-5 space-y-3 md:space-y-4">
+              <div className="border-t border-white/10 pt-4 md:pt-5 space-y-3 md:space-y-4">
                 <button
                   onClick={onOpenSupport}
                   className="btn-primary w-full py-3 md:py-3.5 text-base md:text-lg"
@@ -236,7 +236,7 @@ function HelpPage({ helpTab, onTabChange, onBack, onOpenSupport }) {
         </div>
       </div>
 
-      <button onClick={onBack} className="btn-secondary py-3 text-sm w-full mt-3">
+      <button onClick={onBack} className="btn-secondary py-3 text-sm font-bubble w-full mt-3">
         Back to Main Screen
       </button>
     </div>

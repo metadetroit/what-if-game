@@ -269,7 +269,7 @@
 
   .summary-scroll {
     @apply flex-1 min-h-0 overflow-y-auto;
-    touch-action: pan-x pan-y;
+    touch-action: pan-x pan-y pinch-zoom;
   }
 
   .summary-grid {
@@ -1439,6 +1439,11 @@
   .mobile-fill-mt {
     margin-top: clamp(8px, 2dvh, 20px);
   }
+  /* ─── Support/Help page aesthetic utilities ─── */
+  .support-card {
+    @apply rounded-2xl border border-white/10 bg-black/40 backdrop-blur-sm;
+  }
+
   .mobile-fill-py {
     padding-top: clamp(12px, 2.5dvh, 20px);
     padding-bottom: clamp(12px, 2.5dvh, 20px);

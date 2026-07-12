@@ -12,20 +12,20 @@ function SupportPage({ onBack }) {
 
       <div className="card flex-1 min-h-0 overflow-y-auto py-2.5 md:py-3 px-3 md:px-4 space-y-3 md:space-y-4">
         <div className="text-center mb-3 md:mb-4">
-          <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center">
+          <div className="w-9 h-9 md:w-10 md:h-10 mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center">
             <span className="text-lg md:text-xl">🎁</span>
           </div>
-          <h3 className="font-bubble text-lg md:text-xl font-bold text-white">Value for Value</h3>
+          <h3 className="font-bubble text-lg md:text-xl font-bold text-gradient-chaos">Value for Value</h3>
         </div>
 
-        <p className="text-base md:text-lg text-gray-300 leading-relaxed">
+        <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
           If Fluke gave you a good laugh, a memorable night, or a reason to reconnect with friends, consider returning some of that value back. This game is free to play, but it is not free to build, host, and improve.
         </p>
 
-        <div className="border-t border-gray-700 pt-3 md:pt-4 space-y-3 md:space-y-4">
+        <div className="border-t border-white/10 pt-3 md:pt-4 space-y-3 md:space-y-4">
           <div>
-            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Send a Tip</h4>
-            <p className="text-base md:text-lg text-gray-300 leading-relaxed mb-2 md:mb-3">
+            <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-1.5 md:mb-2">Send a Tip</h4>
+            <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed mb-2 md:mb-3">
               A small donation helps cover server costs and keeps the game online. No amount is too small.
             </p>
 
@@ -36,7 +36,7 @@ function SupportPage({ onBack }) {
                   alt="Cash App QR code for $playfluke"
                   className="w-52 h-52 rounded-lg bg-white p-2"
                 />
-                <p className="text-sm md:text-base font-semibold text-gray-300 text-center max-w-[10rem] leading-relaxed">
+                <p className="text-sm md:text-base font-semibold text-[#E6E1FF]/70 text-center max-w-[10rem] leading-relaxed">
                   Playing on PC? Scan with your phone camera to open Cash App instantly.
                 </p>
               </div>
@@ -52,7 +52,7 @@ function SupportPage({ onBack }) {
                   </svg>
                   pay with any credit card (no account needed) or Cash App
                 </a>
-                <p className="text-sm md:text-base font-semibold text-gray-300 text-center leading-relaxed">
+                <p className="text-sm md:text-base font-semibold text-[#E6E1FF]/70 text-center leading-relaxed">
                   Opens in a new tab — works without the app.
                 </p>
               </div>
@@ -65,7 +65,7 @@ function SupportPage({ onBack }) {
                   alt="Cash App QR code for $playfluke"
                   className="w-40 h-40 rounded-lg bg-white p-2"
                 />
-                <p className="text-sm md:text-base font-semibold text-gray-300 text-center max-w-[11rem] leading-relaxed">
+                <p className="text-sm md:text-base font-semibold text-[#E6E1FF]/70 text-center max-w-[11rem] leading-relaxed">
                   Scan with your phone camera to open Cash App instantly.
                 </p>
               </div>
@@ -80,39 +80,39 @@ function SupportPage({ onBack }) {
                 </svg>
                 pay with any credit card (no account needed) or Cash App
               </a>
-              <p className="text-xs md:text-sm text-gray-500 text-center">
+              <p className="text-xs md:text-sm text-[#E6E1FF]/50 text-center">
                 Opens the Cash App if installed, or a secure web checkout otherwise.
               </p>
             </div>
           </div>
 
-          <div className="border-t border-gray-700 pt-3 md:pt-4">
-            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Beta Test & Feedback</h4>
-            <p className="text-base md:text-lg text-gray-300 leading-relaxed mb-2 md:mb-3">
+          <div className="border-t border-white/10 pt-3 md:pt-4">
+            <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-1.5 md:mb-2">Beta Test & Feedback</h4>
+            <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed mb-2 md:mb-3">
               Spotted a bug? Have an idea? Want to test new features before they go live? Your feedback shapes what Fluke becomes next.
             </p>
-            <a href="mailto:hello@playfluke.com" className="text-base md:text-lg text-indigo-300 hover:text-indigo-200 underline">
+            <a href="mailto:hello@playfluke.com" className="text-base md:text-lg text-fuchsia-300 hover:text-fuchsia-200 underline">
               hello@playfluke.com
             </a>
           </div>
 
-          <div className="border-t border-gray-700 pt-3 md:pt-4">
-            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Share the Game</h4>
-            <p className="text-base md:text-lg text-gray-300 leading-relaxed">
+          <div className="border-t border-white/10 pt-3 md:pt-4">
+            <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-1.5 md:mb-2">Share the Game</h4>
+            <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
               The easiest way to support Fluke is to bring more people into the room. Share the link, teach a friend, or bring it to your next group hangout.
             </p>
           </div>
 
-          <div className="border-t border-gray-700 pt-3 md:pt-4">
-            <h4 className="text-base md:text-lg font-bold text-pink-400 mb-1.5 md:mb-2">Thank You</h4>
-            <p className="text-base md:text-lg text-gray-300 leading-relaxed">
+          <div className="border-t border-white/10 pt-3 md:pt-4">
+            <h4 className="text-base md:text-lg font-semibold text-[#E6E1FF] mb-1.5 md:mb-2">Thank You</h4>
+            <p className="text-base md:text-lg text-[#E6E1FF]/85 leading-relaxed">
               However you choose to give back — donation, bug report, or another round — it matters. Thanks for being part of this.
             </p>
           </div>
         </div>
       </div>
 
-      <button onClick={onBack} className="btn-secondary py-2.5 md:py-3 text-base md:text-lg w-full mt-3 min-h-[44px]">
+      <button onClick={onBack} className="btn-secondary py-2.5 md:py-3 text-base md:text-lg font-bubble w-full mt-3 min-h-[44px]">
         Back to Main Screen
       </button>
     </div>
