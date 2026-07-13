@@ -65,7 +65,7 @@ export default function ScoreboardView({
             const speed = winner.pointsBreakdown?.speed ?? 0
             const speedText = speed !== 0 ? ` · ⚡${speed > 0 ? "+" : ""}${speed}` : ""
             return (
-              <p key={i} className="leading-snug">
+              <p key={i} className="leading-snug text-sm md:text-base">
                 {winner.isFluke ? (
                   <span className="summary-winner-banner__fluke">
                     🎯 FLUKE! +{base} pts — {winner.questionAuthor}
@@ -84,7 +84,7 @@ export default function ScoreboardView({
 
       {speedEnabled && speedDetails && !roundWinnerDetails?.length && (
         <div className="summary-winner-banner" data-testid="speed-banner">
-          <p className="leading-snug">
+          <p className="leading-snug text-sm md:text-base">
             <span className="text-amber-300">⚡</span>
             <span className="ml-1">
               {speedDetails.fastestQ && <>Fastest Q: {speedDetails.fastestQ} </>}

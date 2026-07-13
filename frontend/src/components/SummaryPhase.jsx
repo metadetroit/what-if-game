@@ -102,7 +102,7 @@ export default function SummaryPhase({
             <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-[2px] text-xs md:text-sm">
               <button
                 onClick={() => setViewMode("paired")}
-                className={`w-24 sm:w-28 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[40px] md:min-h-[44px] flex items-center justify-center ${
+                className={`w-24 sm:w-28 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[44px] flex items-center justify-center ${
                   viewMode === "paired" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
@@ -110,7 +110,7 @@ export default function SummaryPhase({
               </button>
               <button
                 onClick={() => setViewMode("actual")}
-                className={`w-24 sm:w-28 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[40px] md:min-h-[44px] flex items-center justify-center ${
+                className={`w-24 sm:w-28 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[44px] flex items-center justify-center ${
                   viewMode === "actual" ? "bg-indigo-600 text-white shadow-sm" : "text-gray-300 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
@@ -118,7 +118,7 @@ export default function SummaryPhase({
               </button>
             </div>
             {roundHistory.length > 0 && (
-              <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline min-h-[40px] md:min-h-[44px] inline-flex items-center px-1">
+              <button onClick={() => setShowRoundHistory(true)} className="text-xs md:text-sm text-indigo-300 hover:text-indigo-200 underline min-h-[44px] inline-flex items-center px-1">
                 {roundHistory.length} past
               </button>
             )}
