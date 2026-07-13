@@ -14,8 +14,16 @@ export default function ScoreboardView({
   const prevRanksRef = useRef({})
   const [showAll, setShowAll] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [revealWinners, setRevealWinners] = useState(false)
 
   const speedEnabled = scoringRules?.speedScoringEnabled
+  const isCompact = standings.length > 8
+
+  // Delay reveal of winners for drama
+  useEffect(() => {
+    const t = setTimeout(() => setRevealWinners(true), 2000)
+    return () => clearTimeout(t)
+  }, [])
 
   // Track rank changes for delta indicators
   useEffect(() => {
@@ -64,15 +72,18 @@ export default function ScoreboardView({
             const base = winner.pointsBreakdown?.base ?? (winner.isFluke ? winner.votes * 2 + 2 + 3 : winner.votes + 2)
             const speed = winner.pointsBreakdown?.speed ?? 0
             const speedText = speed !== 0 ? ` · ⚡${speed > 0 ? "+" : ""}${speed}` : ""
+            const winnerQ = revealWinners ? winner.questionAuthor : "???"
+            const winnerA = revealWinners ? winner.answerAuthor : "???"
+
             return (
-              <p key={i} className="leading-snug text-sm md:text-base">
+              <p key={i} className="leading-snug text-sm md:text-base animate-in fade-in slide-in-from-bottom-2 duration-700">
                 {winner.isFluke ? (
-                  <span className="summary-winner-banner__fluke">
-                    🎯 FLUKE! +{base} pts — {winner.questionAuthor}
+                  <span className={"summary-winner-banner__fluke transition-all duration-500 " + (revealWinners ? "opacity-100" : "opacity-70 scale-95")}>
+                    🎯 FLUKE! +{base} pts — <span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerQ}</span>
                   </span>
                 ) : (
-                  <span className="summary-winner-banner__normal">
-                    🏆 Winner: +{base} pts — {winner.questionAuthor} & {winner.answerAuthor}
+                  <span className={"summary-winner-banner__normal transition-all duration-500 " + (revealWinners ? "opacity-100" : "opacity-70 scale-95")}>
+                    🏆 Winner: +{base} pts — <span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerQ}</span> & <span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerA}</span>
                   </span>
                 )}
                 <span className="text-gray-500 ml-1">({winner.votes} vote{winner.votes === 1 ? "" : "s"}{speedText})</span>
@@ -114,32 +125,33 @@ export default function ScoreboardView({
                   <div className="text-center text-xs text-gray-600 py-1">· · ·</div>
                 )}
                 <div className={
-                  "flex items-center gap-3 py-2 px-3 rounded-xl transition-all duration-300 " +
+                  "flex items-center gap-3 rounded-xl transition-all duration-300 " +
                   (isMe ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800/60") +
-                  (s.leftGame ? " opacity-50" : "")
+                  (s.leftGame ? " opacity-50" : "") +
+                  (isCompact ? " py-1.5 px-2.5" : " py-2 px-3")
                 }>
-                  <div className="flex flex-col items-center justify-center w-10 h-10 shrink-0">
+                  <div className={"flex flex-col items-center justify-center shrink-0 " + (isCompact ? "w-8 h-8" : "w-10 h-10")}>
                     {icon ? (
-                      <span className="text-xl">{icon}</span>
+                      <span className={isCompact ? "text-lg" : "text-xl"}>{icon}</span>
                     ) : (
-                      <span className="text-base font-bold text-gray-400">{s.rank}</span>
+                      <span className={(isCompact ? "text-sm" : "text-base") + " font-bold text-gray-400"}>{s.rank}</span>
                     )}
                     {delta && (
                       <span className={"text-[10px] leading-none " + (delta === "▲" ? "text-emerald-400" : "text-rose-400")}>{delta}</span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={"text-base md:text-lg font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
+                    <p className={(isCompact ? "text-sm md:text-base" : "text-base md:text-lg") + " font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
                       {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                     </p>
-                    <p className="text-sm md:text-sm text-gray-500">
+                    <p className={(isCompact ? "text-xs" : "text-sm") + " text-gray-500"}>
                       {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes
                       {speedEnabled && speedBonus !== 0 && <span className={"ml-1 " + (speedBonus > 0 ? "text-amber-400" : "text-gray-500")}>· ⚡{speedBonus > 0 ? "+" : ""}{speedBonus}</span>}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-2xl font-black text-amber-300">{s.total}</p>
-                    <p className="text-sm text-gray-500">pts</p>
+                    <p className={(isCompact ? "text-xl" : "text-2xl") + " font-black text-amber-300"}>{s.total}</p>
+                    <p className={(isCompact ? "text-xs" : "text-sm") + " text-gray-500"}>pts</p>
                   </div>
                 </div>
               </React.Fragment>

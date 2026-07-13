@@ -11,19 +11,20 @@ export default function TournamentCompleteView({
 }) {
   if (!tournamentCompleteData) return null
   const { champions, isTie, standings } = tournamentCompleteData
+  const isCompact = standings.length > 8
 
   return (
     <div className="game-container game-container--summary py-4">
       <div className="summary-header--compact text-center" data-testid="champion-header">
         {isTie ? (
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className="text-xl">🏆</span>
+            <span className="text-2xl animate-bounce">🏆</span>
             <h2 className="font-bubble text-xl md:text-2xl font-black text-amber-300 leading-tight">Co-Champions</h2>
-            <span className="text-sm md:text-base font-bold text-white truncate px-2">{champions.join(" & ")}</span>
+            <span className="text-sm md:text-base font-bold text-white px-2 text-center">{champions.join(" & ")}</span>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className="text-xl">🏆</span>
+            <span className="text-2xl animate-bounce">🏆</span>
             <h2 className="font-bubble text-xl md:text-2xl font-black text-amber-300 leading-tight">Tournament Champion</h2>
             <span className="text-lg md:text-xl font-black text-white truncate px-2">{champions[0]}</span>
           </div>
@@ -39,25 +40,30 @@ export default function TournamentCompleteView({
               <div
                 key={s.name}
                 className={
-                  "flex items-center gap-3 py-2 px-3 rounded-xl " +
+                  "flex items-center gap-3 rounded-xl " +
                   (isMe ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800/60") +
-                  (s.leftGame ? " opacity-50" : "")
+                  (s.leftGame ? " opacity-50" : "") +
+                  (isCompact ? " py-1.5 px-2.5" : " py-2 px-3")
                 }
               >
-                <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                  {icon ? <span className="text-xl">{icon}</span> : <span className="text-base font-bold text-gray-400">{s.rank}</span>}
+                <div className={"flex items-center justify-center shrink-0 " + (isCompact ? "w-8 h-8" : "w-10 h-10")}>
+                  {icon ? (
+                    <span className={isCompact ? "text-lg" : "text-xl"}>{icon}</span>
+                  ) : (
+                    <span className={(isCompact ? "text-sm" : "text-base") + " font-bold text-gray-400"}>{s.rank}</span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={"text-base md:text-lg font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
+                  <p className={(isCompact ? "text-sm md:text-base" : "text-base md:text-lg") + " font-semibold truncate " + (isMe ? "text-indigo-300" : "text-white")}>
                     {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                   </p>
-                  <p className="text-sm md:text-sm text-gray-500">
+                  <p className={(isCompact ? "text-xs" : "text-sm") + " text-gray-500"}>
                     {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-2xl font-black text-amber-300">{s.total}</p>
-                  <p className="text-sm text-gray-500">pts</p>
+                  <p className={(isCompact ? "text-xl" : "text-2xl") + " font-black text-amber-300"}>{s.total}</p>
+                  <p className={(isCompact ? "text-xs" : "text-sm") + " text-gray-500"}>pts</p>
                 </div>
               </div>
             )

@@ -130,8 +130,8 @@ export default function SummaryPhase({
             <span>·</span>
             <span>Players {players.length}</span>
             <span>·</span>
-            <span className={votersCount >= players.length ? "text-emerald-300" : "text-amber-300"}>
-              Votes {votersCount >= players.length ? "✓ All" : `${votersCount}/${players.length}`} {votersCount >= players.length ? "Ready" : "Waiting"}
+            <span className={votersCount >= players.length ? "text-emerald-300 animate-pulse" : "text-amber-300"}>
+              {votersCount >= players.length ? "✅ All Votes In!" : `🗳️ Votes: ${votersCount}/${players.length}`}
             </span>
           </div>
         )}
@@ -338,21 +338,28 @@ export default function SummaryPhase({
       )}
 
       {voteConfirm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" role="dialog" aria-modal="true" aria-labelledby="vote-confirm-title">
-          <div className="bg-gray-900 border border-indigo-700 rounded-xl p-6 max-w-xs w-full text-center">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-300" role="dialog" aria-modal="true" aria-labelledby="vote-confirm-title">
+          <div className="bg-gray-900 border border-indigo-500/50 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl">🗳️</span>
+            </div>
             <p id="vote-confirm-title" className="text-lg font-bold text-white mb-2">Lock in vote?</p>
-            <p className="text-sm text-gray-400 mb-1">You're voting for:</p>
-            <p className="text-sm text-indigo-300 font-medium mb-4 line-clamp-2">{voteConfirm.question}</p>
-            <div className="flex gap-3">
-              <button onClick={() => setVoteConfirm(null)} className="btn-secondary flex-1 py-2 text-sm">Cancel</button>
+            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Your choice</p>
+            <div className="bg-white/5 rounded-xl p-3 mb-6 border border-white/5">
+              <p className="text-sm text-indigo-300 font-medium line-clamp-3 leading-relaxed">"{voteConfirm.question}"</p>
+            </div>
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => {
                   handleVote('qa_pair', voteConfirm.pairDbId)
                   setVoteConfirm(null)
                 }}
-                className="btn-primary flex-1 py-2 text-sm"
+                className="btn-primary py-3 text-base w-full shadow-lg shadow-indigo-500/20"
               >
-                Lock In
+                Confirm Vote
+              </button>
+              <button onClick={() => setVoteConfirm(null)} className="btn-secondary py-2 text-sm w-full">
+                Cancel
               </button>
             </div>
           </div>
