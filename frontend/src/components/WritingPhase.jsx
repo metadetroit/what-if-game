@@ -18,6 +18,20 @@ export default function WritingPhase({
   renderWaitingPanel,
   speedScoringEnabled
 }) {
+  const canSubmit = question.trim() && question.toLowerCase().startsWith("what if")
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      if (canSubmit) submitQuestion()
+    }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (canSubmit) submitQuestion()
+  }
+
   return (
     <div className="game-container game-container--active game-container--keyboard-aware py-2 flex flex-col">
       {speedScoringEnabled && (
@@ -54,14 +68,16 @@ export default function WritingPhase({
             <h2 className="font-bubble active-heading-text font-bold text-white leading-tight">Write a Question</h2>
             <p className="active-body-text text-indigo-400 leading-tight">Must begin with "What if..."</p>
           </div>
-          <label htmlFor="question-input" className="sr-only">Your question</label>
-          <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} placeholder="Type your question here" autoComplete="off" autoCapitalize="sentences" aria-label="Your question" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug" maxLength={300} />
-          <div className="flex items-center justify-between active-fill-mt">
-            <span className="active-body-text text-gray-500">{question.length}/300</span>
-            {question && !question.toLowerCase().startsWith("what if") && (<span className="active-body-text text-red-500 font-semibold">Must start with "What if"</span>)}
-          </div>
-          {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
-          <button onClick={submitQuestion} disabled={!question.trim() || !question.toLowerCase().startsWith("what if")} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Question</button>
+          <form onSubmit={handleSubmit} className="contents">
+            <label htmlFor="question-input" className="sr-only">Your question</label>
+            <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your question here" autoComplete="off" autoCapitalize="sentences" aria-label="Your question" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug" maxLength={300} />
+            <div className="flex items-center justify-between active-fill-mt">
+              <span className="active-body-text text-gray-500">{question.length}/300</span>
+              {question && !question.toLowerCase().startsWith("what if") && (<span className="active-body-text text-red-500 font-semibold">Must start with "What if"</span>)}
+            </div>
+            {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
+            <button type="submit" disabled={!canSubmit} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Question</button>
+          </form>
           <div className="w-full active-fill-mt">
             <div className={"flex justify-between text-xs mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>{progress.submitted}/{progress.total}</span></div>
             <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>

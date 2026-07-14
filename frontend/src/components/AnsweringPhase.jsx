@@ -18,6 +18,20 @@ export default function AnsweringPhase({
   renderWaitingPanel,
   speedScoringEnabled
 }) {
+  const canSubmit = answer.trim()
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      if (canSubmit) submitAnswer()
+    }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (canSubmit) submitAnswer()
+  }
+
   return (
     <div className="game-container game-container--active game-container--keyboard-aware py-2 flex flex-col">
       {speedScoringEnabled && (
@@ -47,13 +61,15 @@ export default function AnsweringPhase({
           <div className="card active-card-padding active-fill-mt bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
             <p className="active-body-text font-bold text-white leading-snug text-center">{assignedQuestion}</p>
           </div>
-          <label htmlFor="answer-input" className="sr-only">Your answer</label>
-          <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} placeholder="Type your answer here..." autoComplete="off" autoCapitalize="sentences" aria-label="Your answer" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug" maxLength={400} />
-          <div className="flex justify-between items-center active-fill-mt">
-            <span className="active-body-text text-gray-500">{answer.length}/400 characters</span>
-          </div>
-          {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
-          <button onClick={submitAnswer} disabled={!answer.trim()} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Answer</button>
+          <form onSubmit={handleSubmit} className="contents">
+            <label htmlFor="answer-input" className="sr-only">Your answer</label>
+            <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your answer here..." autoComplete="off" autoCapitalize="sentences" aria-label="Your answer" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug" maxLength={400} />
+            <div className="flex justify-between items-center active-fill-mt">
+              <span className="active-body-text text-gray-500">{answer.length}/400 characters</span>
+            </div>
+            {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
+            <button type="submit" disabled={!canSubmit} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Answer</button>
+          </form>
           <div className="w-full active-fill-mt">
             <div className={"flex justify-between text-xs mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>{progress.submitted}/{progress.total}</span></div>
             <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
