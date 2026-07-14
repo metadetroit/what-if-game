@@ -151,7 +151,6 @@ export default function ScoreboardView({
                   </div>
                   <div className="text-right shrink-0">
                     <p className={(isCompact ? "text-xl" : "text-2xl") + " font-black text-amber-300"}>{s.total}</p>
-                    <p className={(isCompact ? "text-xs" : "text-sm") + " text-gray-500"}>pts</p>
                   </div>
                 </div>
               </React.Fragment>

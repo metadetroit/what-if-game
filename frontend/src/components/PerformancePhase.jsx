@@ -111,15 +111,12 @@ export default function PerformancePhase({
             )}
           </div>
           <div className="shrink-0 pt-2 border-t border-gray-800">
-            <div className="flex justify-center gap-1 mb-2">
-              {Array.from({ length: gameStats.total }).map((_, i) => (
-                <div key={i} className={"w-2.5 h-2.5 md:w-2 md:h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
-              ))}
-            </div>
-            <div className="flex items-center justify-between text-xs md:text-sm text-gray-500 mb-2">
-              <span>Turn {gameStats.round}/{gameStats.total}</span>
-              <div className="flex-1 mx-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: (gameStats.total > 0 ? (gameStats.round / gameStats.total) * 100 : 0) + "%" }} />
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xs md:text-sm text-gray-500">Turn {gameStats.round}/{gameStats.total}</span>
+              <div className="flex justify-center gap-1">
+                {Array.from({ length: gameStats.total }).map((_, i) => (
+                  <div key={i} className={"w-2.5 h-2.5 md:w-2 md:h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
+                ))}
               </div>
             </div>
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2">{error}</div>)}
@@ -165,15 +162,15 @@ export default function PerformancePhase({
               )
             })()}
             {isHost && (
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <button onClick={rewindPerformance} className="active-body-text text-indigo-200 border-2 border-indigo-500/30 bg-indigo-950/20 rounded-lg px-3 py-3 hover:bg-indigo-900/30 transition-colors min-h-[44px]">
-                  <span className="text-sm md:text-sm font-bold text-indigo-300 uppercase tracking-wider">HOST</span>
-                  <span className="ml-2">↩ Repeat</span>
-                </button>
-                <button onClick={() => setForceConfirm(true)} className="active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-3 py-3 hover:bg-red-900/20 transition-colors min-h-[44px]">
-                  <span className="text-sm md:text-sm font-bold text-fuchsia-300 uppercase tracking-wider">HOST</span>
-                  <span className="ml-2">⚡ Skip</span>
-                </button>
+              <div className="host-controls-group mt-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={rewindPerformance} className="active-body-text text-indigo-200 border-2 border-indigo-500/30 bg-indigo-950/20 rounded-lg px-3 py-3 hover:bg-indigo-900/30 transition-colors min-h-[44px]">
+                    <span>↩ Back</span>
+                  </button>
+                  <button onClick={() => setForceConfirm(true)} className="active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-3 py-3 hover:bg-red-900/20 transition-colors min-h-[44px]">
+                    <span>⚡ Skip</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

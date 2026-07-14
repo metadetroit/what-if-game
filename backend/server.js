@@ -1759,7 +1759,7 @@ io.on('connection', (socket) => {
     });
   }
 
-  // Host rewinds one step in the performance phase (presentation-only, no score impact)
+  // Host rewinds to the start of the current Q&A card (or previous card's question)
   socket.on('rewind-performance', () => {
     let roomCode = socket.roomCode;
     if (!roomCode && socket.rooms) {
@@ -1769,14 +1769,30 @@ io.on('connection', (socket) => {
     }
     const game = games[roomCode];
     if (!game || game.host !== socket.id || game.phase !== 'performing') return;
-    if (game.currentReaderIndex > 0) {
-      game.currentReaderIndex--;
-      // Remove the turn log entry for the turn we are rewinding over so summaries stay clean.
-      if (Array.isArray(game.turnLog) && game.turnLog.length > 0) {
-        game.turnLog.pop();
-      }
-      startNextReading(roomCode);
+
+    const oldIndex = game.currentReaderIndex;
+    let targetIndex;
+    if (oldIndex % 2 === 1) {
+      // Answer turn: restart the question of this card
+      targetIndex = oldIndex - 1;
+    } else {
+      // Question turn: restart the previous card's question
+      targetIndex = oldIndex - 2;
     }
+    // Clamp to start of round; already on first question restarts first question
+    if (targetIndex < 0) targetIndex = 0;
+
+    console.log(`[REWIND] Host rewinding from turn ${oldIndex} to turn ${targetIndex} in room ${roomCode}`);
+    game.currentReaderIndex = targetIndex;
+
+    // Remove turn log entries for the skipped turns so summaries stay clean
+    if (Array.isArray(game.turnLog)) {
+      game.turnLog = game.turnLog.filter(entry => entry.turnIndex < targetIndex);
+    }
+
+    // Reactions are keyed by contentDbId, so existing reactions for the rewound content
+    // remain valid and players stay locked out. Skipped turns are naturally not revisited.
+    startNextReading(roomCode);
   });
 
   // Player confirms they finished reading

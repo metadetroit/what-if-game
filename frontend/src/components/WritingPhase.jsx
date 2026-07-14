@@ -63,13 +63,12 @@ export default function WritingPhase({
           {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
           <button onClick={submitQuestion} disabled={!question.trim() || !question.toLowerCase().startsWith("what if")} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Question</button>
           <div className="w-full active-fill-mt">
-            <div className={"flex justify-between text-xs mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>Submissions</span><span>{progress.submitted}/{progress.total}</span></div>
+            <div className={"flex justify-between text-xs mb-0.5 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "text-red-400 font-semibold" : "text-gray-500")}><span>{progress.submitted}/{progress.total}</span></div>
             <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
           </div>
           {canForceAdvance && (
             <button onClick={() => setForceConfirm(true)} className="active-fill-mt active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-4 py-3 hover:bg-red-900/20 transition-colors">
-              <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">HOST CONTROL</span>
-              <span className="ml-2">⚡ Force Advance (skip waiting players)</span>
+              <span>⚡ Force Advance (skip waiting players)</span>
             </button>
           )}
         </div>
@@ -84,7 +83,6 @@ export default function WritingPhase({
           {canForceAdvance && (
             <div className="host-nudge shrink-0 mt-1">
               <div>
-                <p>Host option</p>
                 <span>Only use this if someone disappeared.</span>
               </div>
               <button onClick={() => setForceConfirm(true)}>Skip waiting players</button>

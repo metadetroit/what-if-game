@@ -265,15 +265,18 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
 
     newSocket.on("reading-turn", (data) => {
       setCurrentTurn(data)
-      setCurrentContent(null)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
+      // Reactions are keyed by contentDbId, so we preserve reactionCounts/myReactions
+      // across rewinds. Players who already reacted to this content stay locked out.
       if (data.currentContentDbId) {
         setCurrentContent({
           dbId: data.currentContentDbId,
           authorId: data.currentContentAuthorId,
           type: data.currentContentType || 'question'
         })
+      } else {
+        setCurrentContent(null)
       }
       setPerformanceVotes({})
     })

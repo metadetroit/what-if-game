@@ -128,8 +128,6 @@ export default function SummaryPhase({
           <div className="summary-meta-inline mt-1">
             <span className="text-gray-300">Vote for the best pair</span>
             <span>·</span>
-            <span>Players {players.length}</span>
-            <span>·</span>
             <span className={votersCount >= players.length ? "text-emerald-300 animate-pulse" : "text-amber-300"}>
               {votersCount >= players.length ? "✅ All Votes In!" : `🗳️ Votes: ${votersCount}/${players.length}`}
             </span>
