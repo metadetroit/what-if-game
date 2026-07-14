@@ -362,7 +362,7 @@
   }
 
   .waiting-panel {
-    @apply w-full max-w-sm rounded-2xl border border-gray-700 bg-gray-900/95 p-4 text-left shadow-md shadow-black/30 space-y-3;
+    @apply w-full max-w-sm rounded-2xl border border-gray-700 bg-gray-900/95 p-4 text-left shadow-md shadow-black/30 space-y-2;
   }
 
   .waiting-panel__top {
@@ -382,11 +382,11 @@
   }
 
   .waiting-panel__players {
-    @apply max-h-44 overflow-y-auto space-y-1 pr-1;
+    @apply max-h-64 overflow-y-auto space-y-1 pr-1;
   }
 
   .waiting-player {
-    @apply flex items-center justify-between gap-3 rounded-xl border border-gray-700 bg-gray-800/80 px-3 py-2 text-sm;
+    @apply flex items-center justify-between gap-3 rounded-xl border border-gray-700 bg-gray-800/80 px-3 py-1.5 text-sm;
   }
 
   .waiting-player--done {
@@ -402,7 +402,7 @@
   }
 
   .host-nudge {
-    @apply w-full max-w-sm rounded-2xl border border-red-500/30 bg-red-950/20 px-4 py-3 flex items-center justify-between gap-3 text-left backdrop-blur-xl;
+    @apply w-full max-w-sm rounded-2xl border border-red-500/30 bg-red-950/20 px-3 py-2.5 flex items-center justify-between gap-3 text-left backdrop-blur-xl;
   }
 
   .host-nudge p {
@@ -536,7 +536,7 @@
   }
 
   .waiting-player--compact {
-    @apply px-3 py-2 md:py-1.5 text-xs md:text-sm;
+    @apply px-3 py-1 text-xs md:text-sm;
   }
 
   .waiting-panel__more {

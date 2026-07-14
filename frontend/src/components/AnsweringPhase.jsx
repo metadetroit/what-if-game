@@ -66,15 +66,15 @@ export default function AnsweringPhase({
           )}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center text-center gap-4 min-h-0 overflow-hidden">
-          <div className="flex-1 flex flex-col items-center text-center gap-3 overflow-hidden min-h-0 w-full">
-            <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mb-3"><span className="text-2xl">✓</span></div>
-            <h3 className="font-bubble text-xl font-bold text-white mb-1">Answer Submitted!</h3>
+        <div className="flex-1 flex flex-col items-center text-center gap-2 min-h-0">
+          <div className="flex-1 flex flex-col items-center text-center gap-2 min-h-0 w-full">
+            <div className="w-10 h-10 bg-green-900/30 rounded-full flex items-center justify-center mb-1"><span className="text-xl">✓</span></div>
+            <h3 className="font-bubble text-lg font-bold text-white mb-0.5">Answer Submitted!</h3>
             {renderWaitingPanel('answering')}
-            {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-3 max-w-xs">{error}</div>)}
+            {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2 max-w-xs">{error}</div>)}
           </div>
           {canForceAdvance && (
-            <div className="host-nudge shrink-0 mt-2">
+            <div className="host-nudge shrink-0 mt-1">
               <div>
                 <p>Host option</p>
                 <span>Only use this if someone disappeared.</span>

@@ -1077,7 +1077,7 @@ function App() {
 
   const renderWaitingPanel = (phase) => {
     const remainingNames = playerStatuses.filter(p => !p.submitted).map(p => p.name)
-    const visiblePlayers = playerStatuses.slice(0, 6)
+    const visiblePlayers = playerStatuses.slice(0, 12)
     const remainingPlayers = playerStatuses.length - visiblePlayers.length
 
     return (
