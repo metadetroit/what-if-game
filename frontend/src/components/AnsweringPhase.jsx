@@ -89,10 +89,7 @@ export default function AnsweringPhase({
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2 max-w-xs">{error}</div>)}
           </div>
           {canForceAdvance && (
-            <div className="host-nudge shrink-0 mt-1">
-              <div>
-                <span>Only use this if someone disappeared.</span>
-              </div>
+            <div className="host-nudge shrink-0 mt-1 justify-center">
               <button onClick={() => setForceConfirm(true)}>Skip waiting players</button>
             </div>
           )}

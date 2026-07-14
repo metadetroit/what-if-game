@@ -20,16 +20,16 @@ export default function TournamentCompleteView({
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-2xl animate-bounce">🏆</span>
             <h2 className="vote-now-logo text-xl md:text-2xl align-middle mx-1">
-              <span style={{ color: "#c026d3" }}>C</span>
-              <span style={{ color: "#f97316" }}>o</span>
-              <span style={{ color: "#facc15" }}>-</span>
               <span style={{ color: "#f43f5e" }}>C</span>
-              <span style={{ color: "#a855f7" }}>h</span>
-              <span style={{ color: "#c026d3" }}>a</span>
-              <span style={{ color: "#f97316" }}>m</span>
-              <span style={{ color: "#facc15" }}>p</span>
-              <span style={{ color: "#f43f5e" }}>s</span>
-              <span style={{ color: "#a855f7" }} className="animate-pop-wiggle">!</span>
+              <span style={{ color: "#a855f7" }}>o</span>
+              <span style={{ color: "#c026d3" }}>-</span>
+              <span style={{ color: "#f97316" }}>C</span>
+              <span style={{ color: "#facc15" }}>h</span>
+              <span style={{ color: "#f43f5e" }}>a</span>
+              <span style={{ color: "#a855f7" }}>m</span>
+              <span style={{ color: "#c026d3" }}>p</span>
+              <span style={{ color: "#f97316" }}>s</span>
+              <span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span>
             </h2>
             <span className="text-sm md:text-base font-bold text-white px-2 text-center">{champions.join(" & ")}</span>
           </div>
@@ -37,15 +37,15 @@ export default function TournamentCompleteView({
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-2xl animate-bounce">🏆</span>
             <h2 className="vote-now-logo text-xl md:text-2xl align-middle mx-1">
-              <span style={{ color: "#c026d3" }}>C</span>
-              <span style={{ color: "#f97316" }}>h</span>
-              <span style={{ color: "#facc15" }}>a</span>
-              <span style={{ color: "#f43f5e" }}>m</span>
-              <span style={{ color: "#a855f7" }}>p</span>
-              <span style={{ color: "#c026d3" }}>i</span>
-              <span style={{ color: "#f97316" }}>o</span>
-              <span style={{ color: "#facc15" }}>n</span>
-              <span style={{ color: "#f43f5e" }} className="animate-pop-wiggle">!</span>
+              <span style={{ color: "#a855f7" }}>C</span>
+              <span style={{ color: "#c026d3" }}>h</span>
+              <span style={{ color: "#f97316" }}>a</span>
+              <span style={{ color: "#facc15" }}>m</span>
+              <span style={{ color: "#f43f5e" }}>p</span>
+              <span style={{ color: "#a855f7" }}>i</span>
+              <span style={{ color: "#c026d3" }}>o</span>
+              <span style={{ color: "#f97316" }}>n</span>
+              <span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span>
             </h2>
             <span className="text-lg md:text-xl font-black text-white truncate px-2">{champions[0]}</span>
           </div>

@@ -99,7 +99,11 @@ export default function SummaryPhase({
               <span style={{ color: "#f97316" }}>o</span>
               <span style={{ color: "#facc15" }}>t</span>
               <span style={{ color: "#f43f5e" }}>e</span>
-              <span style={{ color: "#a855f7" }} className="animate-pop-wiggle">!</span>
+              <span className="mx-1" />
+              <span style={{ color: "#a855f7" }}>N</span>
+              <span style={{ color: "#c026d3" }}>o</span>
+              <span style={{ color: "#f97316" }}>w</span>
+              <span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span>
             </h2>
             {tournament && (
               <span className="text-xs text-gray-500">
