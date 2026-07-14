@@ -19,13 +19,34 @@ export default function TournamentCompleteView({
         {isTie ? (
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-2xl animate-bounce">🏆</span>
-            <h2 className="font-bubble text-xl md:text-2xl font-black text-amber-300 leading-tight">Co-Champions</h2>
+            <h2 className="vote-now-logo text-xl md:text-2xl align-middle mx-1">
+              <span style={{ color: "#c026d3" }}>C</span>
+              <span style={{ color: "#f97316" }}>o</span>
+              <span style={{ color: "#facc15" }}>-</span>
+              <span style={{ color: "#f43f5e" }}>C</span>
+              <span style={{ color: "#a855f7" }}>h</span>
+              <span style={{ color: "#c026d3" }}>a</span>
+              <span style={{ color: "#f97316" }}>m</span>
+              <span style={{ color: "#facc15" }}>p</span>
+              <span style={{ color: "#f43f5e" }}>s</span>
+              <span style={{ color: "#a855f7" }} className="animate-pop-wiggle">!</span>
+            </h2>
             <span className="text-sm md:text-base font-bold text-white px-2 text-center">{champions.join(" & ")}</span>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-2xl animate-bounce">🏆</span>
-            <h2 className="font-bubble text-xl md:text-2xl font-black text-amber-300 leading-tight">Tournament Champion</h2>
+            <h2 className="vote-now-logo text-xl md:text-2xl align-middle mx-1">
+              <span style={{ color: "#c026d3" }}>C</span>
+              <span style={{ color: "#f97316" }}>h</span>
+              <span style={{ color: "#facc15" }}>a</span>
+              <span style={{ color: "#f43f5e" }}>m</span>
+              <span style={{ color: "#a855f7" }}>p</span>
+              <span style={{ color: "#c026d3" }}>i</span>
+              <span style={{ color: "#f97316" }}>o</span>
+              <span style={{ color: "#facc15" }}>n</span>
+              <span style={{ color: "#f43f5e" }} className="animate-pop-wiggle">!</span>
+            </h2>
             <span className="text-lg md:text-xl font-black text-white truncate px-2">{champions[0]}</span>
           </div>
         )}

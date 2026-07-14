@@ -42,6 +42,7 @@ export default function SummaryPhase({
   const [voteConfirm, setVoteConfirm] = useState(null) // { pairDbId, question } when confirming a vote
   const [hostControlsFocused, setHostControlsFocused] = useState(false)
   const [liveText, setLiveText] = useState("")
+  const [burstPairId, setBurstPairId] = useState(null)
   const prevCountdownActiveRef = useRef(false)
 
   const countdownActive = Boolean(tournament?.votingDeadlineAt)
@@ -61,6 +62,11 @@ export default function SummaryPhase({
     }
     prevCountdownActiveRef.current = countdownActive
   }, [countdownActive, currentRound, targetRounds])
+
+  const triggerBurst = (pairDbId) => {
+    setBurstPairId(pairDbId)
+    setTimeout(() => setBurstPairId(null), 600)
+  }
 
   const handleHostControlsFocus = () => setHostControlsFocused(true)
   const handleHostControlsBlur = (e) => {
@@ -88,9 +94,18 @@ export default function SummaryPhase({
         <span aria-live="polite" className="sr-only">{liveText}</span>
         <div className="summary-header--compact__row">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">
-              {tournament ? `Round ${tournament.currentRound} of ${tournament.targetRounds}` : 'Round Complete'}
-            </p>
+            <h2 className="vote-now-logo">
+              <span style={{ color: "#c026d3" }}>V</span>
+              <span style={{ color: "#f97316" }}>o</span>
+              <span style={{ color: "#facc15" }}>t</span>
+              <span style={{ color: "#f43f5e" }}>e</span>
+              <span style={{ color: "#a855f7" }} className="animate-pop-wiggle">!</span>
+            </h2>
+            {tournament && (
+              <span className="text-xs text-gray-500">
+                Round {tournament.currentRound} of {tournament.targetRounds}
+              </span>
+            )}
             {countdownActive && (
               <>
                 <span className="text-xs text-gray-500">·</span>
@@ -158,8 +173,13 @@ export default function SummaryPhase({
               return (
                 <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card summary-card--compact " + (userVotedForPair ? "summary-card--active " : "") + (isWinner ? "summary-card--winner" : "")}>
                   <div className="summary-card__body">
-                    {isWinner && <div className="text-right"><span className="text-sm" title="Top voted!">👑</span></div>}
-                    <p className="summary-question">{pair.question}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {isWinner && <div className="text-right"><span className="text-sm" title="Top voted!">👑</span></div>}
+                        <p className="summary-question">{pair.question}</p>
+                      </div>
+                      <span key={voteCount} className="vote-count-badge shrink-0 mt-0.5" aria-label={`${voteCount} votes`}>{voteCount}</span>
+                    </div>
                     {viewMode === "paired" ? (
                       <>
                         <div className="summary-paired">
@@ -190,9 +210,15 @@ export default function SummaryPhase({
                   {viewMode === "paired" ? (
                     <div className="summary-card__footer">
                       <div className="summary-vote-meta">
-                        <span className="text-gray-400 text-xs uppercase tracking-widest leading-none">Votes</span>
-                        <p className="text-xl font-black text-amber-300 leading-none">{voteCount}</p>
-                        {userVotedForPair && (<span className="you-badge">You</span>)}
+                        {userVotedForPair ? (
+                          <span className="you-badge">You voted</span>
+                        ) : userLockedToDifferentPair ? (
+                          <span className="text-gray-400 text-xs">Locked to another pair</span>
+                        ) : inFlight ? (
+                          <span className="text-gray-400 text-xs">Submitting…</span>
+                        ) : (
+                          <span className="text-gray-300 text-sm">Tap 👍 to vote</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 flex-1 justify-end">
                         {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
@@ -208,21 +234,47 @@ export default function SummaryPhase({
                         {hasPairId ? (
                           <button
                             onClick={() => {
+                              if (!userVotedForPair && !voteDisabled) {
+                                triggerBurst(pair.pairDbId)
+                              }
                               if (isTournamentVoting && !userVotedForPair) {
                                 setVoteConfirm({ pairDbId: pair.pairDbId, question: pair.question })
                               } else {
                                 handleVote('qa_pair', pair.pairDbId)
                               }
                             }}
-                            className={`summary-vote-icon ${
+                            className={`summary-vote-icon relative ${
                               userVotedForPair ? 'summary-vote-icon--active' : ''
-                            } ${voteDisabled ? 'summary-vote-icon--disabled' : ''}`}
+                            } ${voteDisabled ? 'summary-vote-icon--disabled' : 'summary-vote-icon--pulse'}`}
                             title={userVotedForPair ? 'You voted for this pair' : userLockedToDifferentPair ? 'Locked to another pair' : inFlight ? 'Submitting…' : 'Vote for best pairing'}
                             disabled={voteDisabled}
                             aria-busy={inFlight ? 'true' : 'false'}
                             aria-label={userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Locked' : inFlight ? 'Submitting' : 'Vote'}
                           >
                             {inFlight ? '…' : userVotedForPair ? '✓' : userLockedToDifferentPair ? '🔒' : '👍'}
+                            {burstPairId === pair.pairDbId && (
+                              <span className="vote-burst" aria-hidden="true">
+                                {Array.from({ length: 10 }).map((_, i) => {
+                                  const angle = (i / 10) * 360
+                                  const dist = 22 + (i % 3) * 6
+                                  const x = Math.cos((angle * Math.PI) / 180) * dist
+                                  const y = Math.sin((angle * Math.PI) / 180) * dist
+                                  const colors = ['#c026d3', '#f97316', '#facc15', '#f43f5e', '#a855f7']
+                                  return (
+                                    <span
+                                      key={i}
+                                      className="vote-burst-piece"
+                                      style={{
+                                        '--burst-x': `${x}px`,
+                                        '--burst-y': `${y}px`,
+                                        backgroundColor: colors[i % colors.length],
+                                        animationDelay: `${(i % 4) * 15}ms`
+                                      }}
+                                    />
+                                  )
+                                })}
+                              </span>
+                            )}
                           </button>
                         ) : (
                           <button disabled className="summary-vote-icon summary-vote-icon--disabled" title="Unavailable" aria-label="Unavailable">−</button>
