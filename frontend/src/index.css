@@ -344,6 +344,30 @@
     @apply ring-2 ring-yellow-400/60 border-yellow-300/50 shadow-lg shadow-yellow-900/20;
   }
 
+  .summary-card--compact .summary-card__body {
+    @apply p-2 space-y-1;
+  }
+
+  .summary-card--compact .summary-card__footer {
+    @apply py-2 px-3;
+  }
+
+  .summary-card--compact .summary-paired {
+    @apply pl-2 py-0;
+  }
+
+  .summary-card--compact .summary-actual {
+    @apply pl-2 py-0;
+  }
+
+  .summary-card--compact .summary-vote-icon {
+    @apply w-11 h-11 md:w-11 md:h-11;
+  }
+
+  .standings-row--compact {
+    @apply py-1 px-2;
+  }
+
   .phase-banner {
     @apply flex items-center gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 px-3 py-2 shadow-lg shadow-indigo-950/20;
   }

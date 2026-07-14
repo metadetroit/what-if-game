@@ -15,7 +15,7 @@ export default function TournamentCompleteView({
 
   return (
     <div className="game-container game-container--summary py-4">
-      <div className="summary-header--compact text-center" data-testid="champion-header">
+      <div className="summary-header--compact text-center !p-2 md:!p-2.5" data-testid="champion-header">
         {isTie ? (
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-2xl animate-bounce">🏆</span>
@@ -32,7 +32,7 @@ export default function TournamentCompleteView({
       </div>
 
       <div className="summary-scroll">
-        <div className="space-y-1 content-visibility-auto">
+        <div className="space-y-0.5 content-visibility-auto">
           {standings.map(s => {
             const icon = RANK_ICONS[s.rank] || null
             const isMe = s.name === playerName
@@ -43,7 +43,7 @@ export default function TournamentCompleteView({
                   "flex items-center gap-3 rounded-xl " +
                   (isMe ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800/60") +
                   (s.leftGame ? " opacity-50" : "") +
-                  (isCompact ? " py-1.5 px-2.5" : " py-2 px-3")
+                  (isCompact ? " py-1 px-2" : " py-1.5 px-2.5")
                 }
               >
                 <div className={"flex items-center justify-center shrink-0 " + (isCompact ? "w-8 h-8" : "w-10 h-10")}>

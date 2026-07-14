@@ -156,7 +156,7 @@ export default function SummaryPhase({
               const isWinner = roundLeader && roundLeader.pairDbId === pair.pairDbId && !roundLeader.tied
 
               return (
-                <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card " + (userVotedForPair ? "summary-card--active " : "") + (isWinner ? "summary-card--winner" : "")}>
+                <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card summary-card--compact " + (userVotedForPair ? "summary-card--active " : "") + (isWinner ? "summary-card--winner" : "")}>
                   <div className="summary-card__body">
                     {isWinner && <div className="text-right"><span className="text-sm" title="Top voted!">👑</span></div>}
                     <p className="summary-question">{pair.question}</p>

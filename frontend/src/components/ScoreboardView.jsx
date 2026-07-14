@@ -109,7 +109,7 @@ export default function ScoreboardView({
       )}
 
       <div className="summary-scroll">
-        <div className="space-y-1 content-visibility-auto">
+        <div className="space-y-0.5 content-visibility-auto">
           {visibleStandings.map((s, idx) => {
             const icon = RANK_ICONS[s.rank] || null
             const isMe = s.name === playerName
@@ -128,7 +128,7 @@ export default function ScoreboardView({
                   "flex items-center gap-3 rounded-xl transition-all duration-300 " +
                   (isMe ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800/60") +
                   (s.leftGame ? " opacity-50" : "") +
-                  (isCompact ? " py-1.5 px-2.5" : " py-2 px-3")
+                  (isCompact ? " py-1 px-2" : " py-1.5 px-2.5")
                 }>
                   <div className={"flex flex-col items-center justify-center shrink-0 " + (isCompact ? "w-8 h-8" : "w-10 h-10")}>
                     {icon ? (
