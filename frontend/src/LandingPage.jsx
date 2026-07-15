@@ -109,17 +109,54 @@ export default function LandingPage({
       const params = new URLSearchParams(window.location.search)
       const debug = (params.get("debug") || "").split(",").includes("motion")
       if (!debug) return
+
       const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)')?.matches
-      const logoEx = document.querySelector('.hero-logo-text .animate-pop-wiggle')
-      const pulseHead = document.querySelector('.play-heading-text.heading-pulse')
-      const scrollCue = document.querySelector('.scroll-cue')
-      const anim = (el) => (el ? window.getComputedStyle(el).animationName : 'n/a')
+      const samples = [
+        ['exclamation', document.querySelector('.hero-logo-text .animate-pop-wiggle')],
+        ['heading', document.querySelector('.play-heading-text.heading-pulse')],
+        ['scroll', document.querySelector('.scroll-cue')],
+      ]
+      const describe = (el) => {
+        if (!el) return { name: 'n/a', duration: 'n/a', state: 'missing', visible: false, changed: false }
+        const style = window.getComputedStyle(el)
+        const rect = el.getBoundingClientRect()
+        return {
+          name: style.animationName,
+          duration: style.animationDuration,
+          state: style.animationPlayState,
+          visible: rect.width > 0 && rect.height > 0,
+          changed: false,
+        }
+      }
+
+      const initial = Object.fromEntries(samples.map(([key, el]) => [key, { el, info: describe(el), value: el ? window.getComputedStyle(el).transform + window.getComputedStyle(el).opacity : '' }]))
       setDebugInfo({
         reducedMotion: !!reduced,
-        exclamationAnim: anim(logoEx),
-        headingPulseAnim: anim(pulseHead),
-        scrollCueAnim: anim(scrollCue),
+        exclamation: initial.exclamation.info,
+        heading: initial.heading.info,
+        scroll: initial.scroll.info,
+        liveRevealed: document.getElementById('live')?.classList.contains('revealed') || false,
+        playRevealed: document.getElementById('play')?.classList.contains('revealed') || false,
       })
+
+      let frame = 0
+      const probe = () => {
+        frame += 1
+        const next = {}
+        samples.forEach(([key, el]) => {
+          const info = describe(el)
+          const value = el ? window.getComputedStyle(el).transform + window.getComputedStyle(el).opacity : ''
+          next[key] = { ...info, changed: Boolean(initial[key].value && value && initial[key].value !== value) }
+        })
+        setDebugInfo((prev) => ({
+          ...prev,
+          exclamation: next.exclamation,
+          heading: next.heading,
+          scroll: next.scroll,
+        }))
+        if (frame < 3) window.requestAnimationFrame(probe)
+      }
+      window.requestAnimationFrame(probe)
     } catch (_) {}
   }, [])
 
@@ -140,10 +177,17 @@ export default function LandingPage({
         <div className="relative z-10 mx-auto max-w-3xl">
           {debugInfo && (
             <div className="absolute right-2 top-2 z-20 rounded-lg border border-white/15 bg-black/60 p-2 text-left text-[10px] leading-tight text-purple-100/80">
-              <div><strong>Reduced motion:</strong> {String(debugInfo.reducedMotion)}</div>
-              <div><strong>Exclamation:</strong> {debugInfo.exclamationAnim}</div>
-              <div><strong>Heading pulse:</strong> {debugInfo.headingPulseAnim}</div>
-              <div><strong>Scroll cue:</strong> {debugInfo.scrollCueAnim}</div>
+              <div><strong>Windows reduced motion:</strong> {String(debugInfo.reducedMotion)}</div>
+              {[
+                ['Exclamation', debugInfo.exclamation],
+                ['Heading pulse', debugInfo.heading],
+                ['Scroll cue', debugInfo.scroll],
+              ].map(([label, info]) => (
+                <div key={label}>
+                  <strong>{label}:</strong> {info.name} / {info.duration} / {info.state} / {info.visible ? 'visible' : 'hidden'} / {info.changed ? 'moving' : 'static'}
+                </div>
+              ))}
+              <div><strong>Reveals:</strong> live={String(debugInfo.liveRevealed)} play={String(debugInfo.playRevealed)}</div>
             </div>
           )}
           <h1 className="font-bubble glow-title hero-logo-text md:text-[160px] md:leading-[0.88] drop-shadow-[4px_4px_0px_rgba(20,5,35,0.85)]">

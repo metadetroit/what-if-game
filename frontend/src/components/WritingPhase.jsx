@@ -33,7 +33,7 @@ export default function WritingPhase({
   }
 
   return (
-    <div className="game-container game-container--active game-container--keyboard-aware py-2 flex flex-col">
+    <div className="game-container game-container--active game-container--writing game-container--keyboard-aware py-2 flex flex-col">
       {speedScoringEnabled && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5" title="Blitz Mode: Speed counts this round">
           <span className="text-xs">⚡</span>
@@ -70,11 +70,17 @@ export default function WritingPhase({
           </div>
           <form onSubmit={handleSubmit} className="contents">
             <label htmlFor="question-input" className="sr-only">Your question</label>
-            <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your question here" autoComplete="off" autoCapitalize="sentences" aria-label="Your question" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug" maxLength={300} />
-            <div className="flex items-center justify-between active-fill-mt">
-              <span className="active-body-text text-gray-500">{question.length}/300</span>
-              {question && !question.toLowerCase().startsWith("what if") && (<span className="active-body-text text-red-500 font-semibold">Must start with "What if"</span>)}
+            <div className="input-field-shell active-textarea-height active-fill-mt">
+              <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your question here" autoComplete="off" autoCapitalize="sentences" aria-label="Your question" className="input-field-shell__textarea resize-none active-input-text leading-snug" maxLength={300} />
+              <div className="input-field-shell__footer active-counter-text" aria-label={`${question.length} of 300 characters used`}>
+                <span>{question.length}/300</span>
+              </div>
             </div>
+            {question && !question.toLowerCase().startsWith("what if") && (
+              <div className="flex items-center justify-end active-fill-mt">
+                <span className="active-body-text text-red-500 font-semibold">Must start with "What if"</span>
+              </div>
+            )}
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
             <button type="submit" disabled={!canSubmit} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Question</button>
           </form>

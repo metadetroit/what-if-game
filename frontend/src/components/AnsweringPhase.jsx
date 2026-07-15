@@ -33,7 +33,7 @@ export default function AnsweringPhase({
   }
 
   return (
-    <div className="game-container game-container--active game-container--keyboard-aware py-2 flex flex-col">
+    <div className="game-container game-container--active game-container--answering game-container--keyboard-aware py-2 flex flex-col">
       {speedScoringEnabled && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5" title="Blitz Mode: Speed counts this round">
           <span className="text-xs">⚡</span>
@@ -63,9 +63,11 @@ export default function AnsweringPhase({
           </div>
           <form onSubmit={handleSubmit} className="contents">
             <label htmlFor="answer-input" className="sr-only">Your answer</label>
-            <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your answer here..." autoComplete="off" autoCapitalize="sentences" aria-label="Your answer" className="input-field active-textarea-height resize-none active-fill-mt active-input-text leading-snug" maxLength={400} />
-            <div className="flex justify-between items-center active-fill-mt">
-              <span className="active-body-text text-gray-500">{answer.length}/400 characters</span>
+            <div className="input-field-shell active-textarea-height active-fill-mt">
+              <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your answer here..." autoComplete="off" autoCapitalize="sentences" aria-label="Your answer" className="input-field-shell__textarea resize-none active-input-text leading-snug" maxLength={400} />
+              <div className="input-field-shell__footer active-counter-text" aria-label={`${answer.length} of 400 characters used`}>
+                <span>{answer.length}/400</span>
+              </div>
             </div>
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 active-body-text text-center active-fill-mt">{error}</div>)}
             <button type="submit" disabled={!canSubmit} className="btn-primary active-fill-py active-input-text active-fill-mt">Submit Answer</button>
