@@ -118,7 +118,7 @@ export default function SummaryPhase({
             )}
           </div>
           <div className="flex items-center gap-1 md:gap-2">
-            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-[2px] text-xs md:text-sm">
+            <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 p-[1px] text-xs md:text-sm">
               <button
                 onClick={() => setViewMode("paired")}
                 className={`w-24 sm:w-28 rounded-full px-2 py-0.5 font-semibold text-center transition-colors duration-200 min-h-[44px] flex items-center justify-center ${
@@ -144,7 +144,7 @@ export default function SummaryPhase({
           </div>
         </div>
         {countdownActive && (
-          <div className="summary-meta-inline mt-1">
+          <div className="summary-meta-inline mt-0.5">
             <span className="text-gray-300">Vote for the best pair</span>
             <span>·</span>
             <span className={votersCount >= players.length ? "text-emerald-300 animate-pulse" : "text-amber-300"}>

@@ -128,11 +128,11 @@
   }
 
   .summary-header--compact {
-    @apply card !p-2 md:!p-3;
+    @apply card !py-1 !px-2 md:!py-1.5 md:!px-3;
   }
 
   .summary-header--compact__row {
-    @apply flex flex-wrap items-center justify-between gap-1 md:gap-2;
+    @apply flex flex-wrap items-center justify-between gap-0.5 md:gap-1;
   }
 
   .summary-meta-inline {
