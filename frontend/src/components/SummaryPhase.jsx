@@ -456,10 +456,10 @@ export default function SummaryPhase({
               <div className="summary-actions__toggles">
                 <div className="summary-toggle card !p-2.5 md:!p-3">
                   <div>
-                    <p className="text-xs text-white font-semibold">Anonymous Results</p>
-                    <p className="text-xs md:text-xs text-gray-400 leading-tight">Hide names in summary + Best Of.</p>
+                    <p className="text-xs text-white font-semibold">Anonymize next round</p>
+                    <p className="text-xs md:text-xs text-gray-400 leading-tight">Hide names in the next replay.</p>
                   </div>
-                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
+                  <button onClick={() => socketRef.current?.emit("toggle-anonymous")} aria-pressed={anonymousMode} aria-label="Toggle anonymous results for next round" className={"toggle-switch " + (anonymousMode ? "toggle-switch--on" : "")}>
                     <span />
                   </button>
                 </div>

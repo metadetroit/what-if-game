@@ -866,16 +866,17 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Host toggles anonymous mode (show/hide names in end-of-game summary)
+  // Host toggles anonymous mode for the current or next round
   socket.on('toggle-anonymous', async () => {
     const roomCode = socket.roomCode;
     const game = games[roomCode];
 
     if (!game || game.host !== socket.id) return;
 
-    if (game.phase !== 'lobby') {
-      console.log(`[toggle-anonymous] Rejected: not in lobby (phase: ${game.phase})`);
-      socket.emit('error', 'Anonymous mode can only be changed in the lobby');
+    const allowedPhases = ['lobby', 'ended', 'voting'];
+    if (!allowedPhases.includes(game.phase)) {
+      console.log(`[toggle-anonymous] Rejected: not in lobby/summary (phase: ${game.phase})`);
+      socket.emit('error', 'Anonymous mode can only be changed in the lobby or between rounds');
       return;
     }
 
