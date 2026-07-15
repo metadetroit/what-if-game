@@ -173,16 +173,17 @@ export default function SummaryPhase({
               const inFlight = pendingVoteRef.current && pendingVoteRef.current.type === 'qa_pair' && pendingVoteRef.current.targetId === pair.pairDbId
               const voteDisabled = userLockedToDifferentPair || inFlight
               const isWinner = roundLeader && roundLeader.pairDbId === pair.pairDbId && !roundLeader.tied
+              const showVoteIndicators = viewMode === "paired"
 
               return (
-                <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card summary-card--compact " + (userVotedForPair ? "summary-card--active " : "") + (isWinner ? "summary-card--winner" : "")}>
+                <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card summary-card--compact " + (showVoteIndicators && userVotedForPair ? "summary-card--active " : "") + (showVoteIndicators && isWinner ? "summary-card--winner" : "")}>
                   <div className="summary-card__body">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        {isWinner && <div className="text-right"><span className="text-sm" title="Top voted!">👑</span></div>}
+                        {showVoteIndicators && isWinner && <div className="text-right"><span className="text-sm" title="Top voted!">👑</span></div>}
                         <p className="summary-question">{pair.question}</p>
                       </div>
-                      <span key={voteCount} className="vote-count-badge shrink-0 mt-0.5" aria-label={`${voteCount} votes`}>{voteCount}</span>
+                      {showVoteIndicators && <span key={voteCount} className="vote-count-badge shrink-0 mt-0.5" aria-label={`${voteCount} votes`}>{voteCount}</span>}
                     </div>
                     {viewMode === "paired" ? (
                       <>
@@ -354,7 +355,7 @@ export default function SummaryPhase({
         </div>
       )}
 
-      {roundLeader && (
+      {viewMode === "paired" && roundLeader && (
         <div className="summary-winner-banner" data-testid="leader-banner">
           <p className="leading-snug">
             <span className="text-rose-300">🔥</span>
