@@ -98,10 +98,23 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
   }, [summaryPairVoteId, setNotice, socketRef, roomCodeRef, pendingVoteRef])
 
   useEffect(() => {
+    // Stable client id for future server-side mapping; non-breaking today
+    const getClientId = () => {
+      try {
+        const key = 'fluke-client-id'
+        let id = localStorage.getItem(key)
+        if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem(key, id) }
+        return id
+      } catch (_) { return 'anon-' + Math.random().toString(36).slice(2) }
+    }
+
     const newSocket = io(socketUrl, {
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000
+      reconnectionDelayMax: 5000,
+      transports: ["websocket", "polling"],
+      upgrade: true,
+      auth: { clientId: getClientId() }
     })
     setSocket(newSocket)
     socketRef.current = newSocket
@@ -178,7 +191,15 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     document.addEventListener("visibilitychange", handleVisibilityChange)
 
     const handlePageShow = () => revalidatePresence()
+    const handleOnline = () => {
+      if (socketRef.current && !socketRef.current.connected) {
+        reconnectAttemptedRef.current = false
+        socketRef.current.connect()
+      }
+      revalidatePresence()
+    }
     window.addEventListener("pageshow", handlePageShow)
+    window.addEventListener("online", handleOnline)
 
     const updatePlayersAndHost = (payload) => {
       if (!payload) return
@@ -651,6 +672,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       window.removeEventListener("beforeunload", handleBeforeUnload)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("pageshow", handlePageShow)
+      window.removeEventListener("online", handleOnline)
       if (revalidateTimer) clearTimeout(revalidateTimer)
       newSocket.close()
     }

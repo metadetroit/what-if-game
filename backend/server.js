@@ -460,7 +460,9 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   },
   pingTimeout: 120000,
-  pingInterval: 25000
+  pingInterval: 25000,
+  transports: ["websocket", "polling"],
+  upgrade: true
 });
 
 // Store games in memory (use Redis for production)

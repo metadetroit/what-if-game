@@ -26,6 +26,7 @@ export default function LandingPage({
   const [copied, setCopied] = useState(false)
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768)
   const [revealedSections, setRevealedSections] = useState(new Set())
+  const [debugInfo, setDebugInfo] = useState(null)
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
   const { showInstallLink, isIOS, promptInstall } = usePWAInstall()
@@ -83,21 +84,43 @@ export default function LandingPage({
   }, [roomCode])
 
   useEffect(() => {
+    const rootEl = scrollRef.current || null
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting && entry.target?.id) {
             setRevealedSections((prev) => new Set(prev).add(entry.target.id))
           }
         })
       },
-      { threshold: 0.1 }
+      { root: rootEl, rootMargin: "0px 0px -8% 0px", threshold: 0.1 }
     )
-    ;["live", "play"].forEach((id) => {
+    const ids = ["live", "play"]
+    ids.forEach((id) => {
       const el = document.getElementById(id)
       if (el) observer.observe(el)
     })
     return () => observer.disconnect()
+  }, [])
+
+  // Lightweight debug overlay for motion issues: enable with ?debug=motion
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const debug = (params.get("debug") || "").split(",").includes("motion")
+      if (!debug) return
+      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)')?.matches
+      const logoEx = document.querySelector('.hero-logo-text .animate-pop-wiggle')
+      const pulseHead = document.querySelector('.play-heading-text.heading-pulse')
+      const scrollCue = document.querySelector('.scroll-cue')
+      const anim = (el) => (el ? window.getComputedStyle(el).animationName : 'n/a')
+      setDebugInfo({
+        reducedMotion: !!reduced,
+        exclamationAnim: anim(logoEx),
+        headingPulseAnim: anim(pulseHead),
+        scrollCueAnim: anim(scrollCue),
+      })
+    } catch (_) {}
   }, [])
 
   return (
@@ -115,6 +138,14 @@ export default function LandingPage({
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b2e]/75 via-[#2a0f45]/55 to-[#1a0b2e]/95" />
 
         <div className="relative z-10 mx-auto max-w-3xl">
+          {debugInfo && (
+            <div className="absolute right-2 top-2 z-20 rounded-lg border border-white/15 bg-black/60 p-2 text-left text-[10px] leading-tight text-purple-100/80">
+              <div><strong>Reduced motion:</strong> {String(debugInfo.reducedMotion)}</div>
+              <div><strong>Exclamation:</strong> {debugInfo.exclamationAnim}</div>
+              <div><strong>Heading pulse:</strong> {debugInfo.headingPulseAnim}</div>
+              <div><strong>Scroll cue:</strong> {debugInfo.scrollCueAnim}</div>
+            </div>
+          )}
           <h1 className="font-bubble glow-title hero-logo-text md:text-[160px] md:leading-[0.88] drop-shadow-[4px_4px_0px_rgba(20,5,35,0.85)]">
             <span style={{ color: "#c026d3" }}>F</span>
             <span style={{ color: "#f97316" }}>l</span>
