@@ -674,6 +674,23 @@ test('leftGame players are deprioritised in standings', () => {
   assert.equal(standings[1].rank, 2);
 });
 
+// C2: leftGame player with the highest total must not be champion
+test('leftGame player with highest total is excluded from champions', () => {
+  const scores = {
+    Alice: { total: 15, firstPlaces: 2, votesReceived: 10, roundScores: [], joinedAtRound: 1, leftGame: true },
+    Bob: { total: 10, firstPlaces: 1, votesReceived: 5, roundScores: [], joinedAtRound: 1, leftGame: false },
+    Carol: { total: 8, firstPlaces: 0, votesReceived: 3, roundScores: [], joinedAtRound: 1, leftGame: false },
+  };
+  const { champions, isTie, standings } = resolveStandings(scores);
+  assert.deepEqual(champions, ['Bob']);
+  assert.equal(isTie, false);
+  assert.equal(standings[0].name, 'Alice');
+  assert.equal(standings[0].rank, 1);
+  assert.equal(standings[0].leftGame, true);
+  assert.equal(standings[1].name, 'Bob');
+  assert.equal(standings[1].rank, 2);
+});
+
 // L1: joinedAtRound should not be set to current round for a player that already exists
 test('mergeRoundScores does not overwrite joinedAtRound for existing players from votesReceived', () => {
   const scores = {

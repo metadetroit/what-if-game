@@ -305,7 +305,14 @@ function resolveStandings(tournamentScores) {
     standings.push(entries[i]);
   }
 
-  const champions = standings.filter(s => s.rank === 1).map(s => s.name);
+  let champions = standings.filter(s => s.rank === 1 && !s.leftGame).map(s => s.name);
+  if (champions.length === 0) {
+    const nonLeft = standings.filter(s => !s.leftGame);
+    if (nonLeft.length > 0) {
+      const bestRank = nonLeft[0].rank;
+      champions = nonLeft.filter(s => s.rank === bestRank).map(s => s.name);
+    }
+  }
   const isTie = champions.length > 1;
 
   return { champions, isTie, standings };

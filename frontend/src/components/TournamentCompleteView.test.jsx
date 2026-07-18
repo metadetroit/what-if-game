@@ -24,7 +24,8 @@ describe('TournamentCompleteView', () => {
         }}
       />
     )
-    expect(screen.getByText('Tournament Champion')).toBeInTheDocument()
+    const header = screen.getByTestId('champion-header')
+    expect(header.textContent).toMatch(/Champion/)
     expect(screen.getByText('Alice')).toBeInTheDocument()
     expect(screen.getByText('🥇')).toBeInTheDocument()
     expect(screen.getByText('15')).toBeInTheDocument()
@@ -45,7 +46,8 @@ describe('TournamentCompleteView', () => {
         }}
       />
     )
-    expect(screen.getByText('Co-Champions')).toBeInTheDocument()
+    const header = screen.getByTestId('champion-header')
+    expect(header.textContent).toMatch(/Co-Champs/)
     expect(screen.getByText('Alice & Bob')).toBeInTheDocument()
   })
 

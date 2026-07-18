@@ -162,9 +162,10 @@ export default function SummaryPhase({
               const isTournamentVoting = tournament && tournament.enabled
               // Tournament voting: always mask. Classic: mask if anonymous.
               const effectiveMask = isTournamentVoting || maskNames
-              const questionAuthor = effectiveMask ? '???' : (pair.questionAuthorName || 'Unknown')
-              const pairedAuthor = effectiveMask ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')
-              const actualAuthor = effectiveMask ? '???' : (pair.actualAnswerAuthorName || 'Unknown')
+              const revealed = authorReveals && pair.pairDbId && authorReveals[pair.pairDbId]
+              const questionAuthor = (effectiveMask && !revealed) ? '???' : (pair.questionAuthorName || 'Unknown')
+              const pairedAuthor = (effectiveMask && !revealed) ? '???' : (pair.pairedAnswerAuthorName || 'Unknown')
+              const actualAuthor = (effectiveMask && !revealed) ? '???' : (pair.actualAnswerAuthorName || 'Unknown')
               const pairKey = pair.pairDbId || `${pair.question}-${i}`
               const voteCount = pair.pairDbId ? (summaryVotes[pair.pairDbId] || 0) : 0
               const hasPairId = Boolean(pair.pairDbId)

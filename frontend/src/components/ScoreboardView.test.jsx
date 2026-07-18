@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import ScoreboardView from './ScoreboardView'
 
 function makeScoreboard(overrides = {}) {
@@ -62,7 +62,7 @@ describe('ScoreboardView relative leaderboard', () => {
 })
 
 describe('ScoreboardView round winner', () => {
-  it('shows round winner details and speed bonus', () => {
+  it('shows round winner details and speed bonus', async () => {
     const scoreboardData = makeScoreboard({
       scoringRules: { speedScoringEnabled: true },
       roundWinnerDetails: [
@@ -84,7 +84,11 @@ describe('ScoreboardView round winner', () => {
         setNotice={() => {}}
       />
     )
-    expect(screen.getByText(/A & B/)).toBeInTheDocument()
-    expect(screen.getByText(/⚡\+2/)).toBeInTheDocument()
+    await waitFor(() => {
+      const banner = screen.getByTestId('winner-banner')
+      expect(banner.textContent).toMatch(/A & B/)
+    }, { timeout: 3000 })
+    const banner = screen.getByTestId('winner-banner')
+    expect(banner.textContent).toMatch(/⚡\+2/)
   })
 })

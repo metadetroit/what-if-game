@@ -71,6 +71,10 @@ const writeLimiter = rateLimit({
 });
 app.use('/api/hide-game', writeLimiter);
 app.use('/api/delete-best-of', writeLimiter);
+app.use('/api/admin/approve-sfw', writeLimiter);
+app.use('/api/admin/approve-nsfw', writeLimiter);
+app.use('/api/admin/delete-pair', writeLimiter);
+app.use('/api/admin/reject-factual', writeLimiter);
 
 // Health check endpoint for Render.com
 app.get('/api/health', (req, res) => {
@@ -1974,7 +1978,7 @@ io.on('connection', (socket) => {
     // Build unmasked summary for scoreboard display
     const fullSummary = await buildGameSummary(roomCode);
 
-    const { standings } = resolveStandings(game.tournament.scores);
+    const { champions: roundChampions, isTie: roundIsTie, standings } = resolveStandings(game.tournament.scores);
     const isFinalRound = game.tournament.currentRound >= game.tournament.targetRounds;
     const scoreboardMs = isFinalRound ? 5000 : 20000;
     const scoreboardDeadlineAt = Date.now() + scoreboardMs;
@@ -1994,14 +1998,14 @@ io.on('connection', (socket) => {
           const myRank = myStanding ? myStanding.rank : null;
           const myTotal = myStanding ? myStanding.total : 0;
           const totalPlayers = standings.length;
-          const isChampion = myRank === 1;
+          const isChampion = roundChampions.includes(p.name);
           io.to(p.id).emit('rank-reveal', {
             rank: myRank,
             total: myTotal,
             totalPlayers,
             isChampion,
-            isTie: standings.filter(s => s.rank === 1).length > 1,
-            champions: standings.filter(s => s.rank === 1).map(s => s.name)
+            isTie: roundIsTie,
+            champions: roundChampions
           });
         }
         game.phase = 'rank_reveal';
