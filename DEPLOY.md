@@ -4,44 +4,13 @@
 1. Create a free account at https://render.com
 2. Push your code to GitHub (recommended) or use Render's Git integration
 
-## Step 1: Deploy the Backend
+## Step 1: Use the authoritative single-service manifest
 
-1. In Render Dashboard, click **New +** → **Web Service**
-2. Connect your GitHub repo or use **Public Git Repository**
-3. Configure:
-   - **Name**: `what-if-game-backend`
-   - **Root Directory**: `backend`
-   - **Environment**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - **Plan**: Free
-4. Add Environment Variables:
-   - `CORS_ORIGIN`: `*` (or your frontend URL after deployment)
-5. Click **Create Web Service**
-
-6. Wait for deployment to complete. Note your backend URL (e.g., `https://what-if-game-backend.onrender.com`)
-
-## Step 2: Deploy the Frontend
-
-1. In Render Dashboard, click **New +** → **Static Site**
-2. Connect the same repo
-3. Configure:
-   - **Name**: `what-if-game-frontend`
-   - **Root Directory**: `frontend`
-   - **Build Command**: `npm install && npm run build`
-   - **Publish Directory**: `dist`
-4. Add Environment Variables:
-   - `VITE_SOCKET_URL`: `https://what-if-game-backend.onrender.com` (your actual backend URL)
-5. Click **Create Static Site**
-
-## Alternative: Deploy Both Together (Simpler)
-
-If you want a single service (easier to manage), modify `render.yaml` and use Blueprint:
-
-1. Push `render.yaml` to your repo
-2. In Render, click **New +** → **Blueprint**
-3. Connect your repo
-4. Render will create both services automatically
+1. In Render Dashboard, open the existing `what-if-game-v2` service or create a Blueprint from `render-new.yaml`.
+2. Confirm the service builds the frontend from `frontend`, starts `backend`, and serves `/api/health`.
+3. Set `CORS_ORIGIN` to `https://what-if-game-v2.onrender.com`.
+4. Set `ADMIN_KEY` to a rotated secret directly in Render; never commit or report its value.
+5. Apply the Blueprint/service configuration and wait for the deployment to complete.
 
 ## Testing Your Deployment
 
@@ -59,9 +28,9 @@ If you want a single service (easier to manage), modify `render.yaml` and use Bl
 - **Workaround**: If players experience delays, the first player should wait for the "Connecting..." to resolve before others join
 
 ### CORS Configuration
-- By default, backend accepts connections from anywhere (`*`)
-- For security, after deploying, update `CORS_ORIGIN` to your exact frontend URL:
-  - Example: `https://what-if-game-frontend.onrender.com`
+- Production uses the exact origin `https://what-if-game-v2.onrender.com`
+- Legacy frontend/backend origins and `playfluke.com` are not allowlisted until the custom domain serves the app directly
+- Update the Render environment value only when the final custom-domain cutover is complete
 
 ### Socket.IO on Render.com
 Socket.IO works great on Render.com's free tier. The WebSocket connections are properly supported.

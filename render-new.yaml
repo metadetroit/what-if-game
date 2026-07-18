@@ -1,5 +1,5 @@
 services:
-  # Backend Web Service (also serves frontend)
+  # Authoritative single-service Render Blueprint; render.yaml is deprecated after verification.
   - type: web
     name: what-if-game-backend
     runtime: node
@@ -9,6 +9,8 @@ services:
       - key: PORT
         value: 10000
       - key: CORS_ORIGIN
-        value: "*"
+        value: https://what-if-game-v2.onrender.com
+      - key: ADMIN_KEY
+        sync: false
     plan: free
-    healthCheckPath: /
+    healthCheckPath: /api/health

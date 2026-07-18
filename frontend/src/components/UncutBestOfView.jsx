@@ -3,6 +3,12 @@ import BestOfView from "./BestOfView"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
+function adminResponseError(response) {
+  if (response.status === 503) return 'Admin controls are not configured'
+  if (response.status === 403) return 'Admin key invalid'
+  return null
+}
+
 function UncutBestOfView({ onBack }) {
   const [bestOfData, setBestOfData] = useState(null)
   const [bestOfSort, setBestOfSort] = useState(() => sessionStorage.getItem('uncutBestOfSort') || 'votes')
@@ -81,6 +87,13 @@ function UncutBestOfView({ onBack }) {
         body: JSON.stringify({ type, id })
       })
 
+      const authError = adminResponseError(response)
+      if (authError) {
+        setAdminKey('')
+        sessionStorage.removeItem('adminKey')
+        alert(authError)
+        return
+      }
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
@@ -120,7 +133,13 @@ function UncutBestOfView({ onBack }) {
         body: JSON.stringify({ id })
       })
 
-      if (!response.ok) {
+      const authError = adminResponseError(response)
+      if (authError) {
+        setAdminKey('')
+        sessionStorage.removeItem('adminKey')
+        fetchBestOfData({ force: true })
+        alert(authError)
+      } else if (!response.ok) {
         fetchBestOfData({ force: true })
         alert('Failed to approve as SFW')
       } else {
@@ -156,7 +175,13 @@ function UncutBestOfView({ onBack }) {
         body: JSON.stringify({ id })
       })
 
-      if (!response.ok) {
+      const authError = adminResponseError(response)
+      if (authError) {
+        setAdminKey('')
+        sessionStorage.removeItem('adminKey')
+        fetchBestOfData({ force: true })
+        alert(authError)
+      } else if (!response.ok) {
         fetchBestOfData({ force: true })
         alert('Failed to approve as NSFW')
       } else {

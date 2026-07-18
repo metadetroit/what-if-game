@@ -94,7 +94,7 @@ Backend runs on `http://localhost:3001`
 Required environment variables:
 - `TURSO_DATABASE_URL` - Turso database URL
 - `TURSO_AUTH_TOKEN` - Turso auth token
-- `CORS_ORIGIN` - CORS origin (defaults to `*`)
+- `CORS_ORIGIN` - comma-separated exact origins; production uses `https://what-if-game-v2.onrender.com`
 
 ### 2. Start the Frontend
 
@@ -146,38 +146,27 @@ Play with friends across the internet! The easiest deployment is using **Render.
 
 ### Quick Deploy (Single Service - Easiest)
 
-1. **Build the frontend:**
-   ```bash
-   cd frontend
-   npm install
-   npm run build
-   cd ..
-   ```
+1. **Create a free Render.com account:** https://render.com
 
-2. **Create free Render.com account:** https://render.com
+2. **Open the existing `what-if-game-v2` Web Service or create a Blueprint from `render-new.yaml`.**
+   - Build command: `cd frontend && npm install && npm run build && cd ../backend && npm install`
+   - Start command: `cd backend && npm start`
+   - Health check: `/api/health`
+   - Plan: `Free`
 
-3. **New Web Service:**
-   - Connect your GitHub repo or upload files
-   - **Name**: `what-if-game`
-   - **Root Directory**: `backend`
-   - **Runtime**: `Node`
-   - **Start Command**: `node server.js`
-   - **Plan**: `Free`
-   - **Environment Variables**:
-     - `CORS_ORIGIN` = `*`
-     - `TURSO_DATABASE_URL` = your Turso URL
-     - `TURSO_AUTH_TOKEN` = your Turso auth token
+3. **Set environment variables in Render:**
+   - `CORS_ORIGIN` = `https://what-if-game-v2.onrender.com`
+   - `ADMIN_KEY` = a rotated secret configured directly in Render, never committed
+   - `TURSO_DATABASE_URL` = your Turso URL
+   - `TURSO_AUTH_TOKEN` = your Turso auth token
 
-4. **Done!** Your game is live at `https://what-if-game.onrender.com`
+4. **Done!** Your game is live at `https://what-if-game-v2.onrender.com`
 
 5. **Share the URL** with 3-15 friends anywhere in the world!
 
-### Two-Service Deploy (Better for Updates)
+### Deployment topology
 
-For separate frontend/backend deployment (see `DEPLOY.md` for full instructions):
-- Backend: Web Service on Render
-- Frontend: Static Site on Render
-- More flexible for updates
+The current deployment is one Render Web Service serving the built frontend and Socket.IO backend. Keep `render-new.yaml` authoritative; the legacy `render.yaml` is deprecated after the first verified deployment.
 
 ### Deployment Notes
 

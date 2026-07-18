@@ -26,8 +26,9 @@ This creates a `dist` folder with your production frontend.
    - **Start Command**: `node server.js`
    - **Plan**: Free
 
-5. Add Environment Variable:
-   - `CORS_ORIGIN`: `*`
+5. Add Environment Variables:
+   - `CORS_ORIGIN`: `https://what-if-game-v2.onrender.com`
+   - `ADMIN_KEY`: a rotated secret configured directly in Render, never committed
 
 6. Click **Create Web Service**
 
@@ -56,7 +57,7 @@ Share this URL with friends - they can all join from their own devices!
 ### "Connecting..." stays forever
 - Wait 30 seconds for the free tier to wake up
 - Refresh the page
-- Check that your `CORS_ORIGIN` is set to `*`
+- Check that your `CORS_ORIGIN` is set to `https://what-if-game-v2.onrender.com`
 
 ### Players can't see each other
 - Make sure everyone is using the same backend URL

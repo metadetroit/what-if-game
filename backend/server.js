@@ -7,9 +7,37 @@ const rateLimit = require('express-rate-limit');
 const { initDatabase, getDb, saveDatabase } = require('./database');
 const { calculateRoundPoints, tallyRound, mergeRoundScores, resolveStandings } = require('./tournament');
 
-const ADMIN_KEY = 'fluke-admin-2024';
-
 const app = express();
+
+function getConfiguredCorsOrigins() {
+  return (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+}
+
+function corsOriginCallback(origin, callback) {
+  if (!origin || getConfiguredCorsOrigins().includes(origin)) {
+    return callback(null, true);
+  }
+  return callback(new Error('Origin not allowed by CORS'));
+}
+
+function requireAdmin(req, res, next) {
+  const configuredAdminKey = (process.env.ADMIN_KEY || '').trim();
+  if (!configuredAdminKey) {
+    return res.status(503).json({
+      success: false,
+      error: 'admin_unconfigured',
+      code: 'admin_unconfigured',
+      message: 'Admin controls are not configured.'
+    });
+  }
+  if (req.headers['x-admin-key'] !== configuredAdminKey) {
+    return res.status(403).json({ success: false, error: 'Admin key required' });
+  }
+  return next();
+}
 
 function getPlayingPlayers(game) {
   return game.players.filter(p => p.isActive && p.role !== 'spectator');
@@ -19,9 +47,7 @@ function getPlayingPlayersCount(game) {
   return getPlayingPlayers(game).length;
 }
 
-// CORS configuration for production
-const corsOrigin = process.env.CORS_ORIGIN || "*";
-app.use(cors({ origin: corsOrigin }));
+app.use(cors({ origin: corsOriginCallback }));
 app.use(express.json());
 
 // --- Rate limiting ---
@@ -220,10 +246,7 @@ app.get('/api/best-of-uncut', async (req, res) => {
 });
 
 // API: Hide game from best of page (admin only)
-app.post('/api/hide-game', async (req, res) => {
-  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: 'Admin key required' });
-  }
+app.post('/api/hide-game', requireAdmin, async (req, res) => {
   const { roomCode } = req.body;
   
   if (!roomCode) {
@@ -237,10 +260,7 @@ app.post('/api/hide-game', async (req, res) => {
 });
 
 // API: Delete/hide a best-of item (admin only)
-app.post('/api/delete-best-of', async (req, res) => {
-  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: 'Admin key required' });
-  }
+app.post('/api/delete-best-of', requireAdmin, async (req, res) => {
   const { type, id } = req.body;
   
   if (!type || !id) {
@@ -266,10 +286,7 @@ app.post('/api/delete-best-of', async (req, res) => {
 });
 
 // API: Approve pair as SFW (admin only)
-app.post('/api/admin/approve-sfw', async (req, res) => {
-  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: 'Admin key required' });
-  }
+app.post('/api/admin/approve-sfw', requireAdmin, async (req, res) => {
   const { id } = req.body;
 
   if (!id) {
@@ -287,10 +304,7 @@ app.post('/api/admin/approve-sfw', async (req, res) => {
 });
 
 // API: Approve pair as NSFW (admin only)
-app.post('/api/admin/approve-nsfw', async (req, res) => {
-  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: 'Admin key required' });
-  }
+app.post('/api/admin/approve-nsfw', requireAdmin, async (req, res) => {
   const { id } = req.body;
 
   if (!id) {
@@ -308,10 +322,7 @@ app.post('/api/admin/approve-nsfw', async (req, res) => {
 });
 
 // API: Delete pair permanently (admin only)
-app.delete('/api/admin/delete-pair', async (req, res) => {
-  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: 'Admin key required' });
-  }
+app.delete('/api/admin/delete-pair', requireAdmin, async (req, res) => {
   const { id } = req.body;
 
   if (!id) {
@@ -328,10 +339,7 @@ app.delete('/api/admin/delete-pair', async (req, res) => {
   }
 });
 
-app.post('/api/admin/reject-factual', async (req, res) => {
-  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: 'Admin key required' });
-  }
+app.post('/api/admin/reject-factual', requireAdmin, async (req, res) => {
   const { id } = req.body;
 
   if (!id) {
@@ -349,10 +357,7 @@ app.post('/api/admin/reject-factual', async (req, res) => {
 });
 
 // API: Get pending pairs for moderation (admin only)
-app.get('/api/admin/pending', async (req, res) => {
-  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: 'Admin key required' });
-  }
+app.get('/api/admin/pending', requireAdmin, async (req, res) => {
   const db = getDb();
   const limit = parseInt(req.query.limit) || 50;
   const offset = parseInt(req.query.offset) || 0;
@@ -456,7 +461,7 @@ app.get('*', (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: corsOrigin,
+    origin: corsOriginCallback,
     methods: ["GET", "POST"]
   },
   pingTimeout: 120000,
@@ -3455,6 +3460,12 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize database and start server
 async function startServer() {
+  if (!getConfiguredCorsOrigins().length) {
+    console.warn('[startup] CORS_ORIGIN is not configured; defined cross-origin requests will be rejected.');
+  }
+  if (!(process.env.ADMIN_KEY || '').trim()) {
+    console.warn('[startup] ADMIN_KEY is not configured; admin endpoints are disabled.');
+  }
   await initDatabase();
   console.log('Database initialized');
 

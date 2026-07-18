@@ -34,6 +34,12 @@ import { useSocketEvents } from "./hooks/useSocketEvents"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
+function adminResponseError(response) {
+  if (response.status === 503) return 'Admin controls are not configured'
+  if (response.status === 403) return 'Admin key invalid'
+  return null
+}
+
 function App() {
   const [socket, setSocket] = useState(null)
   const [gameState, setGameState] = useState("welcome")
@@ -233,6 +239,14 @@ function App() {
       const response = await fetch(url, {
         headers: { 'x-admin-key': adminKey }
       })
+      const authError = adminResponseError(response)
+      if (authError) {
+        sessionStorage.removeItem('adminKey')
+        setAdminKey('')
+        setPendingData(null)
+        setNotice(noticeFor(authError, 'warn', 3000))
+        return
+      }
       const data = await response.json()
       const items = Array.isArray(data) ? data : []
 
@@ -299,7 +313,17 @@ function App() {
         body: JSON.stringify({ id })
       })
 
-      if (!response.ok) {
+      const authError = adminResponseError(response)
+      if (authError) {
+        if (bestOfViewMode === 'pending') {
+          fetchPendingData({ force: true })
+        } else {
+          fetchBestOfData({ force: true })
+        }
+        sessionStorage.removeItem('adminKey')
+        setAdminKey('')
+        setNotice(noticeFor(authError, 'warn', 3000))
+      } else if (!response.ok) {
         // Revert on error
         if (bestOfViewMode === 'pending') {
           fetchPendingData({ force: true })
@@ -341,7 +365,17 @@ function App() {
         body: JSON.stringify({ id })
       })
 
-      if (!response.ok) {
+      const authError = adminResponseError(response)
+      if (authError) {
+        if (bestOfViewMode === 'pending') {
+          fetchPendingData({ force: true })
+        } else {
+          fetchBestOfData({ force: true })
+        }
+        sessionStorage.removeItem('adminKey')
+        setAdminKey('')
+        setNotice(noticeFor(authError, 'warn', 3000))
+      } else if (!response.ok) {
         // Revert on error
         if (bestOfViewMode === 'pending') {
           fetchPendingData({ force: true })
@@ -507,10 +541,11 @@ function App() {
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ roomCode })
       })
-      if (response.status === 403) {
+      const authError = adminResponseError(response)
+      if (authError) {
         sessionStorage.removeItem('adminKey')
         setAdminKey('')
-        setNotice(noticeFor('Admin key invalid', 'warn', 3000))
+        setNotice(noticeFor(authError, 'warn', 3000))
         return
       }
       console.log('hide-game response status:', response.status)
@@ -535,10 +570,11 @@ function App() {
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ type, id })
       })
-      if (response.status === 403) {
+      const authError = adminResponseError(response)
+      if (authError) {
         sessionStorage.removeItem('adminKey')
         setAdminKey('')
-        setNotice(noticeFor('Admin key invalid', 'warn', 3000))
+        setNotice(noticeFor(authError, 'warn', 3000))
         return
       }
       const result = await response.json()
@@ -566,10 +602,11 @@ function App() {
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ id })
       })
-      if (response.status === 403) {
+      const authError = adminResponseError(response)
+      if (authError) {
         sessionStorage.removeItem('adminKey')
         setAdminKey('')
-        setNotice(noticeFor('Admin key invalid', 'warn', 3000))
+        setNotice(noticeFor(authError, 'warn', 3000))
         return
       }
       const result = await response.json()

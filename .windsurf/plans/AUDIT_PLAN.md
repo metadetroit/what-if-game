@@ -725,7 +725,7 @@ Merges a round's results into persistent tournament scores:
 |---------|-------|
 | `pingTimeout` | 120000ms (2 minutes) |
 | `pingInterval` | 25000ms (25 seconds) |
-| CORS | `process.env.CORS_ORIGIN` or `*` |
+| CORS | Exact comma-separated `process.env.CORS_ORIGIN` allowlist shared by Express and Socket.IO; defined non-matches rejected |
 
 ### 12.6 Wake Lock (Client)
 
@@ -757,7 +757,7 @@ Merges a round's results into persistent tournament scores:
 
 ### 13.2 Admin REST API
 
-All admin endpoints require `x-admin-key` header matching `ADMIN_KEY = 'fluke-admin-2024'`.
+All admin endpoints require an `x-admin-key` header matching the runtime `ADMIN_KEY` environment variable. The environment variable has no source-controlled fallback.
 
 | Endpoint | Method | Purpose |
 |-----------|--------|---------|
