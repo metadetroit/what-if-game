@@ -144,7 +144,7 @@ function BestOfView({
       <div className="text-center mb-4 relative">
         <button
           onClick={onBack}
-          className="absolute top-0 left-0 flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors"
+          className="absolute top-0 left-0 flex items-center gap-1 text-white/60 hover:text-white text-sm font-medium transition-colors min-h-[44px] px-2"
           aria-label="Back to main screen"
         >
           ← Back

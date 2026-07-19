@@ -64,7 +64,7 @@ export default function AnsweringPhase({
           <form onSubmit={handleSubmit} className="contents">
             <label htmlFor="answer-input" className="sr-only">Your answer</label>
             <div className="input-field-shell active-textarea-height active-fill-mt">
-              <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your answer here..." autoComplete="off" autoCapitalize="sentences" aria-label="Your answer" className="input-field-shell__textarea resize-none active-input-text leading-snug" maxLength={400} />
+              <textarea id="answer-input" value={answer} onChange={(e) => { setAnswer(e.target.value); saveDraft(roomCodeRef.current, "answering", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your answer here..." autoComplete="off" autoCapitalize="sentences" enterKeyHint="send" aria-label="Your answer" className="input-field-shell__textarea resize-none active-input-text leading-snug" maxLength={400} />
               <div className="input-field-shell__footer active-counter-text" aria-label={`${answer.length} of 400 characters used`}>
                 <span>{answer.length}/400</span>
               </div>
@@ -77,7 +77,7 @@ export default function AnsweringPhase({
             <div className={"w-full h-1.5 rounded-full overflow-hidden " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-900/30" : "bg-gray-800")}><div className={"h-full transition-all duration-500 " + (!submitted && progress.submitted === progress.total - 1 && progress.total > 1 ? "bg-red-500 animate-pulse" : "bg-indigo-500")} style={{ width: (progress.total > 0 ? (progress.submitted / progress.total) * 100 : 0) + "%" }} /></div>
           </div>
           {canForceAdvance && (
-            <button onClick={() => setForceConfirm(true)} className="active-fill-mt active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-4 py-3 hover:bg-red-900/20 transition-colors">
+            <button onClick={() => setForceConfirm(true)} className="active-fill-mt active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-4 py-3 min-h-[44px] hover:bg-red-900/20 transition-colors">
               <span>⚡ Force Advance (skip waiting players)</span>
             </button>
           )}

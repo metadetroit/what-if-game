@@ -159,7 +159,7 @@ export default function ScoreboardView({
         </div>
         {showRelative && (
           <div className="text-center mt-3">
-            <button onClick={() => setShowAll(true)} className="text-sm text-indigo-300 hover:text-indigo-200 underline py-1">
+            <button onClick={() => setShowAll(true)} className="text-sm text-indigo-300 hover:text-indigo-200 underline py-1 min-h-[44px] px-2">
               Show all {standings.length} players
             </button>
           </div>
@@ -171,7 +171,7 @@ export default function ScoreboardView({
         <div className="text-center">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors py-1"
+            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors py-1 min-h-[44px] px-2"
           >
             {showHistory ? "▾ Hide Scoring History" : "▸ Show Scoring History"}
           </button>
