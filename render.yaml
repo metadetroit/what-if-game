@@ -1,10 +1,10 @@
 services:
-  # Backend Web Service (also serves frontend)
+  # Authoritative single-service Render Blueprint.
   - type: web
     name: what-if-game-backend
     runtime: node
-    buildCommand: cd .. && npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend
-    startCommand: npm start
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: cd backend && npm start
     envVars:
       - key: PORT
         value: 10000
