@@ -756,19 +756,23 @@ function App() {
     }
     let cancelled = false
     const requestWakeLock = () => {
-      if (cancelled || document.visibilityState !== "visible" || !activePhases.includes(gameStateRef.current)) return
-      navigator.wakeLock.request("screen").then(lock => {
-        if (cancelled) { lock.release(); return }
-        wakeLockRef.current = lock
-        lock.addEventListener("release", () => {
-          if (!cancelled) {
-            wakeLockRef.current = null
-            // The browser may release the lock automatically (e.g. screen dim).
-            // Re-acquire if we are still in an active phase and visible.
-            requestWakeLock()
-          }
-        })
-      }).catch(() => {})
+      if (cancelled || document.visibilityState !== "visible" || !activePhases.includes(gameStateRef.current) || !("wakeLock" in navigator)) return
+      try {
+        navigator.wakeLock.request("screen").then(lock => {
+          if (cancelled) { lock.release(); return }
+          wakeLockRef.current = lock
+          lock.addEventListener("release", () => {
+            if (!cancelled) {
+              wakeLockRef.current = null
+              // The browser may release the lock automatically (e.g. screen dim).
+              // Re-acquire if we are still in an active phase and visible.
+              requestWakeLock()
+            }
+          })
+        }).catch(() => {})
+      } catch {
+        // API may have disappeared (e.g. polyfill or extreme devtools tampering). Ignore silently.
+      }
     }
     const onVisible = () => {
       if (document.visibilityState === "visible") requestWakeLock()
