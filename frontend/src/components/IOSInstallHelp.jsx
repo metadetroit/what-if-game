@@ -27,7 +27,7 @@ export default function IOSInstallHelp({ onClose }) {
         </div>
         <button
           onClick={onClose}
-          className="btn-primary w-full py-2 text-sm bg-purple-600 hover:bg-purple-700"
+          className="btn-primary w-full py-2 text-sm bg-purple-600 hover:bg-purple-700 min-h-[44px]"
         >
           Got it
         </button>

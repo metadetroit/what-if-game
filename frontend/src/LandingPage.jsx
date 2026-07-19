@@ -332,9 +332,9 @@ export default function LandingPage({
                   <button
                     type="button"
                     onClick={() => (isIOS ? setShowIOSHelp(true) : promptInstall())}
-                    className="w-full text-center text-sm text-fuchsia-300 hover:text-fuchsia-200 underline underline-offset-4 min-h-[44px] px-2 py-1"
+                    className="w-full rounded-xl border border-fuchsia-500/30 bg-fuchsia-950/20 px-4 py-3 text-sm font-semibold text-fuchsia-200 hover:bg-fuchsia-900/30 transition-colors min-h-[48px] flex items-center justify-center gap-2"
                   >
-                    Play fullscreen (Install app) →
+                    {isIOS ? "📱 Add to Home Screen" : "📥 Install app for fullscreen"}
                   </button>
                 ) : (
                   <input
@@ -413,7 +413,7 @@ export default function LandingPage({
               rel="noopener noreferrer"
               aria-label="Share on X (Twitter)"
               title="Share on X / Twitter"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
             >
               <IconX />
             </a>
@@ -423,7 +423,7 @@ export default function LandingPage({
               rel="noopener noreferrer"
               aria-label="Share on Facebook"
               title="Share on Facebook"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
             >
               <IconFacebook />
             </a>
@@ -437,7 +437,7 @@ export default function LandingPage({
                 }}
                 aria-label="Copy URL"
                 title="Copy URL"
-                className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                className="hidden sm:flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
                 {copied ? <IconCheck /> : <IconCopy />}
               </button>
@@ -449,7 +449,7 @@ export default function LandingPage({
                 }}
                 aria-label="Share via device"
                 title="Share via your device"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[#E6E1FF]/70 hover:bg-white/10 hover:text-[#E6E1FF] transition-colors"
               >
                 <IconShare />
               </button>
