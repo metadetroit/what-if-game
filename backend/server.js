@@ -8,6 +8,7 @@ const { initDatabase, getDb, saveDatabase } = require('./database');
 const { calculateRoundPoints, tallyRound, mergeRoundScores, resolveStandings } = require('./tournament');
 
 const app = express();
+app.set('trust proxy', 1);
 
 function getConfiguredCorsOrigins() {
   return (process.env.CORS_ORIGIN || '')
@@ -489,9 +490,22 @@ const VOTE_RATE_LIMIT_MS = 500;
 const connectionRateLimits = new Map();
 const CONNECTION_COOLDOWN_MS = 3000;
 
-function generateRoomCode() {
+async function generateRoomCode() {
   const existingCodes = new Set(Object.keys(games));
-  for (let attempt = 0; attempt < 50; attempt++) {
+
+  // Also avoid codes already persisted in the database from previous sessions
+  try {
+    const db = getDb();
+    const result = await db.exec("SELECT room_code FROM games");
+    const rows = result[0]?.values || [];
+    for (const row of rows) {
+      if (row[0]) existingCodes.add(row[0]);
+    }
+  } catch (e) {
+    // If the DB query fails, fall back to in-memory check and continue
+  }
+
+  for (let attempt = 0; attempt < 100; attempt++) {
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     if (!existingCodes.has(code) && !recentRoomCodes.has(code)) {
       recentRoomCodes.add(code);
@@ -704,7 +718,7 @@ io.on('connection', (socket) => {
       return;
     }
     const cleanName = playerName.trim().substring(0, 20);
-    const roomCode = generateRoomCode();
+    const roomCode = await generateRoomCode();
     
     const game = {
       host: socket.id,
@@ -722,17 +736,24 @@ io.on('connection', (socket) => {
       tournament: null,   // Set when host starts a tournament game
       voteWriteQueue: Promise.resolve() // Serializes vote DB writes for atomic tallying
     };
+    
+    // Save game to database first so a duplicate room_code cannot leave stale state
+    let gameId;
+    try {
+      const db = getDb();
+      await db.run("INSERT INTO games (room_code, anonymous_mode, hidden_from_best_of) VALUES (?, ?, ?)", [roomCode, 0, 0]);
+      const gameIdResult = await db.exec("SELECT last_insert_rowid() as id");
+      gameId = gameIdResult[0].values[0][0];
+    } catch (err) {
+      console.error(`Failed to create room ${roomCode} in database:`, err.message);
+      callback({ success: false, error: 'Unable to create room. Please try again.' });
+      return;
+    }
+    game.dbGameId = gameId;
     games[roomCode] = game;
     
     socket.join(roomCode);
     socket.roomCode = roomCode;
-    
-    // Save game to database
-    const db = getDb();
-    await db.run("INSERT INTO games (room_code, anonymous_mode, hidden_from_best_of) VALUES (?, ?, ?)", [roomCode, 0, 0]);
-    const gameIdResult = await db.exec("SELECT last_insert_rowid() as id");
-    const gameId = gameIdResult[0].values[0][0];
-    game.dbGameId = gameId;
     
     callback({ success: true, roomCode });
     console.log(`Room ${roomCode} created by ${cleanName}`);
