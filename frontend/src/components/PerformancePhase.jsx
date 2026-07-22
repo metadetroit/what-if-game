@@ -55,9 +55,11 @@ export default function PerformancePhase({
       )}
       {currentTurn ? (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="phase-banner active-fill-mt">
-            <span>Phase 3</span>
-            <strong className="active-heading-text">Performance Time</strong>
+          <div className="active-phase-header active-phase-header--performance active-fill-mt" data-phase="performance">
+            <div className="active-phase-header__title">
+              <span className="active-phase-header__phase">Phase 3</span>
+              <strong className="active-phase-header__task">Performance Time</strong>
+            </div>
           </div>
           <div className="performance-stage">
             {(isQuestionReader || isAnswerReader) ? (
@@ -66,28 +68,30 @@ export default function PerformancePhase({
                   {isQuestionReader ? "Read the question" : "Read the answer"}
                 </TurnStatus>
                 {isQuestionReader && (
-                  <div className="card performance-content-card active-card-padding bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-lg" role="region" aria-label="Question to read" tabIndex={0}>
-                    <p className="text-center active-body-text font-bold text-white leading-relaxed break-words">
-                      <span className="text-white/50 active-heading-text mx-1">"</span>
+                  <div className="card performance-content-card performance-content-card--question active-card-padding" role="region" aria-label="Question to read" tabIndex={0}>
+                    <span className="performance-content-card__label">Question</span>
+                    <p className="performance-reading-text text-center font-bold text-white break-words">
+                      <span className="performance-reading-text__quote" aria-hidden="true">“</span>
                       {currentTurn.question}
-                      <span className="text-white/50 active-heading-text mx-1">"</span>
+                      <span className="performance-reading-text__quote" aria-hidden="true">”</span>
                     </p>
                   </div>
                 )}
                 {isAnswerReader && currentTurn.answer && (
-                  <div className="card performance-content-card active-card-padding bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-lg" role="region" aria-label="Answer to read" tabIndex={0}>
-                    <p className="text-center active-body-text font-bold text-white leading-relaxed break-words">
-                      <span className="text-white/50 active-heading-text mx-1">"</span>
+                  <div className="card performance-content-card performance-content-card--answer active-card-padding" role="region" aria-label="Answer to read" tabIndex={0}>
+                    <span className="performance-content-card__label">Answer</span>
+                    <p className="performance-reading-text text-center font-bold text-white break-words">
+                      <span className="performance-reading-text__quote" aria-hidden="true">“</span>
                       {currentTurn.answer}
-                      <span className="text-white/50 active-heading-text mx-1">"</span>
+                      <span className="performance-reading-text__quote" aria-hidden="true">”</span>
                     </p>
                   </div>
                 )}
                 {!hasRead && isQuestionReader && (
-                  <button onClick={completeReading} aria-label="Done reading question" className={`btn-primary done-reading-button essential-reduced-motion bg-green-600 hover:bg-green-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
+                  <button onClick={completeReading} aria-label="Done reading question" className={`btn-primary done-reading-button done-reading-button--question essential-reduced-motion active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
                 )}
                 {!hasRead && isAnswerReader && (
-                  <button onClick={completeReading} aria-label="Done reading answer" className={`btn-primary done-reading-button essential-reduced-motion bg-purple-600 hover:bg-purple-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
+                  <button onClick={completeReading} aria-label="Done reading answer" className={`btn-primary done-reading-button done-reading-button--answer essential-reduced-motion active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
                 )}
               </div>
             ) : (
@@ -108,16 +112,16 @@ export default function PerformancePhase({
               </div>
             )}
           </div>
-          <div className="shrink-0 pt-2 border-t border-gray-800">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-xs md:text-sm text-gray-500">Turn {gameStats.round}/{gameStats.total}</span>
+          <div className="performance-footer shrink-0">
+            <div className="performance-footer__turn">
+              <span className="active-secondary-text text-gray-400">Turn {gameStats.round}/{gameStats.total}</span>
               <div className="flex justify-center gap-1">
                 {Array.from({ length: gameStats.total }).map((_, i) => (
                   <div key={i} className={"w-2.5 h-2.5 md:w-2 md:h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
                 ))}
               </div>
             </div>
-            {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2">{error}</div>)}
+            {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-300 active-secondary-text text-center mt-2">{error}</div>)}
             {(() => {
               const isSelfContent = currentContent && socketRef.current?.id === currentContent.authorId
               const alreadyReacted = currentContent && myReactions.has(currentContent.dbId)
@@ -126,10 +130,10 @@ export default function PerformancePhase({
               return (
                 <div className="flex justify-center gap-2 mt-2">
                   {isSelfContent && (
-                    <span className="text-xs text-gray-500 self-center mr-1">You wrote this — no self-reactions</span>
+                    <span className="active-secondary-text text-gray-400 self-center mr-1">You wrote this — no self-reactions</span>
                   )}
                   {alreadyReacted && !isSelfContent && (
-                    <span className="text-xs text-gray-500 self-center mr-1">You reacted ✓</span>
+                    <span className="active-secondary-text text-gray-400 self-center mr-1">You reacted ✓</span>
                   )}
                   {['❤️', '😂', '❓'].map(emoji => {
                     const count = currentCounts?.[emoji] || 0
