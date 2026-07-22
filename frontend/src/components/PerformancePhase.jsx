@@ -23,10 +23,11 @@ export default function PerformancePhase({
 }) {
   const [showPrompt, setShowPrompt] = useState(false)
 
-  const isActiveReader = currentTurn && !hasRead && (
-    (currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id) ||
-    (!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id)
-  )
+  const isQuestionReaderSocket = currentTurn && socket?.id === currentTurn?.questionReader?.id
+  const isAnswerReaderSocket = currentTurn && socket?.id === currentTurn?.answerReader?.id
+  const isQuestionReader = currentTurn?.isQuestionTurn && isQuestionReaderSocket
+  const isAnswerReader = currentTurn && !currentTurn.isQuestionTurn && isAnswerReaderSocket
+  const isActiveReader = currentTurn && !hasRead && (isQuestionReader || isAnswerReader)
 
   useEffect(() => {
     if (!isActiveReader) {
@@ -59,61 +60,20 @@ export default function PerformancePhase({
             <strong className="active-heading-text">Performance Time</strong>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-            <div className="shrink-0 mb-1">
-              {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-                <div>
-                  <div className="flex justify-center mb-1"><TurnStatus status="active">Read aloud now</TurnStatus></div>
-                  <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-lg shadow-green-900/40">
-                    <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ QUESTION</span>
-                    <p className="text-green-100 active-body-text mt-1">Read aloud, then tap Done</p>
-                  </div>
-                </div>
-              )}
-              {!currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-                <div>
-                  <div className="flex justify-center mb-1"><TurnStatus status="watch">Watch and listen</TurnStatus></div>
-                  <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                    <span className="font-bubble active-heading-text font-bold text-gray-400">WAITING</span>
-                    <p className="text-gray-500 active-body-text mt-1 truncate px-2">{currentTurn.answerReader.name} is reading the answer</p>
-                  </div>
-                </div>
-              )}
-              {currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
-                <div>
-                  <div className="text-center mb-2">
-                    <TurnStatus status="next">You’re reading next</TurnStatus>
-                    <span className="inline-flex items-center gap-1.5 active-body-text text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30 max-w-full min-w-0">
-                      <span className="text-base">🎤</span>
-                      <span className="truncate min-w-0"><span className="font-medium truncate">{currentTurn.questionReader.name}</span> is reading the question to you</span>
-                    </span>
-                  </div>
-                  <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-lg shadow-purple-900/40">
-                    <span className="font-bubble active-heading-text font-black text-white tracking-wider">GET READY</span>
-                    <p className="text-purple-100 active-body-text mt-1">You're reading the answer next</p>
-                  </div>
-                </div>
-              )}
-              {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
-                <div>
-                  <div className="flex justify-center mb-1"><TurnStatus status="active">Read aloud now</TurnStatus></div>
-                  <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-lg shadow-purple-900/40">
-                    <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ ANSWER</span>
-                    <p className="text-purple-100 active-body-text mt-1">Read aloud, then tap Done</p>
-                  </div>
-                </div>
-              )}
-              {socket?.id !== currentTurn.questionReader.id && socket?.id !== currentTurn.answerReader.id && (
-                <div className="card bg-gray-800 border-2 border-gray-700 mb-2 py-3 px-4 text-center">
-                  <p className="text-gray-300 active-body-text truncate">
-                    <span className="text-green-400 font-bold active-heading-text truncate">{currentTurn.questionReader.name}</span>
-                    <span className="text-gray-500 mx-2">→</span>
-                    <span className="text-purple-400 font-bold active-heading-text truncate">{currentTurn.answerReader.name}</span>
-                  </p>
-                  <p className="text-gray-500 active-body-text mt-2">{currentTurn.isQuestionTurn ? "Question being read" : "Answer being read"}</p>
-                </div>
+            <div className="shrink-0 mb-1 flex justify-center">
+              {isQuestionReader ? (
+                <TurnStatus status="active" sub="Read aloud, then tap Done">Read the question</TurnStatus>
+              ) : isAnswerReader ? (
+                <TurnStatus status="active" sub="Read aloud, then tap Done">Read the answer</TurnStatus>
+              ) : currentTurn?.isQuestionTurn && isAnswerReaderSocket ? (
+                <TurnStatus status="next" sub={`${currentTurn.questionReader.name} is reading the question`}>You read the answer</TurnStatus>
+              ) : (
+                <TurnStatus status="watch" sub={`${currentTurn.questionReader.name} → ${currentTurn.answerReader.name}`}>
+                  {currentTurn?.isQuestionTurn ? "Question being read" : "Answer being read"}
+                </TurnStatus>
               )}
             </div>
-            {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
+            {isQuestionReader && (
               <div className="card active-card-padding bg-gradient-to-br from-green-600 to-green-800 border-4 border-green-400 shadow-lg active-fill-mt overflow-y-auto min-h-0">
                 <p className="text-center active-body-text font-bold text-white leading-relaxed break-words">
                   <span className="text-white/50 active-heading-text mx-1">"</span>
@@ -122,7 +82,7 @@ export default function PerformancePhase({
                 </p>
               </div>
             )}
-            {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && currentTurn.answer && (
+            {isAnswerReader && currentTurn.answer && (
               <div className="card active-card-padding bg-gradient-to-br from-purple-600 to-purple-800 border-4 border-purple-400 shadow-lg active-fill-mt overflow-y-auto min-h-0">
                 <p className="text-center active-body-text font-bold text-white leading-relaxed break-words">
                   <span className="text-white/50 active-heading-text mx-1">"</span>
@@ -131,11 +91,11 @@ export default function PerformancePhase({
                 </p>
               </div>
             )}
-            {!hasRead && currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-              <button onClick={completeReading} className={`btn-primary active-fill-mt bg-green-600 hover:bg-green-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 ring-offset-2 ring-offset-green-600 animate-pulse" : ""}`}>Done Reading →</button>
+            {!hasRead && isQuestionReader && (
+              <button onClick={completeReading} aria-label="Done reading question" className={`btn-primary active-fill-mt bg-green-600 hover:bg-green-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
             )}
-            {!hasRead && !currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
-              <button onClick={completeReading} className={`btn-primary active-fill-mt bg-purple-600 hover:bg-purple-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 ring-offset-2 ring-offset-purple-600 animate-pulse" : ""}`}>Done Reading →</button>
+            {!hasRead && isAnswerReader && (
+              <button onClick={completeReading} aria-label="Done reading answer" className={`btn-primary active-fill-mt bg-purple-600 hover:bg-purple-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
             )}
           </div>
           <div className="shrink-0 pt-2 border-t border-gray-800">

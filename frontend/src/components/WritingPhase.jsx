@@ -63,10 +63,6 @@ export default function WritingPhase({
             <span>Phase 1</span>
             <strong className="active-heading-text">Question Time</strong>
           </div>
-          <div className="text-center active-fill-mt">
-            <h2 className="font-bubble active-heading-text font-bold text-white leading-tight">Write a Question</h2>
-            <p className="active-body-text text-indigo-400 leading-tight">Must begin with "What if..."</p>
-          </div>
           <form onSubmit={handleSubmit} className="contents">
             <label htmlFor="question-input" className="sr-only">Your question</label>
             <div className="input-field-shell active-textarea-height active-fill-mt">
@@ -89,23 +85,21 @@ export default function WritingPhase({
           </div>
           {canForceAdvance && (
             <button onClick={() => setForceConfirm(true)} className="active-fill-mt active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-4 py-3 min-h-[44px] hover:bg-red-900/20 transition-colors">
-              <span>⚡ Force Advance (skip waiting players)</span>
+              <span>⚡ Force Advance</span>
             </button>
           )}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center text-center gap-2 min-h-0">
+        <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 flex flex-col items-center text-center gap-2 min-h-0 w-full">
-            <div className="w-10 h-10 bg-green-900/30 rounded-full flex items-center justify-center mb-1"><span className="text-xl">✓</span></div>
-            <h3 className="font-bubble text-lg font-bold text-white mb-0.5">Submitted!</h3>
-            <TurnStatus status="watch">Waiting for other players</TurnStatus>
+            <TurnStatus status="watch">Submitted — waiting for other players</TurnStatus>
             {renderWaitingPanel('writing')}
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2 max-w-xs">{error}</div>)}
           </div>
           {canForceAdvance && (
-            <div className="host-nudge shrink-0 mt-1 justify-center">
-              <button onClick={() => setForceConfirm(true)}>Skip waiting players</button>
-            </div>
+            <button onClick={() => setForceConfirm(true)} className="active-fill-mt active-body-text text-red-500 border-2 border-fuchsia-500/30 bg-fuchsia-950/10 rounded-lg px-4 py-3 min-h-[44px] hover:bg-red-900/20 transition-colors shrink-0">
+              <span>⚡ Force Advance</span>
+            </button>
           )}
         </div>
       )}
