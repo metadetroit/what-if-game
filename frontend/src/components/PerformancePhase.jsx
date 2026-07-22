@@ -30,30 +30,34 @@ export default function PerformancePhase({
 
   let turnMode = 'watch'
   let turnLabel = 'WATCHING'
-  let turnTitle = currentTurn?.isQuestionTurn
-    ? `${currentTurn.questionReader.name} is reading the question`
-    : `${currentTurn.answerReader.name} is reading the answer`
+  let turnTitle = ''
   let turnSub = ''
 
-  if (isActiveReader) {
-    turnMode = 'active'
-    turnLabel = 'YOUR TURN'
-    turnTitle = isQuestionReader ? 'Read the question' : 'Read the answer'
-    turnSub = 'Read aloud, then tap Done'
-  } else if (currentTurn?.isQuestionTurn && isAnswerReaderSocket) {
-    turnMode = 'next'
-    turnLabel = 'UP NEXT'
-    turnTitle = 'You read the answer next'
-    turnSub = `${currentTurn.questionReader.name} is reading the question`
-  } else if (!currentTurn?.isQuestionTurn && isQuestionReaderSocket) {
-    turnMode = 'next'
-    turnLabel = 'UP NEXT'
-    turnTitle = 'You read the question next'
-    turnSub = `${currentTurn.answerReader.name} is reading the answer`
-  } else {
-    turnSub = currentTurn?.isQuestionTurn
-      ? `Next: ${currentTurn.answerReader.name} reads the answer`
-      : `Question read by ${currentTurn.questionReader.name}`
+  if (currentTurn) {
+    turnTitle = currentTurn.isQuestionTurn
+      ? `${currentTurn.questionReader.name} is reading the question`
+      : `${currentTurn.answerReader.name} is reading the answer`
+
+    if (isActiveReader) {
+      turnMode = 'active'
+      turnLabel = 'YOUR TURN'
+      turnTitle = isQuestionReader ? 'Read the question' : 'Read the answer'
+      turnSub = 'Read aloud, then tap Done'
+    } else if (currentTurn.isQuestionTurn && isAnswerReaderSocket) {
+      turnMode = 'next'
+      turnLabel = 'UP NEXT'
+      turnTitle = 'You read the answer next'
+      turnSub = `${currentTurn.questionReader.name} is reading the question`
+    } else if (!currentTurn.isQuestionTurn && isQuestionReaderSocket) {
+      turnMode = 'next'
+      turnLabel = 'UP NEXT'
+      turnTitle = 'You read the question next'
+      turnSub = `${currentTurn.answerReader.name} is reading the answer`
+    } else {
+      turnSub = currentTurn.isQuestionTurn
+        ? `Next: ${currentTurn.answerReader.name} reads the answer`
+        : `Question read by ${currentTurn.questionReader.name}`
+    }
   }
 
   useEffect(() => {

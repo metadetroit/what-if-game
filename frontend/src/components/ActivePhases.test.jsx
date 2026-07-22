@@ -170,6 +170,11 @@ describe('Performance phase roles and content', () => {
     expect(screen.queryByText('Turn 1/4')).not.toBeInTheDocument()
   })
 
+  it('renders Get Ready fallback without crashing when currentTurn is null', () => {
+    render(<PerformancePhase {...performanceProps({ currentTurn: null })} />)
+    expect(screen.getByText('Get Ready!')).toBeInTheDocument()
+  })
+
   it('renders explicit up-next and spectator handoff wording for both turn halves', () => {
     const { rerender } = render(
       <PerformancePhase
