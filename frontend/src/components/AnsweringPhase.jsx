@@ -53,7 +53,7 @@ export default function AnsweringPhase({
           <div className="active-phase-header active-phase-header--answering active-fill-mt" data-phase="answering">
             <div className="active-phase-header__title">
               <span className="active-phase-header__phase">Phase 2</span>
-              <strong className="active-phase-header__task">Write your answer</strong>
+              <strong className="active-phase-header__task">Answer this question</strong>
             </div>
             {(anonymousMode || speedScoringEnabled) && (
               <div className="active-phase-header__badges">

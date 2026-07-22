@@ -108,7 +108,7 @@ describe('Writing and Answering active phases', () => {
     )
 
     expect(screen.getByText('Phase 2')).toBeInTheDocument()
-    expect(screen.getByText('Write your answer')).toBeInTheDocument()
+    expect(screen.getByText('Answer this question')).toBeInTheDocument()
     expect(screen.queryByText('YOUR TURN')).not.toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Question to answer' })).toHaveClass('answer-prompt-card')
     expect(container.querySelector('[data-phase="answering"]')).toHaveClass('active-phase-header--answering')
@@ -146,6 +146,7 @@ describe('Performance phase roles and content', () => {
     expect(screen.getByText('YOUR TURN')).toBeInTheDocument()
     expect(screen.getByText('Read the question')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Question to read' })).toHaveClass('performance-content-card--question')
+    expect(screen.queryByText('Turn 1/4')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Done reading question' }))
     expect(completeReading).toHaveBeenCalledOnce()
@@ -166,6 +167,7 @@ describe('Performance phase roles and content', () => {
     expect(screen.getByText('Read the answer')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Answer to read' })).toHaveClass('performance-content-card--answer')
     expect(screen.getByRole('button', { name: 'Done reading answer' })).toBeInTheDocument()
+    expect(screen.queryByText('Turn 1/4')).not.toBeInTheDocument()
   })
 
   it('renders explicit up-next and spectator handoff wording for both turn halves', () => {
@@ -181,13 +183,16 @@ describe('Performance phase roles and content', () => {
     expect(screen.getByText('UP NEXT')).toBeInTheDocument()
     expect(screen.getByText('You read the answer next')).toBeInTheDocument()
     expect(screen.getByText(`${currentTurn.questionReader.name} is reading the question`)).toBeInTheDocument()
+    expect(screen.getByText('Turn 1/4')).toBeInTheDocument()
 
     rerender(<PerformancePhase {...performanceProps()} />)
     expect(screen.getByText('WATCHING')).toBeInTheDocument()
     expect(screen.getByText(`Next: ${currentTurn.answerReader.name} reads the answer`)).toBeInTheDocument()
+    expect(screen.getByText('Turn 1/4')).toBeInTheDocument()
 
     rerender(<PerformancePhase {...performanceProps({ currentTurn: { ...currentTurn, isQuestionTurn: false } })} />)
     expect(screen.getByText(`${currentTurn.answerReader.name} is reading the answer`)).toBeInTheDocument()
     expect(screen.getByText(`Question read by ${currentTurn.questionReader.name}`)).toBeInTheDocument()
+    expect(screen.getByText('Turn 1/4')).toBeInTheDocument()
   })
 })

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react"
-import TurnStatus from "./TurnStatus"
 
 export default function PerformancePhase({
   currentTurn,
@@ -29,6 +28,34 @@ export default function PerformancePhase({
   const isAnswerReader = currentTurn && !currentTurn.isQuestionTurn && isAnswerReaderSocket
   const isActiveReader = currentTurn && !hasRead && (isQuestionReader || isAnswerReader)
 
+  let turnMode = 'watch'
+  let turnLabel = 'WATCHING'
+  let turnTitle = currentTurn?.isQuestionTurn
+    ? `${currentTurn.questionReader.name} is reading the question`
+    : `${currentTurn.answerReader.name} is reading the answer`
+  let turnSub = ''
+
+  if (isActiveReader) {
+    turnMode = 'active'
+    turnLabel = 'YOUR TURN'
+    turnTitle = isQuestionReader ? 'Read the question' : 'Read the answer'
+    turnSub = 'Read aloud, then tap Done'
+  } else if (currentTurn?.isQuestionTurn && isAnswerReaderSocket) {
+    turnMode = 'next'
+    turnLabel = 'UP NEXT'
+    turnTitle = 'You read the answer next'
+    turnSub = `${currentTurn.questionReader.name} is reading the question`
+  } else if (!currentTurn?.isQuestionTurn && isQuestionReaderSocket) {
+    turnMode = 'next'
+    turnLabel = 'UP NEXT'
+    turnTitle = 'You read the question next'
+    turnSub = `${currentTurn.answerReader.name} is reading the answer`
+  } else {
+    turnSub = currentTurn?.isQuestionTurn
+      ? `Next: ${currentTurn.answerReader.name} reads the answer`
+      : `Question read by ${currentTurn.questionReader.name}`
+  }
+
   useEffect(() => {
     if (!isActiveReader) {
       setShowPrompt(false)
@@ -55,72 +82,67 @@ export default function PerformancePhase({
       )}
       {currentTurn ? (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="active-phase-header active-phase-header--performance active-fill-mt" data-phase="performance">
+          <div
+            className={`active-phase-header active-phase-header--performance active-phase-header--turn-${turnMode} active-fill-mt`}
+            data-phase="performance"
+            data-turn={turnMode}
+            aria-live="polite"
+            aria-atomic="true"
+          >
             <div className="active-phase-header__title">
               <span className="active-phase-header__phase">Phase 3</span>
               <strong className="active-phase-header__task">Performance Time</strong>
             </div>
+            <div className={`active-phase-header__turn active-phase-header__turn--${turnMode}`}>
+              <div className="active-phase-header__turn-role">
+                <span className={`active-phase-header__turn-dot active-phase-header__turn-dot--${turnMode}`} aria-hidden="true" />
+                <span className="active-phase-header__turn-label">{turnLabel}</span>
+              </div>
+              <div className="active-phase-header__turn-title">{turnTitle}</div>
+              {turnSub && <div className="active-phase-header__turn-sub">{turnSub}</div>}
+            </div>
           </div>
           <div className="performance-stage">
-            {(isQuestionReader || isAnswerReader) ? (
-              <div className="performance-reading-stack">
-                <TurnStatus status="active" sub="Read aloud, then tap Done">
-                  {isQuestionReader ? "Read the question" : "Read the answer"}
-                </TurnStatus>
-                {isQuestionReader && (
-                  <div className="card performance-content-card performance-content-card--question active-card-padding" role="region" aria-label="Question to read" tabIndex={0}>
-                    <span className="performance-content-card__label">Question</span>
-                    <p className="performance-reading-text text-center font-bold text-white break-words">
-                      <span className="performance-reading-text__quote" aria-hidden="true">“</span>
-                      {currentTurn.question}
-                      <span className="performance-reading-text__quote" aria-hidden="true">”</span>
-                    </p>
-                  </div>
-                )}
-                {isAnswerReader && currentTurn.answer && (
-                  <div className="card performance-content-card performance-content-card--answer active-card-padding" role="region" aria-label="Answer to read" tabIndex={0}>
-                    <span className="performance-content-card__label">Answer</span>
-                    <p className="performance-reading-text text-center font-bold text-white break-words">
-                      <span className="performance-reading-text__quote" aria-hidden="true">“</span>
-                      {currentTurn.answer}
-                      <span className="performance-reading-text__quote" aria-hidden="true">”</span>
-                    </p>
-                  </div>
-                )}
-                {!hasRead && isQuestionReader && (
-                  <button onClick={completeReading} aria-label="Done reading question" className={`btn-primary done-reading-button done-reading-button--question essential-reduced-motion active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
-                )}
-                {!hasRead && isAnswerReader && (
-                  <button onClick={completeReading} aria-label="Done reading answer" className={`btn-primary done-reading-button done-reading-button--answer essential-reduced-motion active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
-                )}
-              </div>
-            ) : (
-              <div className="performance-status-stage">
-                {currentTurn.isQuestionTurn && isAnswerReaderSocket ? (
-                  <TurnStatus status="next" sub={`${currentTurn.questionReader.name} is reading the question`}>
-                    You read the answer next
-                  </TurnStatus>
-                ) : currentTurn.isQuestionTurn ? (
-                  <TurnStatus status="watch" sub={`Next: ${currentTurn.answerReader.name} reads the answer`}>
-                    {currentTurn.questionReader.name} is reading the question
-                  </TurnStatus>
-                ) : (
-                  <TurnStatus status="watch" sub={`Question read by ${currentTurn.questionReader.name}`}>
-                    {currentTurn.answerReader.name} is reading the answer
-                  </TurnStatus>
-                )}
-              </div>
-            )}
+            <div className="performance-reading-stack">
+              {isQuestionReader && (
+                <div className="card performance-content-card performance-content-card--question active-card-padding" role="region" aria-label="Question to read" tabIndex={0}>
+                  <span className="performance-content-card__label">Question</span>
+                  <p className="performance-reading-text text-center font-bold text-white break-words">
+                    <span className="performance-reading-text__quote" aria-hidden="true">“</span>
+                    {currentTurn.question}
+                    <span className="performance-reading-text__quote" aria-hidden="true">”</span>
+                  </p>
+                </div>
+              )}
+              {isAnswerReader && currentTurn.answer && (
+                <div className="card performance-content-card performance-content-card--answer active-card-padding" role="region" aria-label="Answer to read" tabIndex={0}>
+                  <span className="performance-content-card__label">Answer</span>
+                  <p className="performance-reading-text text-center font-bold text-white break-words">
+                    <span className="performance-reading-text__quote" aria-hidden="true">“</span>
+                    {currentTurn.answer}
+                    <span className="performance-reading-text__quote" aria-hidden="true">”</span>
+                  </p>
+                </div>
+              )}
+              {!hasRead && isQuestionReader && (
+                <button onClick={completeReading} aria-label="Done reading question" className={`btn-primary done-reading-button done-reading-button--question essential-reduced-motion active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
+              )}
+              {!hasRead && isAnswerReader && (
+                <button onClick={completeReading} aria-label="Done reading answer" className={`btn-primary done-reading-button done-reading-button--answer essential-reduced-motion active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 animate-pulse" : ""}`}>Done Reading →</button>
+              )}
+            </div>
           </div>
           <div className="performance-footer shrink-0">
-            <div className="performance-footer__turn">
-              <span className="active-secondary-text text-gray-400">Turn {gameStats.round}/{gameStats.total}</span>
-              <div className="flex justify-center gap-1">
-                {Array.from({ length: gameStats.total }).map((_, i) => (
-                  <div key={i} className={"w-2.5 h-2.5 md:w-2 md:h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
-                ))}
+            {!isActiveReader && (
+              <div className="performance-footer__turn">
+                <span className="active-secondary-text text-gray-400">Turn {gameStats.round}/{gameStats.total}</span>
+                <div className="flex justify-center gap-1">
+                  {Array.from({ length: gameStats.total }).map((_, i) => (
+                    <div key={i} className={"w-2.5 h-2.5 md:w-2 md:h-2 rounded-full " + (i < gameStats.round ? "bg-indigo-500" : i === gameStats.round - 1 ? "bg-white animate-pulse" : "bg-gray-700")} />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-300 active-secondary-text text-center mt-2">{error}</div>)}
             {(() => {
               const isSelfContent = currentContent && socketRef.current?.id === currentContent.authorId
