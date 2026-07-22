@@ -64,7 +64,7 @@ export default function WritingPhase({
           <form onSubmit={handleSubmit} className="contents">
             <label htmlFor="question-input" className="sr-only">Your question</label>
             <div className="input-field-shell phase-input-shell phase-input-shell--writing active-textarea-height active-fill-mt">
-              <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Type your question here" autoComplete="off" autoCapitalize="sentences" enterKeyHint="send" aria-label="Your question" className="input-field-shell__textarea resize-none active-input-text leading-snug" maxLength={300} />
+              <textarea id="question-input" value={question} onChange={(e) => { setQuestion(e.target.value); saveDraft(roomCodeRef.current, "writing", e.target.value) }} onKeyDown={handleKeyDown} placeholder="Must begin with 'What if'" autoComplete="off" autoCapitalize="sentences" enterKeyHint="send" aria-label="Your question" className="input-field-shell__textarea resize-none active-input-text leading-snug" maxLength={300} />
               <div className="input-field-shell__footer active-counter-text" aria-label={`${question.length} of 300 characters used`}>
                 <span>{question.length}/300</span>
               </div>
