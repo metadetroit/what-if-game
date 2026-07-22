@@ -148,34 +148,42 @@ function calculateRoundPoints(pairs, votesByPair, settings = {}) {
   if (settings.speedScoringEnabled && settings.speedData) {
     const { questionTimes, answerTimes, activePlayerCount } = settings.speedData;
 
-    // Fastest question author (+1)
+    // Fastest question author (+1, no bonus if the fastest time is tied)
     if (questionTimes && questionTimes.length > 0) {
       const sorted = [...questionTimes].sort((a, b) => a.ms - b.ms);
       const fastest = sorted[0];
-      speedDetails.fastestQ = fastest.name;
-      addSpeed(fastest.name, 1);
+      const fastestTied = sorted.length > 1 && sorted[0].ms === sorted[1].ms;
+      if (!fastestTied) {
+        speedDetails.fastestQ = fastest.name;
+        addSpeed(fastest.name, 1);
+      }
 
-      // Slowest question author (-1, only if 4+ players, >20s, and at least 2 submissions)
+      // Slowest question author (-1, only if 4+ players, >20s, at least 2 submissions, and not tied for slowest)
       if (activePlayerCount >= SLOWEST_MIN_PLAYERS && sorted.length > 1) {
         const slowest = sorted[sorted.length - 1];
-        if (slowest.ms > SLOWEST_THRESHOLD_MS) {
+        const secondSlowest = sorted[sorted.length - 2];
+        if (slowest.ms > SLOWEST_THRESHOLD_MS && slowest.ms !== secondSlowest.ms) {
           speedDetails.slowestQ = slowest.name;
           addSpeed(slowest.name, -1);
         }
       }
     }
 
-    // Fastest answer author (+1)
+    // Fastest answer author (+1, no bonus if the fastest time is tied)
     if (answerTimes && answerTimes.length > 0) {
       const sorted = [...answerTimes].sort((a, b) => a.ms - b.ms);
       const fastest = sorted[0];
-      speedDetails.fastestA = fastest.name;
-      addSpeed(fastest.name, 1);
+      const fastestTied = sorted.length > 1 && sorted[0].ms === sorted[1].ms;
+      if (!fastestTied) {
+        speedDetails.fastestA = fastest.name;
+        addSpeed(fastest.name, 1);
+      }
 
-      // Slowest answer author (-1, only if 4+ players, >20s, and at least 2 submissions)
+      // Slowest answer author (-1, only if 4+ players, >20s, at least 2 submissions, and not tied for slowest)
       if (activePlayerCount >= SLOWEST_MIN_PLAYERS && sorted.length > 1) {
         const slowest = sorted[sorted.length - 1];
-        if (slowest.ms > SLOWEST_THRESHOLD_MS) {
+        const secondSlowest = sorted[sorted.length - 2];
+        if (slowest.ms > SLOWEST_THRESHOLD_MS && slowest.ms !== secondSlowest.ms) {
           speedDetails.slowestA = slowest.name;
           addSpeed(slowest.name, -1);
         }

@@ -870,6 +870,11 @@ io.on('connection', (socket) => {
     game.players = activePlayers;
     game.phase = 'writing';
     game.writingPhaseStartedAt = Date.now();
+    game.questionPromptedAt = {};
+    for (const p of activePlayers) {
+      game.questionPromptedAt[p.id] = game.writingPhaseStartedAt;
+    }
+    game.answerPromptedAt = {};
     game.currentRoundAnonymousMode = game.anonymousMode;
 
     // Initialize tournament if host configured one
@@ -1045,11 +1050,13 @@ io.on('connection', (socket) => {
     player.hasSubmittedQuestion = true;
 
     console.log('submit-question: player found:', !!player, 'player name:', player?.name);
+    const questionPromptedAt = game.questionPromptedAt?.[socket.id] || game.writingPhaseStartedAt;
     game.questions[socket.id] = {
       text: question,
       authorId: socket.id,
       authorName: player?.name || 'Unknown',
-      submittedAt: Date.now()
+      submittedAt: Date.now(),
+      promptedAt: questionPromptedAt
     };
 
     // Save question to database
@@ -1177,6 +1184,10 @@ io.on('connection', (socket) => {
       
       game.phase = 'answering';
       game.answeringPhaseStartedAt = Date.now();
+      game.answerPromptedAt = {};
+      for (const pId of playerIds) {
+        game.answerPromptedAt[pId] = game.answeringPhaseStartedAt;
+      }
       console.log(`[distributeQuestions] Game phase set to 'answering'`);
 
       // Reset answer submission flags and transition guard for the new phase
@@ -1307,10 +1318,13 @@ io.on('connection', (socket) => {
 
     player.hasSubmittedAnswer = true;
     
+    const answerPromptedAt = game.answerPromptedAt?.[socket.id] || game.answeringPhaseStartedAt;
+
     try {
       game.answers[socket.id] = {
         text: answer,
         question: assignedQuestion,
+        promptedAt: answerPromptedAt,
         authorId: socket.id,
         authorName: player.name || 'Unknown',
         submittedAt: Date.now()
@@ -1965,19 +1979,21 @@ io.on('connection', (socket) => {
       const writingStart = game.writingPhaseStartedAt || 0;
       const answeringStart = game.answeringPhaseStartedAt || 0;
 
-      // Build question times from game.questions
+      // Build question times from game.questions (using per-player prompt timestamp when available)
       const questionTimes = [];
       for (const [socketId, q] of Object.entries(game.questions)) {
         if (q.submittedAt && q.authorName) {
-          questionTimes.push({ name: q.authorName, ms: q.submittedAt - writingStart });
+          const promptedAt = q.promptedAt || writingStart;
+          questionTimes.push({ name: q.authorName, ms: q.submittedAt - promptedAt });
         }
       }
 
-      // Build answer times from game.answers
+      // Build answer times from game.answers (using per-player prompt timestamp when available)
       const answerTimes = [];
       for (const [socketId, a] of Object.entries(game.answers)) {
         if (a.submittedAt && a.authorName) {
-          answerTimes.push({ name: a.authorName, ms: a.submittedAt - answeringStart });
+          const promptedAt = a.promptedAt || answeringStart;
+          answerTimes.push({ name: a.authorName, ms: a.submittedAt - promptedAt });
         }
       }
 
@@ -2111,6 +2127,11 @@ io.on('connection', (socket) => {
     const prevLastQuestionSubmitter = game.lastQuestionSubmitter;
     game.phase = 'writing';
     game.writingPhaseStartedAt = Date.now();
+    game.questionPromptedAt = {};
+    for (const p of getPlayingPlayers(game)) {
+      game.questionPromptedAt[p.id] = game.writingPhaseStartedAt;
+    }
+    game.answerPromptedAt = {};
     game.currentRoundAnonymousMode = game.anonymousMode;
     game.questions = {};
     game.answers = {};
@@ -2443,6 +2464,11 @@ io.on('connection', (socket) => {
 
     game.phase = 'writing';
     game.writingPhaseStartedAt = Date.now();
+    game.questionPromptedAt = {};
+    for (const p of getPlayingPlayers(game)) {
+      game.questionPromptedAt[p.id] = game.writingPhaseStartedAt;
+    }
+    game.answerPromptedAt = {};
     game.currentRoundAnonymousMode = game.anonymousMode;
     game.questions = {};
     game.answers = {};
@@ -2935,7 +2961,28 @@ io.on('connection', (socket) => {
       console.log(`Migrated answer from ${oldSocketId} to ${socket.id}`);
     }
     
-    // 4. Migrate card assignments (performance phase)
+    // 4. Migrate prompt timestamps for speed-scoring fairness
+    if (game.questionPromptedAt && game.questionPromptedAt[oldSocketId]) {
+      game.questionPromptedAt[socket.id] = game.questionPromptedAt[oldSocketId];
+      delete game.questionPromptedAt[oldSocketId];
+      console.log(`Migrated question prompt timestamp from ${oldSocketId} to ${socket.id}`);
+    }
+    if (game.answerPromptedAt && game.answerPromptedAt[oldSocketId]) {
+      game.answerPromptedAt[socket.id] = game.answerPromptedAt[oldSocketId];
+      delete game.answerPromptedAt[oldSocketId];
+      console.log(`Migrated answer prompt timestamp from ${oldSocketId} to ${socket.id}`);
+    }
+    // If reconnecting mid-phase without a prompt timestamp, start their personal clock now.
+    if (game.phase === 'writing' && !game.questionPromptedAt?.[socket.id]) {
+      if (!game.questionPromptedAt) game.questionPromptedAt = {};
+      game.questionPromptedAt[socket.id] = Date.now();
+    }
+    if (game.phase === 'answering' && !game.answerPromptedAt?.[socket.id]) {
+      if (!game.answerPromptedAt) game.answerPromptedAt = {};
+      game.answerPromptedAt[socket.id] = Date.now();
+    }
+    
+    // 5. Migrate card assignments (performance phase)
     if (game.cardAssignments && game.cardAssignments[oldSocketId]) {
       game.cardAssignments[socket.id] = game.cardAssignments[oldSocketId];
       delete game.cardAssignments[oldSocketId];

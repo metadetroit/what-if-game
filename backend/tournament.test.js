@@ -706,3 +706,62 @@ test('mergeRoundScores does not overwrite joinedAtRound for existing players fro
   assert.equal(scores['Alice'].joinedAtRound, 1);
   assert.equal(scores['Bob'].joinedAtRound, 2);
 });
+
+// A3: no speed bonus when fastest/slowest times are tied
+test('speed scoring: tied fastest question awards no bonus', () => {
+  const pairs = [{ pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' }];
+  const votesByPair = { 1: 2 };
+  const settings = {
+    speedScoringEnabled: true,
+    speedData: {
+      questionTimes: [
+        { name: 'Alice', ms: 5000 },
+        { name: 'Carol', ms: 5000 }, // tied fastest
+      ],
+      answerTimes: [{ name: 'Bob', ms: 8000 }],
+      activePlayerCount: 4,
+      phaseStartedAt: 0,
+    },
+  };
+  const result = calculateRoundPoints(pairs, votesByPair, settings);
+  // Base: Alice 2+2=4, Bob 2+2=4
+  // Fastest Q is tied -> no bonus; fastest A is Bob -> +1
+  assert.equal(result.speedDetails.fastestQ, null);
+  assert.equal(result.speedDetails.fastestA, 'Bob');
+  assert.equal(result.scores['Alice'], 4);
+  assert.equal(result.scores['Bob'], 5);
+});
+
+test('speed scoring: tied slowest question avoids penalty', () => {
+  const pairs = [
+    { pairDbId: 1, questionAuthor: 'Alice', answerAuthor: 'Bob' },
+    { pairDbId: 2, questionAuthor: 'Carol', answerAuthor: 'Dave' },
+  ];
+  const votesByPair = { 1: 2, 2: 1 };
+  const settings = {
+    speedScoringEnabled: true,
+    speedData: {
+      questionTimes: [
+        { name: 'Alice', ms: 5000 },
+        { name: 'Carol', ms: 25000 },
+        { name: 'Eve', ms: 25000 }, // tied slowest, >20s
+      ],
+      answerTimes: [
+        { name: 'Bob', ms: 5000 },
+        { name: 'Dave', ms: 5000 },
+      ],
+      activePlayerCount: 5,
+      phaseStartedAt: 0,
+    },
+  };
+  const result = calculateRoundPoints(pairs, votesByPair, settings);
+  // Fastest Q: Alice; slowest Q tied -> no penalty
+  // Fastest A tied -> no bonus; slowest A doesn't exist (only 2 submissions, both 5000ms)
+  assert.equal(result.speedDetails.fastestQ, 'Alice');
+  assert.equal(result.speedDetails.slowestQ, null);
+  assert.equal(result.speedDetails.fastestA, null);
+  assert.equal(result.speedDetails.slowestA, null);
+  // Alice base 2+2=4 + fastest Q +1 = 5; Carol 1 + slowest penalty 0 = 1
+  assert.equal(result.scores['Alice'], 5);
+  assert.equal(result.scores['Carol'], 1);
+});
