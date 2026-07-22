@@ -49,6 +49,7 @@ function App() {
   const [isHost, setIsHost] = useState(false)
   const [hostId, setHostId] = useState(null)
   const [error, setError] = useState("")
+  const [isJoining, setIsJoining] = useState(false)
   const [notice, setNotice] = useState(null)
   const [question, setQuestion] = useState("")
   const [answer, setAnswer] = useState("")
@@ -812,12 +813,22 @@ function App() {
     }
   }, [gameState])
 
+  // Clear stale welcome/lobby errors once active gameplay begins.
+  useEffect(() => {
+    if (["writing", "answering", "performing"].includes(gameState)) {
+      setError("")
+    }
+  }, [gameState])
+
   const createRoom = useCallback(() => {
+    if (isJoining) return
     if (!playerName.trim()) { setError("Please enter your name"); return }
     if (!socket) { setError("Not connected to server"); return }
     clearSession()
     reconnectAttemptedRef.current = false
+    setIsJoining(true)
     socket.emit("create-room", playerName, (response) => {
+      setIsJoining(false)
       if (response.success) {
         setRoomCode(response.roomCode)
         setIsHost(true)
@@ -829,15 +840,18 @@ function App() {
         setError(response.error || "Failed to create room")
       }
     })
-  }, [socket, playerName])
+  }, [socket, playerName, isJoining])
 
   const joinRoom = useCallback(() => {
+    if (isJoining) return
     if (!playerName.trim()) { setError("Please enter your name"); return }
     if (!roomCode.trim()) { setError("Please enter a room code"); return }
     if (!socket) { setError("Not connected to server"); return }
     clearSession()
     reconnectAttemptedRef.current = false
+    setIsJoining(true)
     socket.emit("join-room", roomCode, playerName, (response) => {
+      setIsJoining(false)
       if (response.success) {
         setIsHost(false)
         setGameState("lobby")
@@ -847,7 +861,7 @@ function App() {
         setError(response.error || "Failed to join room")
       }
     })
-  }, [socket, playerName, roomCode])
+  }, [socket, playerName, roomCode, isJoining])
 
   const startGame = useCallback(() => { socket.emit("start-game", { noSelfReading, tournament: tournamentConfig.enabled ? tournamentConfig : null }) }, [socket, noSelfReading, tournamentConfig])
 
@@ -1292,6 +1306,7 @@ function App() {
               writeSoundMuted={writeSoundMuted}
               socket={socket}
               error={error}
+              isJoining={isJoining}
             />
           </div>
         )

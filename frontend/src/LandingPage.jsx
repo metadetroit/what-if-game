@@ -16,6 +16,7 @@ export default function LandingPage({
   setGameState,
   socket,
   error,
+  isJoining,
 }) {
   const [idxA, setIdxA] = useState(0)
   const [idxB, setIdxB] = useState(1)
@@ -346,10 +347,10 @@ export default function LandingPage({
                 )}
                 <button
                   type="submit"
-                  disabled={!socket || !playerName.trim()}
+                  disabled={isJoining || !socket || !playerName.trim()}
                   className="btn-primary w-full rounded-full px-5 py-4 text-base font-bold transition-transform duration-150 active:scale-95 md:py-3 md:text-sm"
                 >
-                  {socket ? "START NOW" : "..."}
+                  {isJoining ? "STARTING..." : socket ? "START NOW" : "..."}
                 </button>
               </form>
             </PanelCard>
@@ -387,10 +388,10 @@ export default function LandingPage({
                 />
                 <button
                   type="submit"
-                  disabled={!socket || !playerName.trim() || !roomCode.trim()}
+                  disabled={isJoining || !socket || !playerName.trim() || !roomCode.trim()}
                   className="btn-primary w-full rounded-full px-5 py-4 text-base font-bold transition-transform duration-150 active:scale-95 md:py-3 md:text-sm"
                 >
-                  {socket ? "JOIN NOW" : "..."}
+                  {isJoining ? "JOINING..." : socket ? "JOIN NOW" : "..."}
                 </button>
               </form>
             </PanelCard>
