@@ -1122,7 +1122,7 @@ function App() {
     const remainingPlayers = playerStatuses.length - visiblePlayers.length
 
     return (
-    <div className="waiting-panel waiting-panel--compact animate-pulse">
+    <div className="waiting-panel waiting-panel--compact" aria-live="polite">
       <div className="waiting-panel__top">
         <div>
           <p className="summary-pill text-sm font-bold">Waiting Room</p>

@@ -1,6 +1,5 @@
 import React from "react"
 import { saveDraft } from "../utils/gameUtils"
-import TurnStatus from "./TurnStatus"
 
 export default function AnsweringPhase({
   submitted,
@@ -36,12 +35,6 @@ export default function AnsweringPhase({
 
   return (
     <div className="game-container game-container--active game-container--answering game-container--keyboard-aware py-2 flex flex-col">
-      {speedScoringEnabled && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-amber-900/30 border border-amber-700/40 rounded-full px-2 py-0.5" title="Blitz Mode: Speed counts this round">
-          <span className="text-xs">⚡</span>
-          <span className="text-xs text-amber-400 font-semibold uppercase tracking-wide hidden sm:inline">Blitz</span>
-        </div>
-      )}
       {forceConfirm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="force-title">
           <div ref={forceConfirmTrapRef} className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-xs w-full text-center">
@@ -56,13 +49,17 @@ export default function AnsweringPhase({
       )}
       {!submitted ? (
         <div className="flex-1 flex flex-col min-h-0 active-fill-gap">
-          <div className="flex items-center justify-between gap-2 active-fill-mt">
-            <TurnStatus status="active">Write your answer</TurnStatus>
-            {anonymousMode && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-purple-700/70 bg-purple-900/30 px-2 py-1 text-[11px] font-bold text-purple-300">🔒 Anonymous</span>}
-          </div>
-          <div className="phase-banner">
-            <span>Phase 2</span>
-            <strong className="active-heading-text">Answer this question</strong>
+          <div className="active-phase-header active-fill-mt">
+            <div className="active-phase-header__title">
+              <span className="active-phase-header__phase">Phase 2</span>
+              <strong className="active-phase-header__task">Write your answer</strong>
+            </div>
+            {(anonymousMode || speedScoringEnabled) && (
+              <div className="active-phase-header__badges">
+                {anonymousMode && <div className="active-phase-header__badge active-phase-header__badge--anonymous" aria-label="Anonymous mode">🔒 Anonymous</div>}
+                {speedScoringEnabled && <div className="active-phase-header__badge active-phase-header__badge--blitz" title="Blitz Mode: Speed counts this round" aria-label="Blitz Mode: Speed counts this round">⚡ Blitz</div>}
+              </div>
+            )}
           </div>
           <div className="card active-card-padding active-fill-mt bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-700">
             <p className="active-body-text font-bold text-white leading-snug text-center">{assignedQuestion}</p>
@@ -90,8 +87,7 @@ export default function AnsweringPhase({
         </div>
       ) : (
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 flex flex-col items-center text-center gap-2 min-h-0 w-full">
-            <TurnStatus status="watch">Submitted — waiting for other players</TurnStatus>
+          <div className="active-waiting-stage">
             {renderWaitingPanel('answering')}
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2 max-w-xs">{error}</div>)}
           </div>
