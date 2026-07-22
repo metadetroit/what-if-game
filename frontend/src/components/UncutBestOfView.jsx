@@ -16,6 +16,7 @@ function UncutBestOfView({ onBack }) {
   const [bestOfOffset, setBestOfOffset] = useState(0)
   const [bestOfHasMore, setBestOfHasMore] = useState(false)
   const [bestOfLoading, setBestOfLoading] = useState(false)
+  const [bestOfError, setBestOfError] = useState(null)
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('adminKey') || '')
   const [contentFilter, setContentFilter] = useState('all')
 
@@ -23,14 +24,18 @@ function UncutBestOfView({ onBack }) {
   const bestOfScrollRef = useRef(null)
 
   const fetchBestOfData = async (opts = {}) => {
+    if (bestOfLoading && !opts.force) return
+    setBestOfLoading(true)
+    setBestOfError(null)
+    const sort = opts.sort || bestOfSort
+    const limit = opts.limit || bestOfLimit
+    const offset = opts.offset ?? bestOfOffset
+    const url = `${SOCKET_URL}/api/best-of-uncut?type=qa_pairs&limit=${limit}&sort=${sort}&offset=${offset}`
     try {
-      if (bestOfLoading && !opts.force) return
-      setBestOfLoading(true)
-      const sort = opts.sort || bestOfSort
-      const limit = opts.limit || bestOfLimit
-      const offset = opts.offset ?? bestOfOffset
-      const url = `${SOCKET_URL}/api/best-of-uncut?type=qa_pairs&limit=${limit}&sort=${sort}&offset=${offset}`
       const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
       const data = await response.json()
 
       if (opts.offset === 0) {
@@ -42,9 +47,10 @@ function UncutBestOfView({ onBack }) {
         })
       }
 
-      setBestOfHasMore(false)
+      setBestOfHasMore(Array.isArray(data) && data.length === limit)
     } catch (error) {
       console.error('Failed to fetch uncut best-of data:', error)
+      setBestOfError('Failed to load content. Please try again.')
     } finally {
       setBestOfLoading(false)
     }
@@ -54,12 +60,12 @@ function UncutBestOfView({ onBack }) {
     sessionStorage.setItem('uncutBestOfSort', sort)
     setBestOfSort(sort)
     setBestOfOffset(0)
-    setBestOfData(null)
+    setBestOfError(null)
     fetchBestOfData({ sort, offset: 0, force: true })
   }, [fetchBestOfData])
 
   const handleCopyLink = useCallback((pairId) => {
-    const url = `${window.location.origin}/fword?pair=${pairId}`
+    const url = `${window.location.origin}?view=best-of&pair=${pairId}`
     navigator.clipboard.writeText(url).then(() => {
       alert('Link copied to clipboard!')
     }).catch(() => {
@@ -254,6 +260,7 @@ function UncutBestOfView({ onBack }) {
       bestOfData={filteredBestOfData}
       bestOfSort={bestOfSort}
       bestOfLoading={bestOfLoading}
+      bestOfError={bestOfError}
       adminKey={adminKey}
       onBack={onBack}
       onSortChange={handleBestOfSortChange}

@@ -6,6 +6,7 @@ function BestOfView({
   bestOfData,
   bestOfSort,
   bestOfLoading,
+  bestOfError,
   adminKey,
   onBack,
   onSortChange,
@@ -21,6 +22,14 @@ function BestOfView({
   onContentFilterChange
 }) {
   const renderContent = () => {
+    if (bestOfError) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-red-400 text-sm">{bestOfError}</p>
+        </div>
+      )
+    }
+
     if (bestOfData === null) {
       return (
         <div className="text-center py-8">
@@ -62,7 +71,7 @@ function BestOfView({
                     </button>
                     {adminKey && (
                       <>
-                        {viewMode === "pending" ? (
+                        {viewMode === "pending" && (
                           <>
                             <button
                               onClick={() => onApproveSFW(item.id, index)}
@@ -90,25 +99,6 @@ function BestOfView({
                                 ✕ Factual
                               </button>
                             )}
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => onApproveSFW(item.id, index)}
-                              className="text-xs text-green-400 hover:text-green-300 underline min-h-[44px]"
-                              title="Mark as SFW"
-                              aria-label="Mark as SFW"
-                            >
-                              ✓ SFW
-                            </button>
-                            <button
-                              onClick={() => onApproveNSFW(item.id, index)}
-                              className="text-xs text-orange-400 hover:text-orange-300 underline min-h-[44px]"
-                              title="Mark as NSFW"
-                              aria-label="Mark as NSFW"
-                            >
-                              ✓ NSFW
-                            </button>
                           </>
                         )}
                         <button

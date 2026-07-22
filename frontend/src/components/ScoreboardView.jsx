@@ -15,6 +15,7 @@ export default function ScoreboardView({
   const [showAll, setShowAll] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [revealWinners, setRevealWinners] = useState(false)
+  const [selectedPlayer, setSelectedPlayer] = useState(null)
 
   const speedEnabled = scoringRules?.speedScoringEnabled
   const isCompact = standings.length > 8
@@ -24,6 +25,14 @@ export default function ScoreboardView({
     const t = setTimeout(() => setRevealWinners(true), 2000)
     return () => clearTimeout(t)
   }, [])
+
+  // Close modal on Escape
+  useEffect(() => {
+    if (!selectedPlayer) return
+    const onKey = (e) => { if (e.key === "Escape") setSelectedPlayer(null) }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [selectedPlayer])
 
   // Track rank changes for delta indicators
   useEffect(() => {
@@ -124,8 +133,8 @@ export default function ScoreboardView({
                 {showSeparator && (
                   <div className="text-center text-xs text-gray-600 py-1">· · ·</div>
                 )}
-                <div className={
-                  "flex items-center gap-3 rounded-xl transition-all duration-300 " +
+                <button type="button" onClick={() => setSelectedPlayer(s)} className={
+                  "w-full text-left flex items-center gap-3 rounded-xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-indigo-400 " +
                   (isMe ? "bg-indigo-900/40 border border-indigo-700" : "bg-gray-800/60") +
                   (s.leftGame ? " opacity-50" : "") +
                   (isCompact ? " py-1 px-2" : " py-1.5 px-2.5")
@@ -145,14 +154,14 @@ export default function ScoreboardView({
                       {s.name}{isMe && " (you)"}{s.leftGame && " (left)"}
                     </p>
                     <p className={(isCompact ? "text-xs" : "text-sm") + " text-gray-500"}>
-                      {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes
+                      {s.firstPlaces > 0 && `${s.firstPlaces}× 1st · `}{s.votesReceived} votes received
                       {speedEnabled && speedBonus !== 0 && <span className={"ml-1 " + (speedBonus > 0 ? "text-amber-400" : "text-gray-500")}>· ⚡{speedBonus > 0 ? "+" : ""}{speedBonus}</span>}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className={(isCompact ? "text-xl" : "text-2xl") + " font-black text-amber-300"}>{s.total}</p>
                   </div>
-                </div>
+                </button>
               </React.Fragment>
             )
           })}
@@ -166,8 +175,29 @@ export default function ScoreboardView({
         )}
       </div>
 
+      {selectedPlayer && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="player-breakdown-title" onClick={(e) => { if (e.target === e.currentTarget) setSelectedPlayer(null) }}>
+          <div className="w-full max-w-md rounded-2xl border border-indigo-500/40 bg-gray-900 p-5 shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 id="player-breakdown-title" className="text-lg font-bold text-white">{selectedPlayer.name}</h3>
+                <p className="text-sm text-gray-400">{selectedPlayer.total} points · {selectedPlayer.votesReceived} votes received</p>
+              </div>
+              <button type="button" onClick={() => setSelectedPlayer(null)} className="min-h-[44px] px-3 text-gray-300" aria-label="Close player breakdown">✕</button>
+            </div>
+            <div className="mt-4 space-y-2">
+              {(selectedPlayer.roundScores?.length ? selectedPlayer.roundScores : [0]).map((rawScore, index) => {
+                const score = rawScore ?? 0
+                const speed = selectedPlayer.roundSpeedBonuses?.[index] || 0
+                return <div key={index} className="flex items-center justify-between rounded-lg bg-gray-800/70 px-3 py-2 text-sm"><span className="text-gray-300">Round {index + 1}</span><span className="text-white">Base {score - speed >= 0 ? "+" : ""}{score - speed}{speed !== 0 && <span className="ml-2 text-amber-300">Speed {speed > 0 ? "+" : ""}{speed}</span>} <strong className="ml-2 text-amber-300">= {score > 0 ? "+" : ""}{score}</strong></span></div>
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Scoring History — expandable breakdown */}
-      {speedEnabled && (
+      {standings.some(s => (s.roundScores?.[currentRound - 1] ?? 0) !== 0 || (s.roundSpeedBonuses?.[currentRound - 1] ?? 0) !== 0) && (
         <div className="text-center">
           <button
             onClick={() => setShowHistory(!showHistory)}

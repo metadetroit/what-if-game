@@ -177,7 +177,7 @@ export default function SummaryPhase({
               const showVoteIndicators = viewMode === "paired"
 
               return (
-                <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card summary-card--compact " + (showVoteIndicators && userVotedForPair ? "summary-card--active " : "") + (showVoteIndicators && isWinner ? "summary-card--winner" : "")}>
+                <article key={pairKey} id={hasPairId ? `pair-${pair.pairDbId}` : undefined} className={"summary-card summary-card--compact flex flex-col " + (showVoteIndicators && userVotedForPair ? "summary-card--active " : "") + (showVoteIndicators && isWinner ? "summary-card--winner" : "")}>
                   <div className="summary-card__body">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -214,12 +214,12 @@ export default function SummaryPhase({
                   </div>
 
                   {viewMode === "paired" ? (
-                    <div className="summary-card__footer">
+                    <div className="summary-card__footer mt-auto">
                       <div className="summary-vote-meta">
                         {userVotedForPair ? (
                           <span className="you-badge">You voted</span>
                         ) : userLockedToDifferentPair ? (
-                          <span className="text-gray-400 text-xs">Locked to another pair</span>
+                          <span className="text-gray-400 text-xs">You already voted</span>
                         ) : inFlight ? (
                           <span className="text-gray-400 text-xs">Submitting…</span>
                         ) : (
@@ -252,12 +252,12 @@ export default function SummaryPhase({
                             className={`summary-vote-icon relative ${
                               userVotedForPair ? 'summary-vote-icon--active' : ''
                             } ${voteDisabled ? 'summary-vote-icon--disabled' : 'summary-vote-icon--pulse'}`}
-                            title={userVotedForPair ? 'You voted for this pair' : userLockedToDifferentPair ? 'Locked to another pair' : inFlight ? 'Submitting…' : 'Vote for best pairing'}
+                            title={userVotedForPair ? 'You voted for this pair' : userLockedToDifferentPair ? 'You already voted' : inFlight ? 'Submitting…' : 'Vote for best pairing'}
                             disabled={voteDisabled}
                             aria-busy={inFlight ? 'true' : 'false'}
-                            aria-label={userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'Locked' : inFlight ? 'Submitting' : 'Vote'}
+                            aria-label={userVotedForPair ? 'Voted' : userLockedToDifferentPair ? 'You already voted' : inFlight ? 'Submitting' : 'Vote'}
                           >
-                            {inFlight ? '…' : userVotedForPair ? '✓' : userLockedToDifferentPair ? '🔒' : '👍'}
+                            {inFlight ? '…' : userVotedForPair ? '✓' : userLockedToDifferentPair ? '✓' : '👍'}
                             {burstPairId === pair.pairDbId && (
                               <span className="vote-burst" aria-hidden="true">
                                 {Array.from({ length: 10 }).map((_, i) => {
@@ -288,7 +288,7 @@ export default function SummaryPhase({
                       </div>
                     </div>
                   ) : (
-                    <div className="summary-card__footer">
+                    <div className="summary-card__footer mt-auto">
                       <div className="flex items-center gap-1.5 flex-1">
                         {((pair.questionReactions && Object.keys(pair.questionReactions).length > 0) || (pair.answerReactions && Object.keys(pair.answerReactions).length > 0)) && (
                           <div className="flex flex-wrap gap-0.5 text-xs">

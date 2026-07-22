@@ -1,5 +1,6 @@
 import React from "react"
 import { saveDraft } from "../utils/gameUtils"
+import TurnStatus from "./TurnStatus"
 
 export default function WritingPhase({
   submitted,
@@ -54,17 +55,15 @@ export default function WritingPhase({
       )}
       {!submitted ? (
         <div className="flex-1 flex flex-col min-h-0 active-fill-gap">
-          {anonymousMode && (
-            <div className="p-2 bg-purple-900/30 border border-purple-700 rounded-lg text-center">
-              <p className="text-sm font-bold text-purple-300 md:text-xs">🔒 This round is anonymized!</p>
-            </div>
-          )}
-          <div className="phase-banner active-fill-mt">
+          <div className="flex items-center justify-between gap-2 active-fill-mt">
+            <TurnStatus status="active">Write your question</TurnStatus>
+            {anonymousMode && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-purple-700/70 bg-purple-900/30 px-2 py-1 text-[11px] font-bold text-purple-300">🔒 Anonymous</span>}
+          </div>
+          <div className="phase-banner">
             <span>Phase 1</span>
             <strong className="active-heading-text">Question Time</strong>
           </div>
           <div className="text-center active-fill-mt">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-0">Your Turn</p>
             <h2 className="font-bubble active-heading-text font-bold text-white leading-tight">Write a Question</h2>
             <p className="active-body-text text-indigo-400 leading-tight">Must begin with "What if..."</p>
           </div>
@@ -99,6 +98,7 @@ export default function WritingPhase({
           <div className="flex-1 flex flex-col items-center text-center gap-2 min-h-0 w-full">
             <div className="w-10 h-10 bg-green-900/30 rounded-full flex items-center justify-center mb-1"><span className="text-xl">✓</span></div>
             <h3 className="font-bubble text-lg font-bold text-white mb-0.5">Submitted!</h3>
+            <TurnStatus status="watch">Waiting for other players</TurnStatus>
             {renderWaitingPanel('writing')}
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2 max-w-xs">{error}</div>)}
           </div>

@@ -1,4 +1,5 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
+import TurnStatus from "./TurnStatus"
 
 export default function PerformancePhase({
   currentTurn,
@@ -20,6 +21,23 @@ export default function PerformancePhase({
   setReactions,
   setMyReactions
 }) {
+  const [showPrompt, setShowPrompt] = useState(false)
+
+  const isActiveReader = currentTurn && !hasRead && (
+    (currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id) ||
+    (!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id)
+  )
+
+  useEffect(() => {
+    if (!isActiveReader) {
+      setShowPrompt(false)
+      return
+    }
+    setShowPrompt(false)
+    const id = setTimeout(() => setShowPrompt(true), 13000)
+    return () => clearTimeout(id)
+  }, [isActiveReader])
+
   return (
     <div className="game-container game-container--active py-2 flex flex-col">
       {forceConfirm && (
@@ -43,20 +61,27 @@ export default function PerformancePhase({
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <div className="shrink-0 mb-1">
               {currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-                <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-lg shadow-green-900/40">
-                  <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ QUESTION</span>
-                  <p className="text-green-100 active-body-text mt-1">Read aloud, then tap Done</p>
+                <div>
+                  <div className="flex justify-center mb-1"><TurnStatus status="active">Read aloud now</TurnStatus></div>
+                  <div className="py-2 rounded-xl text-center bg-green-500 border-4 border-green-300 shadow-lg shadow-green-900/40">
+                    <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ QUESTION</span>
+                    <p className="text-green-100 active-body-text mt-1">Read aloud, then tap Done</p>
+                  </div>
                 </div>
               )}
               {!currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-                <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
-                  <span className="font-bubble active-heading-text font-bold text-gray-400">WAITING</span>
-                  <p className="text-gray-500 active-body-text mt-1 truncate px-2">{currentTurn.answerReader.name} is reading the answer</p>
+                <div>
+                  <div className="flex justify-center mb-1"><TurnStatus status="watch">Watch and listen</TurnStatus></div>
+                  <div className="py-2 rounded-lg text-center bg-gray-700 border border-gray-600">
+                    <span className="font-bubble active-heading-text font-bold text-gray-400">WAITING</span>
+                    <p className="text-gray-500 active-body-text mt-1 truncate px-2">{currentTurn.answerReader.name} is reading the answer</p>
+                  </div>
                 </div>
               )}
               {currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
                 <div>
                   <div className="text-center mb-2">
+                    <TurnStatus status="next">You’re reading next</TurnStatus>
                     <span className="inline-flex items-center gap-1.5 active-body-text text-purple-300 bg-purple-900/40 px-3 py-1.5 rounded-full border border-purple-700/30 max-w-full min-w-0">
                       <span className="text-base">🎤</span>
                       <span className="truncate min-w-0"><span className="font-medium truncate">{currentTurn.questionReader.name}</span> is reading the question to you</span>
@@ -69,9 +94,12 @@ export default function PerformancePhase({
                 </div>
               )}
               {!currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
-                <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-lg shadow-purple-900/40">
-                  <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ ANSWER</span>
-                  <p className="text-purple-100 active-body-text mt-1">Read aloud, then tap Done</p>
+                <div>
+                  <div className="flex justify-center mb-1"><TurnStatus status="active">Read aloud now</TurnStatus></div>
+                  <div className="py-2 rounded-xl text-center bg-purple-500 border-4 border-purple-300 shadow-lg shadow-purple-900/40">
+                    <span className="font-bubble active-heading-text font-black text-white tracking-wider">READ ANSWER</span>
+                    <p className="text-purple-100 active-body-text mt-1">Read aloud, then tap Done</p>
+                  </div>
                 </div>
               )}
               {socket?.id !== currentTurn.questionReader.id && socket?.id !== currentTurn.answerReader.id && (
@@ -104,10 +132,10 @@ export default function PerformancePhase({
               </div>
             )}
             {!hasRead && currentTurn.isQuestionTurn && socket?.id === currentTurn.questionReader.id && (
-              <button onClick={completeReading} className="btn-primary active-fill-mt bg-green-600 hover:bg-green-700 active-fill-py active-input-text shrink-0">Done Reading →</button>
+              <button onClick={completeReading} className={`btn-primary active-fill-mt bg-green-600 hover:bg-green-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 ring-offset-2 ring-offset-green-600 animate-pulse" : ""}`}>Done Reading →</button>
             )}
             {!hasRead && !currentTurn.isQuestionTurn && socket?.id === currentTurn.answerReader.id && (
-              <button onClick={completeReading} className="btn-primary active-fill-mt bg-purple-600 hover:bg-purple-700 active-fill-py active-input-text shrink-0">Done Reading →</button>
+              <button onClick={completeReading} className={`btn-primary active-fill-mt bg-purple-600 hover:bg-purple-700 active-fill-py active-input-text shrink-0 ${showPrompt ? "ring-4 ring-white/60 ring-offset-2 ring-offset-purple-600 animate-pulse" : ""}`}>Done Reading →</button>
             )}
           </div>
           <div className="shrink-0 pt-2 border-t border-gray-800">

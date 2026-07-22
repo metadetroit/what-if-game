@@ -89,7 +89,6 @@ app.get('/api/best-of', async (req, res) => {
   const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
   const sort = (req.query.sort || 'votes').toLowerCase(); // 'votes' | 'newest'
   const offset = parseInt(req.query.offset) || 0;
-  const pairVoteThreshold = sort === 'newest' ? 1 : 2;
 
   let results = [];
 
@@ -187,6 +186,7 @@ app.get('/api/best-of', async (req, res) => {
     }
   } catch (e) {
     console.error('[best-of] Error:', e.message);
+    return res.status(500).json({ success: false, error: 'Database error' });
   }
 
   res.json(results);
@@ -199,7 +199,6 @@ app.get('/api/best-of-uncut', async (req, res) => {
   const type = req.query.type; // 'questions', 'answers', 'qa_pairs', or undefined for all
   const sort = (req.query.sort || 'votes').toLowerCase(); // 'votes' | 'newest'
   const offset = parseInt(req.query.offset) || 0;
-  const pairVoteThreshold = sort === 'newest' ? 1 : 2;
 
   let results = [];
 
@@ -245,6 +244,7 @@ app.get('/api/best-of-uncut', async (req, res) => {
     }
   } catch (e) {
     console.error('[best-of-uncut] Error:', e.message);
+    return res.status(500).json({ success: false, error: 'Database error' });
   }
 
   res.json(results);
@@ -880,7 +880,15 @@ io.on('connection', (socket) => {
         votingTimerSeconds: tournamentConfig.votingTimerSeconds || 60,
         speedScoringEnabled: !!tournamentConfig.speedScoringEnabled,
         currentRound: 1,
-        scores: {},
+        scores: Object.fromEntries(activePlayers.map(p => [p.name, {
+          total: 0,
+          roundScores: [],
+          firstPlaces: 0,
+          votesReceived: 0,
+          joinedAtRound: 1,
+          leftGame: false,
+          roundSpeedBonuses: []
+        }])),
         pendingPromotions: [],
         roundSettings: {},
         status: 'active'
@@ -2177,7 +2185,15 @@ io.on('connection', (socket) => {
 
     // Reset tournament scores but keep players
     game.tournament.currentRound = 1;
-    game.tournament.scores = {};
+    game.tournament.scores = Object.fromEntries(game.players.filter(p => p.isActive && p.role !== 'spectator').map(p => [p.name, {
+      total: 0,
+      roundScores: [],
+      firstPlaces: 0,
+      votesReceived: 0,
+      joinedAtRound: 1,
+      leftGame: false,
+      roundSpeedBonuses: []
+    }]));
     game.tournament.pendingPromotions = [];
     game.tournament.roundSettings = {};
     game.tournament.status = 'active';

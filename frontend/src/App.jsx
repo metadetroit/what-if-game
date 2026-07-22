@@ -1364,6 +1364,7 @@ function App() {
             forceProgress={forceProgress}
             renderWaitingPanel={renderWaitingPanel}
             speedScoringEnabled={!!tournament?.speedScoringEnabled}
+            anonymousMode={anonymousMode}
           />
         )
 

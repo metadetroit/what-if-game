@@ -1,5 +1,6 @@
 import React from "react"
 import { saveDraft } from "../utils/gameUtils"
+import TurnStatus from "./TurnStatus"
 
 export default function AnsweringPhase({
   submitted,
@@ -16,7 +17,8 @@ export default function AnsweringPhase({
   forceConfirmTrapRef,
   forceProgress,
   renderWaitingPanel,
-  speedScoringEnabled
+  speedScoringEnabled,
+  anonymousMode
 }) {
   const canSubmit = answer.trim()
 
@@ -54,7 +56,11 @@ export default function AnsweringPhase({
       )}
       {!submitted ? (
         <div className="flex-1 flex flex-col min-h-0 active-fill-gap">
-          <div className="phase-banner active-fill-mt">
+          <div className="flex items-center justify-between gap-2 active-fill-mt">
+            <TurnStatus status="active">Write your answer</TurnStatus>
+            {anonymousMode && <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-purple-700/70 bg-purple-900/30 px-2 py-1 text-[11px] font-bold text-purple-300">🔒 Anonymous</span>}
+          </div>
+          <div className="phase-banner">
             <span>Phase 2</span>
             <strong className="active-heading-text">Answer this question</strong>
           </div>
@@ -87,6 +93,7 @@ export default function AnsweringPhase({
           <div className="flex-1 flex flex-col items-center text-center gap-2 min-h-0 w-full">
             <div className="w-10 h-10 bg-green-900/30 rounded-full flex items-center justify-center mb-1"><span className="text-xl">✓</span></div>
             <h3 className="font-bubble text-lg font-bold text-white mb-0.5">Answer Submitted!</h3>
+            <TurnStatus status="watch">Waiting for other players</TurnStatus>
             {renderWaitingPanel('answering')}
             {error && (<div className="p-2 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-xs text-center mt-2 max-w-xs">{error}</div>)}
           </div>
