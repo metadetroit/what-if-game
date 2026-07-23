@@ -30,6 +30,7 @@ export default function LandingPage({
   const [debugInfo, setDebugInfo] = useState(null)
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
+  const startNameInputRef = useRef(null)
   const joinNameInputRef = useRef(null)
   const { showInstallLink, isIOS, promptInstall } = usePWAInstall()
 
@@ -215,7 +216,10 @@ export default function LandingPage({
 
           <div className="mobile-fill-mt max-w-xl mx-auto w-full flex flex-col mobile-fill-gap">
             <button
-              onClick={() => scrollToSection("play")}
+              onClick={() => {
+                scrollToSection("play")
+                setTimeout(() => startNameInputRef.current?.focus(), 200)
+              }}
               className="btn-primary w-full rounded-full px-6 py-4 text-lg font-black tracking-wider whitespace-nowrap transition-transform duration-150 active:scale-95 md:py-4 md:text-xl shadow-lg shadow-fuchsia-900/40 hover:shadow-fuchsia-900/60"
             >
               START GAME / HAVE CODE?
@@ -327,6 +331,7 @@ export default function LandingPage({
                 className="w-full flex flex-col gap-3 flex-1"
               >
                 <input
+                  ref={startNameInputRef}
                   type="text"
                   autoComplete="off"
                   value={playerName}
