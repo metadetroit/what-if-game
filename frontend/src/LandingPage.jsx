@@ -30,6 +30,7 @@ export default function LandingPage({
   const [debugInfo, setDebugInfo] = useState(null)
   const fetchedRef = useRef(false)
   const scrollRef = useRef(null)
+  const joinNameInputRef = useRef(null)
   const { showInstallLink, isIOS, promptInstall } = usePWAInstall()
 
   useEffect(() => {
@@ -80,6 +81,13 @@ export default function LandingPage({
   useEffect(() => {
     if (roomCode && roomCode.length === 4) {
       const t = setTimeout(() => scrollToSection("play"), 100)
+      return () => clearTimeout(t)
+    }
+  }, [roomCode])
+
+  useEffect(() => {
+    if (roomCode && roomCode.length === 4) {
+      const t = setTimeout(() => joinNameInputRef.current?.focus(), 250)
       return () => clearTimeout(t)
     }
   }, [roomCode])
@@ -364,6 +372,7 @@ export default function LandingPage({
                 className="w-full flex flex-col gap-3 flex-1"
               >
                 <input
+                  ref={joinNameInputRef}
                   type="text"
                   autoComplete="off"
                   value={playerName}
