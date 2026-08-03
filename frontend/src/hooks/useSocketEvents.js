@@ -234,7 +234,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       const prefill = prefillWhatIfRef.current
       setQuestion(prefill ? "What if" : "")
       if (prefill) saveDraft(roomCodeRef.current, "writing", "What if")
-      playSound("chime")
+      playSound("start")
       if (typeof data.anonymousMode === "boolean") setAnonymousMode(data.anonymousMode)
       if (data.tournament) setTournament(data.tournament)
     })
@@ -262,7 +262,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setAssignedQuestion(data.question)
       setGameState("answering")
       setSubmitted(false)
-      playSound("chime")
+      playSound("phase")
       const playerCount = playersRef.current.length
       setProgress({ submitted: 0, total: playerCount })
       setPlayerStatuses(playersRef.current.map(p => ({ name: p.name, submitted: false })))
@@ -277,7 +277,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setMyReactions(new Set())
       setCurrentContent(null)
       setCurrentTurn(null)
-      playSound("chime")
+      playSound("stage")
       setProgress({ submitted: 0, total: 0 })
       setPlayerStatuses([])
       setForceConfirm(false)
@@ -289,6 +289,11 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setCurrentTurn(data)
       setGameStats({ round: data.round, total: data.total })
       setHasRead(false)
+      const myId = newSocket.id
+      const activeReaderId = data.isQuestionTurn ? data.questionReader?.id : data.answerReader?.id
+      const otherReaderId = data.isQuestionTurn ? data.answerReader?.id : data.questionReader?.id
+      if (myId && activeReaderId === myId) playSound("turn")
+      else if (myId && otherReaderId === myId) playSound("upnext")
       // Reactions are keyed by contentDbId, so we preserve reactionCounts/myReactions
       // across rewinds. Players who already reacted to this content stay locked out.
       if (data.currentContentDbId) {
@@ -321,6 +326,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       const pendingVote = pendingVoteRef.current
       pendingVoteRef.current = null
       if (data.success) {
+        playSound("vote")
         const isVoted = typeof data.isVoted === 'boolean' ? data.isVoted : true
         setUserVotes(prev => ({ ...prev, [data.targetId]: isVoted }))
         if (pendingVote?.type === 'qa_pair') {
@@ -336,7 +342,11 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setGameState("ended")
       setCurrentContent(null)
       setMyReactions(new Set())
-      playSound("chime")
+      playSound("vote-open")
+      const hasFluke = Array.isArray(data.summary) && data.summary.some(p =>
+        p.questionAuthorName && p.questionAuthorName !== '???' && p.questionAuthorName === p.pairedAnswerAuthorName
+      )
+      if (hasFluke) setTimeout(() => playSound("fluke"), 1500)
       if (data.summary) {
         applySummaryData(data.summary, typeof data.anonymousMode === "boolean" ? data.anonymousMode : false)
         setRoundHistory(prev => [...prev, { summary: data.summary, anonymousMode: typeof data.anonymousMode === "boolean" ? data.anonymousMode : false, timestamp: Date.now() }])
@@ -389,6 +399,11 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
     newSocket.on("scoreboard", (data) => {
       setGameState("scoreboard")
       setScoreboardData(data)
+      const winners = Array.isArray(data.roundWinnerDetails) ? data.roundWinnerDetails : []
+      if (winners.length > 0) {
+        const hasFluke = winners.some(w => w.isFluke)
+        setTimeout(() => playSound(hasFluke ? "fluke" : "winner"), 2000)
+      }
       if (data.authorsReveal) {
         setAuthorReveals(data.authorsReveal)
       }
@@ -408,6 +423,7 @@ export function useSocketEvents({ socketUrl, refs, actions, helpers, voteState }
       setGameState("tournament_complete")
       setTournamentCompleteData(data)
       setRankRevealData(null)
+      playSound("winner")
     })
 
     newSocket.on("tournament-reset", (data) => {

@@ -78,7 +78,8 @@ export default function ScoreboardView({
       {roundWinnerDetails && roundWinnerDetails.length > 0 && (
         <div className="summary-winner-banner" data-testid="winner-banner">
           {roundWinnerDetails.map((winner, i) => {
-            const base = winner.pointsBreakdown?.base ?? (winner.isFluke ? winner.votes * 2 + 2 + 3 : winner.votes + 2)
+            const base = winner.pointsBreakdown?.base
+            const baseText = base != null ? ` +${base} pts — ` : " — "
             const speed = winner.pointsBreakdown?.speed ?? 0
             const speedText = speed !== 0 ? ` · ⚡${speed > 0 ? "+" : ""}${speed}` : ""
             const winnerQ = revealWinners ? winner.questionAuthor : "???"
@@ -88,11 +89,11 @@ export default function ScoreboardView({
               <p key={i} className="leading-snug text-sm md:text-base animate-in fade-in slide-in-from-bottom-2 duration-700">
                 {winner.isFluke ? (
                   <span className={"summary-winner-banner__fluke transition-all duration-500 " + (revealWinners ? "opacity-100" : "opacity-70 scale-95")}>
-                    🎯 <span className="vote-now-logo text-base md:text-lg align-middle mx-1"><span style={{ color: "#c026d3" }}>F</span><span style={{ color: "#f97316" }}>l</span><span style={{ color: "#facc15" }}>u</span><span style={{ color: "#f43f5e" }}>k</span><span style={{ color: "#a855f7" }}>e</span><span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span></span> +{base} pts — <span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerQ}</span>
+                    🎯 <span className="vote-now-logo text-base md:text-lg align-middle mx-1"><span style={{ color: "#c026d3" }}>F</span><span style={{ color: "#f97316" }}>l</span><span style={{ color: "#facc15" }}>u</span><span style={{ color: "#f43f5e" }}>k</span><span style={{ color: "#a855f7" }}>e</span><span style={{ color: "#facc15" }} className="animate-pop-wiggle">!</span></span>{baseText}<span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerQ}</span>
                   </span>
                 ) : (
                   <span className={"summary-winner-banner__normal transition-all duration-500 " + (revealWinners ? "opacity-100" : "opacity-70 scale-95")}>
-                    🏆 Winner: +{base} pts — <span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerQ}</span> & <span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerA}</span>
+                    🏆 Winner:{baseText}<span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerQ}</span> & <span className={revealWinners ? "text-white font-bold" : "text-gray-500"}>{winnerA}</span>
                   </span>
                 )}
                 <span className="text-gray-500 ml-1">({winner.votes} vote{winner.votes === 1 ? "" : "s"}{speedText})</span>

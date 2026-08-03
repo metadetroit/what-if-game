@@ -87,57 +87,105 @@ export function setPrefillWhatIfStorage(enabled) {
   try { localStorage.setItem("fluke-prefill", enabled ? "1" : "0") } catch (e) { /* ignore */ }
 }
 
+const SOUND_THROTTLE_MS = 300
+const lastPlayedAt = {}
+
+// Each sound is a list of notes: { freq, t (start offset s), dur (s), type, vol, slideTo }
+const SOUND_DEFS = {
+  ding: [
+    { freq: 523, t: 0, dur: 0.3, vol: 0.15, slideTo: 784 }
+  ],
+  chime: [
+    { freq: 440, t: 0, dur: 0.4, vol: 0.12, slideTo: 660 }
+  ],
+  success: [
+    { freq: 523, t: 0, dur: 0.5, vol: 0.12 },
+    { freq: 659, t: 0.1, dur: 0.4, vol: 0.12 },
+    { freq: 784, t: 0.2, dur: 0.3, vol: 0.12 }
+  ],
+  warn: [
+    { freq: 300, t: 0, dur: 0.25, type: "triangle", vol: 0.08, slideTo: 200 }
+  ],
+  // Game start / restart — rising arpeggio
+  start: [
+    { freq: 392, t: 0, dur: 0.14, vol: 0.13 },
+    { freq: 523, t: 0.09, dur: 0.14, vol: 0.13 },
+    { freq: 659, t: 0.18, dur: 0.35, vol: 0.13 }
+  ],
+  // Answer phase — gentle down-step
+  phase: [
+    { freq: 523, t: 0, dur: 0.12, vol: 0.11 },
+    { freq: 440, t: 0.1, dur: 0.3, vol: 0.11 }
+  ],
+  // Performance phase — low swell with rising slide
+  stage: [
+    { freq: 220, t: 0, dur: 0.18, type: "triangle", vol: 0.1 },
+    { freq: 440, t: 0.14, dur: 0.35, vol: 0.12, slideTo: 550 }
+  ],
+  // Voting opens — descending settle
+  "vote-open": [
+    { freq: 659, t: 0, dur: 0.12, vol: 0.11 },
+    { freq: 523, t: 0.11, dur: 0.12, vol: 0.11 },
+    { freq: 392, t: 0.22, dur: 0.35, vol: 0.11 }
+  ],
+  // Your turn to read — bright ascending sting
+  turn: [
+    { freq: 784, t: 0, dur: 0.1, type: "triangle", vol: 0.14 },
+    { freq: 988, t: 0.08, dur: 0.1, type: "triangle", vol: 0.14 },
+    { freq: 1319, t: 0.16, dur: 0.32, type: "triangle", vol: 0.14 }
+  ],
+  // You're up next — soft two-note heads-up
+  upnext: [
+    { freq: 587, t: 0, dur: 0.12, vol: 0.07 },
+    { freq: 880, t: 0.1, dur: 0.25, vol: 0.07 }
+  ],
+  // Vote confirmed — tiny pop
+  vote: [
+    { freq: 880, t: 0, dur: 0.07, vol: 0.06 }
+  ],
+  // Fluke moment — sparkle arpeggio crowd reaction
+  fluke: [
+    { freq: 1047, t: 0, dur: 0.1, type: "triangle", vol: 0.1 },
+    { freq: 1319, t: 0.07, dur: 0.1, type: "triangle", vol: 0.1 },
+    { freq: 1568, t: 0.14, dur: 0.1, type: "triangle", vol: 0.1 },
+    { freq: 2093, t: 0.21, dur: 0.4, type: "triangle", vol: 0.11 },
+    { freq: 2637, t: 0.26, dur: 0.35, vol: 0.05 }
+  ],
+  // Round/tournament winner — fanfare
+  winner: [
+    { freq: 523, t: 0, dur: 0.14, vol: 0.13 },
+    { freq: 659, t: 0.1, dur: 0.14, vol: 0.13 },
+    { freq: 784, t: 0.2, dur: 0.14, vol: 0.13 },
+    { freq: 1047, t: 0.3, dur: 0.45, vol: 0.14 }
+  ]
+}
+
 export function playSound(type) {
   if (isSoundMuted()) return
+  const def = SOUND_DEFS[type]
+  if (!def) return
+  const now = Date.now()
+  if (lastPlayedAt[type] && now - lastPlayedAt[type] < SOUND_THROTTLE_MS) return
+  lastPlayedAt[type] = now
   const ctx = ensureAudioContext()
   if (!ctx) return
   if (ctx.state === "suspended") ctx.resume()
 
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-
-  const now = ctx.currentTime
-  switch (type) {
-    case "ding":
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(523, now)
-      osc.frequency.exponentialRampToValueAtTime(784, now + 0.1)
-      gain.gain.setValueAtTime(0.15, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
-      osc.start(now)
-      osc.stop(now + 0.3)
-      break
-    case "chime":
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(440, now)
-      osc.frequency.exponentialRampToValueAtTime(660, now + 0.15)
-      gain.gain.setValueAtTime(0.12, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4)
-      osc.start(now)
-      osc.stop(now + 0.4)
-      break
-    case "success":
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(523, now)
-      osc.frequency.setValueAtTime(659, now + 0.1)
-      osc.frequency.setValueAtTime(784, now + 0.2)
-      gain.gain.setValueAtTime(0.12, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5)
-      osc.start(now)
-      osc.stop(now + 0.5)
-      break
-    case "warn":
-      osc.type = "triangle"
-      osc.frequency.setValueAtTime(300, now)
-      osc.frequency.linearRampToValueAtTime(200, now + 0.2)
-      gain.gain.setValueAtTime(0.08, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
-      osc.start(now)
-      osc.stop(now + 0.25)
-      break
-    default:
-      osc.stop(now)
+  const base = ctx.currentTime + 0.01
+  for (const note of def) {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    const start = base + note.t
+    osc.type = note.type || "sine"
+    osc.frequency.setValueAtTime(note.freq, start)
+    if (note.slideTo) {
+      osc.frequency.exponentialRampToValueAtTime(note.slideTo, start + note.dur * 0.6)
+    }
+    gain.gain.setValueAtTime(note.vol, start)
+    gain.gain.exponentialRampToValueAtTime(0.001, start + note.dur)
+    osc.start(start)
+    osc.stop(start + note.dur + 0.02)
   }
 }

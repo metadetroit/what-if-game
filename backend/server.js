@@ -997,7 +997,8 @@ io.on('connection', (socket) => {
   }
 
   // Player submits question
-  socket.on('submit-question', async (question) => {
+  socket.on('submit-question', async (question, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
     let roomCode = socket.roomCode;
     // Fallback: try to get roomCode from socket.rooms if socket.roomCode is not set
     if (!roomCode && socket.rooms) {
@@ -1013,10 +1014,12 @@ io.on('connection', (socket) => {
     
     // Input validation
     if (typeof question !== 'string' || !question.trim()) {
+      reply({ ok: false, error: 'Question cannot be empty' });
       socket.emit('error', 'Question cannot be empty');
       return;
     }
     if (question.length > 500) {
+      reply({ ok: false, error: 'Question is too long (max 500 characters)' });
       socket.emit('error', 'Question is too long (max 500 characters)');
       return;
     }
@@ -1025,25 +1028,30 @@ io.on('connection', (socket) => {
 
     if (!game) {
       console.log('submit-question rejected: game not found for roomCode:', roomCode);
+      reply({ ok: false, error: 'Game not found — please rejoin' });
       return;
     }
     if (game.phase !== 'writing') {
       console.log('submit-question rejected: game phase is not writing:', game.phase);
+      reply({ ok: false, error: 'Writing phase already ended' });
       return;
     }
 
     const player = game.players.find(p => p.id === socket.id);
     if (!player) {
       console.log(`submit-question rejected: player not found in game ${roomCode}`);
+      reply({ ok: false, error: 'You are not in this game' });
       socket.emit('error', 'You are not in this game');
       return;
     }
     if (player.role === 'spectator') {
+      reply({ ok: false, error: 'Spectators cannot submit questions' });
       socket.emit('error', 'Spectators cannot submit questions');
       return;
     }
     if (player.hasSubmittedQuestion) {
       console.log(`submit-question rejected: duplicate submission from ${player.name}`);
+      reply({ ok: false, error: 'You already submitted a question this round' });
       socket.emit('error', 'You already submitted a question this round');
       return;
     }
@@ -1075,6 +1083,7 @@ io.on('connection', (socket) => {
     // Track last submitter (always update to latest)
     game.lastQuestionSubmitter = player?.name || 'Unknown';
 
+    reply({ ok: true });
     socket.emit('question-submitted');
     console.log('question-submitted emitted to socket:', socket.id);
 

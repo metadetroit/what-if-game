@@ -127,6 +127,7 @@ function App() {
   const socketRef = useRef(null)
   const lastSubmitterTimerRef = useRef(null)
   const pendingVoteRef = useRef(null)
+  const questionSubmittingRef = useRef(false)
   const playerNameRef = useRef("")
   const playersRef = useRef([])
   // Names of OTHER players currently disconnected (within their reconnect grace window).
@@ -198,7 +199,7 @@ function App() {
     }
   }, [gameState, gameSummary])
 
-  const fetchBestOfData = async (opts = {}) => {
+  const fetchBestOfData = useCallback(async (opts = {}) => {
     try {
       if (bestOfLoading && !opts.force) return
       setBestOfLoading(true)
@@ -219,12 +220,12 @@ function App() {
           return [...prev, ...deduped]
         })
       }
-      setBestOfHasMore(false)
+      setBestOfHasMore(items.length >= limit)
     } catch (error) {
       console.error('Failed to fetch best of data:', error)
       setNotice(noticeFor('Failed to load best of content', 'warn', 3000))
     } finally { setBestOfLoading(false) }
-  }
+  }, [bestOfLoading, bestOfSort, bestOfLimit, bestOfOffset])
 
   const fetchPendingData = async (opts = {}) => {
     try {
@@ -504,7 +505,7 @@ function App() {
     }, { root, rootMargin: '0px 0px 400px 0px', threshold: 0.01 })
     io.observe(sentinel)
     return () => io.disconnect()
-  }, [gameState, bestOfHasMore, bestOfLoading, bestOfOffset, bestOfLimit, bestOfSort, bestOfData])
+  }, [gameState, bestOfHasMore, bestOfLoading, bestOfOffset, bestOfLimit, bestOfSort, bestOfData, fetchBestOfData])
 
   useEffect(() => {
     if (gameState !== 'best-of') { setShowBackToTop(false); return }
@@ -788,31 +789,6 @@ function App() {
     }
   }, [gameState])
 
-  // Browser Back Button Support: ensure we return to welcome screen on back
-  useEffect(() => {
-    const handlePopState = (e) => {
-      if (gameState === "lobby" || gameState === "writing" || gameState === "answering" || gameState === "performing" || gameState === "summary" || gameState === "scoreboard") {
-        // If in game, ask or just reset? User says "back functionality should cover [disband]"
-        // So we just reset the game state.
-        if (isHost && (gameState === "lobby")) {
-          socket?.emit("disband-room")
-        } else {
-          socket?.emit("leave-room")
-        }
-        resetGame()
-      }
-    }
-    window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
-  }, [gameState, isHost, socket])
-
-  // Push state when entering lobby
-  useEffect(() => {
-    if (gameState === "lobby" && window.history.state?.view !== "lobby") {
-      window.history.pushState({ view: "lobby" }, "")
-    }
-  }, [gameState])
-
   // Clear stale welcome/lobby errors once active gameplay begins.
   useEffect(() => {
     if (["writing", "answering", "performing"].includes(gameState)) {
@@ -863,6 +839,8 @@ function App() {
     })
   }, [socket, playerName, roomCode, isJoining])
 
+  const handleAgeGateConfirm = useCallback(() => setAgeGatePassed(true), [])
+
   const startGame = useCallback(() => { socket.emit("start-game", { noSelfReading, tournament: tournamentConfig.enabled ? tournamentConfig : null }) }, [socket, noSelfReading, tournamentConfig])
 
   const canForceAdvance = isHost && submitted && (progress.total === 0 || progress.submitted < progress.total)
@@ -872,10 +850,19 @@ function App() {
       setError("Question must start with \"What if...\"")
       return
     }
-    socket.emit("submit-question", question)
-    setSubmitted(true)
-    setError("")
-    clearDraft(roomCodeRef.current, "writing")
+    if (questionSubmittingRef.current) return
+    questionSubmittingRef.current = true
+    socket.timeout(5000).emit("submit-question", question, (err, res) => {
+      questionSubmittingRef.current = false
+      if (err || !res?.ok) {
+        setSubmitted(false)
+        setError(res?.error || "Submission didn't reach the server — tap Submit again")
+        return
+      }
+      setSubmitted(true)
+      setError("")
+      clearDraft(roomCodeRef.current, "writing")
+    })
   }, [socket, question])
 
   const submitAnswer = useCallback(() => {
@@ -1242,8 +1229,8 @@ function App() {
       case "fword":
         return (
           <>
-            {!ageGatePassed && <AgeGate onConfirm={() => setAgeGatePassed(true)} />}
-            {ageGatePassed && <UncutBestOfView onBack={() => setGameState("welcome")} />}
+            {!ageGatePassed && <AgeGate onConfirm={handleAgeGateConfirm} />}
+            {ageGatePassed && <UncutBestOfView onBack={() => setGameState("welcome")} setNotice={setNotice} />}
           </>
         )
 

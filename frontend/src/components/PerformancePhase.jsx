@@ -90,21 +90,26 @@ export default function PerformancePhase({
             className={`active-phase-header active-phase-header--performance active-phase-header--turn-${turnMode} active-fill-mt`}
             data-phase="performance"
             data-turn={turnMode}
-            aria-live="polite"
-            aria-atomic="true"
           >
             <div className="active-phase-header__title">
               <span className="active-phase-header__phase">Phase 3</span>
               <strong className="active-phase-header__task">Performance Time</strong>
             </div>
-            <div className={`active-phase-header__turn active-phase-header__turn--${turnMode}`}>
-              <div className="active-phase-header__turn-role">
-                <span className={`active-phase-header__turn-dot active-phase-header__turn-dot--${turnMode}`} aria-hidden="true" />
-                <span className="active-phase-header__turn-label">{turnLabel}</span>
-              </div>
-              <div className="active-phase-header__turn-title">{turnTitle}</div>
-              {turnSub && <div className="active-phase-header__turn-sub">{turnSub}</div>}
+          </div>
+          <div
+            className={`turn-banner turn-banner--${turnMode}`}
+            data-turn={turnMode}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <span className={`turn-banner__dot turn-banner__dot--${turnMode} essential-reduced-motion`} aria-hidden="true" />
+            <div className="turn-banner__body">
+              <span className={`turn-banner__label turn-banner__label--${turnMode}`}>{turnLabel}</span>
+              <span className="turn-banner__title">{turnTitle}</span>
+              {turnSub && <span className="turn-banner__sub">{turnSub}</span>}
             </div>
+            <span className="turn-banner__progress">{gameStats.round}/{gameStats.total}</span>
           </div>
           <div className="performance-stage">
             <div className="performance-reading-stack">

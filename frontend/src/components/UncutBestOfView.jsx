@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import BestOfView from "./BestOfView"
+import { noticeFor } from "../utils/gameUtils"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
@@ -9,7 +10,7 @@ function adminResponseError(response) {
   return null
 }
 
-function UncutBestOfView({ onBack }) {
+function UncutBestOfView({ onBack, setNotice }) {
   const [bestOfData, setBestOfData] = useState(null)
   const [bestOfSort, setBestOfSort] = useState(() => sessionStorage.getItem('uncutBestOfSort') || 'votes')
   const [bestOfLimit, setBestOfLimit] = useState(50)
@@ -19,9 +20,37 @@ function UncutBestOfView({ onBack }) {
   const [bestOfError, setBestOfError] = useState(null)
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('adminKey') || '')
   const [contentFilter, setContentFilter] = useState('all')
+  const [adminKeyPrompt, setAdminKeyPrompt] = useState(null) // { resolve } when awaiting key input
+  const [adminKeyInput, setAdminKeyInput] = useState('')
 
   const bestOfSentinelRef = useRef(null)
   const bestOfScrollRef = useRef(null)
+  const scrollPairRef = useRef(null)
+
+  const notify = useCallback((msg, tone = 'info', ms = 2000) => {
+    if (setNotice) setNotice(noticeFor(msg, tone, ms))
+  }, [setNotice])
+
+  // Opens the inline admin-key modal and resolves with the key (or null if cancelled)
+  const requestAdminKey = useCallback(() => {
+    if (adminKey) return Promise.resolve(adminKey)
+    setAdminKeyInput('')
+    return new Promise(resolve => setAdminKeyPrompt({ resolve }))
+  }, [adminKey])
+
+  const handleAdminKeySubmit = () => {
+    const key = adminKeyInput.trim()
+    if (!key) return
+    setAdminKey(key)
+    sessionStorage.setItem('adminKey', key)
+    adminKeyPrompt?.resolve(key)
+    setAdminKeyPrompt(null)
+  }
+
+  const handleAdminKeyCancel = () => {
+    adminKeyPrompt?.resolve(null)
+    setAdminKeyPrompt(null)
+  }
 
   const fetchBestOfData = async (opts = {}) => {
     if (bestOfLoading && !opts.force) return
@@ -65,23 +94,34 @@ function UncutBestOfView({ onBack }) {
   }, [fetchBestOfData])
 
   const handleCopyLink = useCallback((pairId) => {
-    const url = `${window.location.origin}?view=best-of&pair=${pairId}`
+    const url = `${window.location.origin}/fword?pair=${pairId}`
     navigator.clipboard.writeText(url).then(() => {
-      alert('Link copied to clipboard!')
+      notify('Link copied to clipboard', 'success', 1500)
     }).catch(() => {
-      alert('Failed to copy link')
+      notify('Failed to copy link', 'warn', 2500)
     })
+  }, [notify])
+
+  // Scroll to a deep-linked pair once it appears in the list
+  useEffect(() => {
+    try {
+      const pairId = new URLSearchParams(window.location.search).get('pair')
+      if (pairId) scrollPairRef.current = pairId
+    } catch (_) {}
   }, [])
 
-  const handleDeleteItem = async (type, id, index) => {
-    let effectiveAdminKey = adminKey
-    if (!adminKey) {
-      const key = prompt('Enter admin key to delete:')
-      if (!key) return
-      setAdminKey(key)
-      sessionStorage.setItem('adminKey', key)
-      effectiveAdminKey = key
+  useEffect(() => {
+    if (!scrollPairRef.current || !Array.isArray(bestOfData)) return
+    const el = document.getElementById(`bestof-${scrollPairRef.current}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      scrollPairRef.current = null
     }
+  }, [bestOfData])
+
+  const handleDeleteItem = async (type, id, index) => {
+    const effectiveAdminKey = await requestAdminKey()
+    if (!effectiveAdminKey) return
 
     try {
       const response = await fetch(`${SOCKET_URL}/api/admin/delete-pair`, {
@@ -97,34 +137,29 @@ function UncutBestOfView({ onBack }) {
       if (authError) {
         setAdminKey('')
         sessionStorage.removeItem('adminKey')
-        alert(authError)
+        notify(authError, 'warn', 3000)
         return
       }
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
           setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
+          notify('Item deleted', 'success', 2000)
         } else {
-          alert('Failed to delete item')
+          notify('Failed to delete item', 'warn', 2500)
         }
       } else {
-        alert('Failed to delete item')
+        notify('Failed to delete item', 'warn', 2500)
       }
     } catch (error) {
       console.error('Failed to delete best-of item:', error)
-      alert('Failed to delete item')
+      notify('Failed to delete item', 'warn', 2500)
     }
   }
 
   const handleApproveSFW = async (id, index) => {
-    let effectiveAdminKey = adminKey
-    if (!adminKey) {
-      const key = prompt('Enter admin key:')
-      if (!key) return
-      setAdminKey(key)
-      sessionStorage.setItem('adminKey', key)
-      effectiveAdminKey = key
-    }
+    const effectiveAdminKey = await requestAdminKey()
+    if (!effectiveAdminKey) return
 
     // Optimistic UI update
     setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
@@ -144,29 +179,23 @@ function UncutBestOfView({ onBack }) {
         setAdminKey('')
         sessionStorage.removeItem('adminKey')
         fetchBestOfData({ force: true })
-        alert(authError)
+        notify(authError, 'warn', 3000)
       } else if (!response.ok) {
         fetchBestOfData({ force: true })
-        alert('Failed to approve as SFW')
+        notify('Failed to approve as SFW', 'warn', 2500)
       } else {
-        alert('Approved as SFW')
+        notify('Approved as SFW', 'success', 2000)
       }
     } catch (error) {
       console.error('Failed to approve as SFW:', error)
       fetchBestOfData({ force: true })
-      alert('Failed to approve as SFW')
+      notify('Failed to approve as SFW', 'warn', 2500)
     }
   }
 
   const handleApproveNSFW = async (id, index) => {
-    let effectiveAdminKey = adminKey
-    if (!adminKey) {
-      const key = prompt('Enter admin key:')
-      if (!key) return
-      setAdminKey(key)
-      sessionStorage.setItem('adminKey', key)
-      effectiveAdminKey = key
-    }
+    const effectiveAdminKey = await requestAdminKey()
+    if (!effectiveAdminKey) return
 
     // Optimistic UI update
     setBestOfData(prev => (Array.isArray(prev) ? prev.filter(item => item.id !== id) : prev))
@@ -186,17 +215,17 @@ function UncutBestOfView({ onBack }) {
         setAdminKey('')
         sessionStorage.removeItem('adminKey')
         fetchBestOfData({ force: true })
-        alert(authError)
+        notify(authError, 'warn', 3000)
       } else if (!response.ok) {
         fetchBestOfData({ force: true })
-        alert('Failed to approve as NSFW')
+        notify('Failed to approve as NSFW', 'warn', 2500)
       } else {
-        alert('Approved as NSFW')
+        notify('Approved as NSFW', 'success', 2000)
       }
     } catch (error) {
       console.error('Failed to approve as NSFW:', error)
       fetchBestOfData({ force: true })
-      alert('Failed to approve as NSFW')
+      notify('Failed to approve as NSFW', 'warn', 2500)
     }
   }
 
@@ -204,14 +233,11 @@ function UncutBestOfView({ onBack }) {
     if (adminKey) {
       setAdminKey('')
       sessionStorage.removeItem('adminKey')
+      notify('Admin mode disabled', 'info', 1500)
     } else {
-      const key = prompt('Enter admin key:')
-      if (key) {
-        setAdminKey(key)
-        sessionStorage.setItem('adminKey', key)
-      }
+      requestAdminKey()
     }
-  }, [adminKey])
+  }, [adminKey, requestAdminKey, notify])
 
   const filteredBestOfData = useMemo(() => {
     if (!Array.isArray(bestOfData)) return bestOfData
@@ -254,25 +280,54 @@ function UncutBestOfView({ onBack }) {
   }, [bestOfHasMore, bestOfLoading, bestOfOffset, bestOfLimit, bestOfSort, bestOfData])
 
   return (
-    <BestOfView
-      bestOfScrollRef={bestOfScrollRef}
-      bestOfSentinelRef={bestOfSentinelRef}
-      bestOfData={filteredBestOfData}
-      bestOfSort={bestOfSort}
-      bestOfLoading={bestOfLoading}
-      bestOfError={bestOfError}
-      adminKey={adminKey}
-      onBack={onBack}
-      onSortChange={handleBestOfSortChange}
-      onToggleAdmin={handleToggleAdmin}
-      onCopyLink={handleCopyLink}
-      onDeleteItem={handleDeleteItem}
-      onApproveSFW={handleApproveSFW}
-      onApproveNSFW={handleApproveNSFW}
-      viewMode="approved"
-      contentFilter={contentFilter}
-      onContentFilterChange={setContentFilter}
-    />
+    <>
+      {adminKeyPrompt && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4" role="dialog" aria-modal="true" aria-labelledby="admin-key-title">
+          <div className="bg-gray-900 border border-amber-500/50 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl">
+            <p id="admin-key-title" className="text-lg font-bold text-white mb-2">Admin Key Required</p>
+            <p className="text-sm text-gray-400 mb-4">Enter the admin key to continue.</p>
+            <input
+              type="password"
+              value={adminKeyInput}
+              onChange={(e) => setAdminKeyInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAdminKeySubmit() }}
+              placeholder="Admin key"
+              autoFocus
+              autoComplete="off"
+              aria-label="Admin key"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-base mb-4 focus:outline-none focus:border-amber-500"
+            />
+            <div className="flex flex-col gap-2">
+              <button onClick={handleAdminKeySubmit} disabled={!adminKeyInput.trim()} className="btn-primary py-2.5 text-base w-full min-h-[44px]">
+                Unlock Admin
+              </button>
+              <button onClick={handleAdminKeyCancel} className="btn-secondary py-2 text-sm w-full min-h-[44px]">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <BestOfView
+        bestOfScrollRef={bestOfScrollRef}
+        bestOfSentinelRef={bestOfSentinelRef}
+        bestOfData={filteredBestOfData}
+        bestOfSort={bestOfSort}
+        bestOfLoading={bestOfLoading}
+        bestOfError={bestOfError}
+        adminKey={adminKey}
+        onBack={onBack}
+        onSortChange={handleBestOfSortChange}
+        onToggleAdmin={handleToggleAdmin}
+        onCopyLink={handleCopyLink}
+        onDeleteItem={handleDeleteItem}
+        onApproveSFW={handleApproveSFW}
+        onApproveNSFW={handleApproveNSFW}
+        viewMode="approved"
+        contentFilter={contentFilter}
+        onContentFilterChange={setContentFilter}
+      />
+    </>
   )
 }
 
