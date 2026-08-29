@@ -9,7 +9,7 @@ services:
       - key: PORT
         value: 10000
       - key: CORS_ORIGIN
-        value: https://playfluke.com
+        value: https://playfluke.com,https://www.playfluke.com
       - key: ADMIN_KEY
         sync: false
     plan: free

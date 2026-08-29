@@ -598,16 +598,21 @@ function removePlayerFromGame(roomCode, socketId) {
 }
 
 // After permanent removal, transfer host if needed. Returns true if host changed.
-function ensureHost(roomCode) {
+// force=true skips the "original host still present" check so a host who just
+// disconnected mid-game can be replaced immediately (host-only controls stay usable).
+function ensureHost(roomCode, force = false) {
   const game = games[roomCode];
   if (!game) return false;
   
   // Check if original host is still in the game (even if disconnected)
   const originalHost = game.players.find(p => p.id === game.host);
-  if (originalHost) {
+  if (originalHost && !force) {
     // Keep original host as host - they can reconnect within 180s
     // Only transfer if they've been permanently removed from game
     return false;
+  }
+  if (originalHost && force) {
+    originalHost.isHost = false;
   }
   
   // Original host is gone, find a new active host
@@ -868,6 +873,20 @@ io.on('connection', (socket) => {
 
     // CRITICAL FIX: Remove any disconnected players from lobby before starting
     game.players = activePlayers;
+
+    // If the host was among the disconnected players filtered out above,
+    // transfer host immediately so host-only controls stay usable.
+    if (!activePlayers.some(p => p.id === game.host)) {
+      const hostChanged = ensureHost(roomCode);
+      if (hostChanged) {
+        const newHost = game.players.find(p => p.isHost);
+        if (newHost) {
+          io.to(roomCode).emit('host-changed', { hostId: newHost.id, hostName: newHost.name });
+          console.log(`[start-game] Host transferred to ${newHost.name} (original host disconnected)`);
+        }
+      }
+    }
+
     game.phase = 'writing';
     game.writingPhaseStartedAt = Date.now();
     game.questionPromptedAt = {};
@@ -2936,10 +2955,6 @@ io.on('connection', (socket) => {
     player.disconnectedAt = null;
     player.reconnectTimeout = null;
 
-    // Restore submission flags based on migrated state
-    player.hasSubmittedQuestion = !!game.questions[socket.id];
-    player.hasSubmittedAnswer = !!game.answers[socket.id];
-    
     // If this player was the host (check both player.isHost and game.host comparison), update game.host to new socket ID and player.isHost
     if (player.isHost || game.host === oldSocketId) {
       game.host = socket.id;
@@ -2969,6 +2984,11 @@ io.on('connection', (socket) => {
       delete game.answers[oldSocketId];
       console.log(`Migrated answer from ${oldSocketId} to ${socket.id}`);
     }
+
+    // Restore submission flags based on migrated state (must run AFTER migration
+    // so the flags reflect the newly-migrated question/answer entries).
+    player.hasSubmittedQuestion = !!game.questions[socket.id];
+    player.hasSubmittedAnswer = !!game.answers[socket.id];
     
     // 4. Migrate prompt timestamps for speed-scoring fairness
     if (game.questionPromptedAt && game.questionPromptedAt[oldSocketId]) {
@@ -3415,7 +3435,7 @@ io.on('connection', (socket) => {
     let hostTransferredTo = null;
     if (wasHost) {
       player.isHost = false;
-      const hostChanged = ensureHost(roomCode);
+      const hostChanged = ensureHost(roomCode, true);
       if (hostChanged) {
         const newHost = game.players.find(p => p.isHost);
         if (newHost) {
@@ -3521,6 +3541,18 @@ io.on('connection', (socket) => {
       if (stillThere.players.length === 0) {
         delete games[roomCode];
         return;
+      }
+
+      // Transfer host if the removed player was the host (mid-game path).
+      // ensureHost succeeds now because the original host is gone from the array.
+      if (wasHost) {
+        const hostChanged = ensureHost(roomCode);
+        if (hostChanged) {
+          const newHost = stillThere.players.find(p => p.isHost);
+          if (newHost) {
+            io.to(roomCode).emit('host-changed', { hostId: newHost.id, hostName: newHost.name });
+          }
+        }
       }
 
       // Disband if remaining active falls below phase minimum
