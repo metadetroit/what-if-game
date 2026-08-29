@@ -800,11 +800,13 @@ function App() {
     if (isJoining) return
     if (!playerName.trim()) { setError("Please enter your name"); return }
     if (!socket) { setError("Not connected to server"); return }
+    if (!socket.connected) { setError("Not connected to server — check your connection and try again"); return }
     clearSession()
     reconnectAttemptedRef.current = false
     setIsJoining(true)
-    socket.emit("create-room", playerName, (response) => {
+    socket.timeout(5000).emit("create-room", playerName, (err, response) => {
       setIsJoining(false)
+      if (err) { setError("Connection timed out — try again"); return }
       if (response.success) {
         setRoomCode(response.roomCode)
         setIsHost(true)
@@ -823,11 +825,13 @@ function App() {
     if (!playerName.trim()) { setError("Please enter your name"); return }
     if (!roomCode.trim()) { setError("Please enter a room code"); return }
     if (!socket) { setError("Not connected to server"); return }
+    if (!socket.connected) { setError("Not connected to server — check your connection and try again"); return }
     clearSession()
     reconnectAttemptedRef.current = false
     setIsJoining(true)
-    socket.emit("join-room", roomCode, playerName, (response) => {
+    socket.timeout(5000).emit("join-room", roomCode, playerName, (err, response) => {
       setIsJoining(false)
+      if (err) { setError("Connection timed out — try again"); return }
       if (response.success) {
         setIsHost(false)
         setGameState("lobby")
