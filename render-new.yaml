@@ -9,7 +9,7 @@ services:
       - key: PORT
         value: 10000
       - key: CORS_ORIGIN
-        value: https://what-if-game-v2.onrender.com
+        value: https://playfluke.com
       - key: ADMIN_KEY
         sync: false
     plan: free

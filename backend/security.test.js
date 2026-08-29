@@ -6,7 +6,7 @@ const http = require('node:http');
 const ioClient = require('socket.io-client');
 
 process.env.PORT = '0';
-process.env.CORS_ORIGIN = 'https://what-if-game-v2.onrender.com,http://localhost:3000,http://localhost:3001';
+process.env.CORS_ORIGIN = 'https://playfluke.com,http://localhost:3000,http://localhost:3001';
 process.env.ADMIN_KEY = 'track1-test-admin-key';
 delete process.env.TURSO_DATABASE_URL;
 delete process.env.TURSO_AUTH_TOKEN;
@@ -131,11 +131,11 @@ test('core game remains available when admin controls are unconfigured', async (
 });
 
 test('Express CORS allows the production origin and rejects an unlisted origin', async () => {
-  process.env.CORS_ORIGIN = 'https://what-if-game-v2.onrender.com,http://localhost:3000,http://localhost:3001';
+  process.env.CORS_ORIGIN = 'https://playfluke.com,http://localhost:3000,http://localhost:3001';
 
-  const allowed = await request('/api/health', { origin: 'https://what-if-game-v2.onrender.com' });
+  const allowed = await request('/api/health', { origin: 'https://playfluke.com' });
   assert.equal(allowed.statusCode, 200);
-  assert.equal(allowed.headers['access-control-allow-origin'], 'https://what-if-game-v2.onrender.com');
+  assert.equal(allowed.headers['access-control-allow-origin'], 'https://playfluke.com');
 
   const rejected = await request('/api/health', { origin: 'https://example.com' });
   assert.notEqual(rejected.statusCode, 200);
@@ -143,11 +143,11 @@ test('Express CORS allows the production origin and rejects an unlisted origin',
 });
 
 test('Socket.IO polling handshake allows production origin and rejects an unlisted origin', async () => {
-  process.env.CORS_ORIGIN = 'https://what-if-game-v2.onrender.com,http://localhost:3000,http://localhost:3001';
+  process.env.CORS_ORIGIN = 'https://playfluke.com,http://localhost:3000,http://localhost:3001';
 
-  const allowed = await socketHandshake('https://what-if-game-v2.onrender.com');
+  const allowed = await socketHandshake('https://playfluke.com');
   assert.equal(allowed.statusCode, 200);
-  assert.equal(allowed.headers['access-control-allow-origin'], 'https://what-if-game-v2.onrender.com');
+  assert.equal(allowed.headers['access-control-allow-origin'], 'https://playfluke.com');
   assert.match(allowed.body, /^0\{/);
 
   const rejected = await socketHandshake('https://example.com');
@@ -156,14 +156,14 @@ test('Socket.IO polling handshake allows production origin and rejects an unlist
 });
 
 test('Socket.IO WebSocket connection allows production origin and rejects an unlisted origin', async t => {
-  process.env.CORS_ORIGIN = 'https://what-if-game-v2.onrender.com,http://localhost:3000,http://localhost:3001';
+  process.env.CORS_ORIGIN = 'https://playfluke.com,http://localhost:3000,http://localhost:3001';
   const url = `http://127.0.0.1:${appServer.server.address().port}`;
 
   await t.test('allowed origin connects', async () => {
     const client = ioClient(url, {
       transports: ['websocket'],
       forceNew: true,
-      extraHeaders: { Origin: 'https://what-if-game-v2.onrender.com' }
+      extraHeaders: { Origin: 'https://playfluke.com' }
     });
     try {
       await new Promise((resolve, reject) => {
